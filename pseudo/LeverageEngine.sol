@@ -34,6 +34,7 @@ contract LeverageEngine is AccessControl {
     uint256 internal liquidationFee;  // Fee taken after returning all debt during liquidation
     uint256 internal exitFee;         // Fee (taken from profits) taken after returning all debt during exit by user
     address internal feeCollector;    // Address that collects fees
+    address internal leverageDepositor; // Address of the Leverage Depositor contract
 
     // Events
     event StrategyConfigUpdated(address indexed strategy);
@@ -131,6 +132,12 @@ contract LeverageEngine is AccessControl {
         emit FeeCollectorUpdated(collector);
     }
 
+    /// @notice Set the global leverage depositor address (for swaping between WBTC and underlying asset).
+    /// @param depositor The new leverage depositor address.
+    function setFeeCollector(address collector) external onlyRole(ADMIN_ROLE) {
+       
+    }
+
     ///////////// User functions /////////////
 
     /// @notice Allows a user to open a leverage position.
@@ -143,7 +150,7 @@ contract LeverageEngine is AccessControl {
         uint256 collateralAmount, 
         uint256 wbtcToBorrow, 
         address strategy, 
-        uint256 minStrategyShares
+        uint256 minStrategyShares,
         uint256 swapRoute
     ) external {
         // Check if strategy is whitelisted and has non-zero quota
@@ -231,7 +238,7 @@ contract LeverageEngine is AccessControl {
     /// @param nftIDs An array of NFT IDs representing positions to expire.
     /// @param minWBTC Minimum amount of WBTC expected to get back before debt repayment.
     /// @param strategy The strategy associated with the positions.
-    function expirePositions(uint256[] memory nftIDs, uint256 minWBTC, address strategy) external onlyRole(MONITOR_ROLE) {
+    function expirePositions(uint256[] memory nftIDs, uint256 minWBTC, address strategy, uint256 swapRoute) external onlyRole(MONITOR_ROLE) {
         uint256 totalShares = 0;
         uint256 totalDebt = 0;
         uint256 totalCollateral = 0;
@@ -281,7 +288,7 @@ contract LeverageEngine is AccessControl {
 
     /// @notice Liquidates a position if it's eligible for liquidation.
     /// @param nftID The ID of the NFT representing the position.
-    function liquidatePosition(uint256 nftID) external onlyRole(MONITOR_ROLE) {
+    function liquidatePosition(uint256 nftID,  uint256 swapRoute) external onlyRole(MONITOR_ROLE) {
         PositionLedgerLib.LedgerEntry memory position = ledger.getLedgerEntry(nftID);
         
         // Verify the position is LIVE
