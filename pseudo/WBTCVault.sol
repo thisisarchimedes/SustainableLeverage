@@ -79,6 +79,20 @@ contract WBTCVault is AccessControl {
         emit LeverageEngineQuotaSet(leverageEngine, WBTCQuota);
     }
 
+
+     /**
+     * @dev Sets the WBTC quota for a specific LeverageEngine.
+     * Can only be called by an minter. Minter can only reduce quouta. It cannot increase it
+     * Meant to use when need to return WBTC to the vault
+     */
+    function reduceLeverageEngineQuota(address leverageEngine, uint256 WBTCQuota) external onlyRole(MINTER_ROLE) {
+        
+        if (leverageEngineWBTCQuota[leverageEngine] < WBTCQuota)
+            revert("Minter cannot increase quota");
+
+        leverageEngineWBTCQuota[leverageEngine] = WBTCQuota;
+        emit LeverageEngineQuotaSet(leverageEngine, WBTCQuota);
+    }
     /**
     * @dev Allows a LeverageEngine to borrow WBTC from the vault.
     * Verifies that the requested amount is below the LeverageEngine's quota.

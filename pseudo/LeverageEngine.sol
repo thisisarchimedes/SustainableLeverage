@@ -6,6 +6,7 @@ import "./PositionLedgerLib.sol";
 
 /// @title LeverageEngine Contract
 /// @notice This contract facilitates the management of strategy configurations and admin parameters for the Leverage Engine.
+/// @notice Leverage Engine is upgradable
 contract LeverageEngine is AccessControl {
     using SafeMath for uint256;
     using PositionLedgerLib for PositionLedgerLib.LedgerStorage;
@@ -137,11 +138,13 @@ contract LeverageEngine is AccessControl {
     /// @param wbtcToBorrow Amount of WBTC to borrow.
     /// @param strategy Strategy to be used for leveraging.
     /// @param minStrategyShares Minimum amount of strategy shares expected in return.
+    /// @param swapRoute Route to be used for swapping (sent to leverageDepositor).
     function openPosition(
         uint256 collateralAmount, 
         uint256 wbtcToBorrow, 
         address strategy, 
         uint256 minStrategyShares
+        uint256 swapRoute
     ) external {
         // Check if strategy is whitelisted and has non-zero quota
         require(strategies[strategy].quota > 0, "Invalid strategy");
@@ -177,12 +180,15 @@ contract LeverageEngine is AccessControl {
         // update strategy qouta - reduce by the amount of borrowed WBTC
 
         // Send nft to user
+
+        // emit event
     }
 
     /// @notice Allows a user to close their leverage position.
     /// @param nftID The ID of the NFT representing the position.
     /// @param minWBTC Minimum amount of WBTC expected after position closure.
-    function closePosition(uint256 nftID, uint256 minWBTC) external {
+    /// @param swapRoute Route to be used for swapping (sent to leverageDepositor).
+    function closePosition(uint256 nftID, uint256 minWBTC, uint256 swapRoute) external {
         // Check if the user owns the NFT
         require(nft.ownerOf(nftID) == msg.sender, "Not the owner of the NFT");
 
@@ -215,6 +221,8 @@ contract LeverageEngine is AccessControl {
 
         // Burn the NFT
         nft.burn(nftID);
+
+        // emit event
     }
 
     ///////////// Monitor functions /////////////
