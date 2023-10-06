@@ -165,10 +165,9 @@ contract LeverageEngine is AccessControl {
         // This function might be different based on actual implementation.
         wbtcVault.borrow(wbtcToBorrow);
 
-        // Swap WBTC with the strategy underlying aasset
 
-        // Deposit borrowed WBTC to strategy and get back shares
-        uint256 sharesReceived = strategy.deposit(wbtcToBorrow);
+        // Deposit borrowed WBTC to LeverageDepositor->strategy and get back shares
+        uint256 sharesReceived = leverageDepositor.deposit(wbtcToBorrow);
         require(sharesReceived >= minStrategyShares, "Received less shares than expected");
 
         // Update Ledger
