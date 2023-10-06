@@ -327,11 +327,11 @@ contract LeverageEngine is AccessControl {
 
     ///////////// View functions /////////////
 
-    /// @notice Preview the number of strategy shares expected from opening a position.
+    /// @notice Preview the number of AMM LP tokensexpected from opening a position.
     /// @param collateralAmount Amount of WBTC the user is planning to deposit as collateral.
     /// @param wbtcToBorrow Amount of WBTC the user is planning to borrow.
     /// @param strategy The strategy user is considering.
-    /// @return estimatedShares The estimated number of strategy shares the user will receive.
+    /// @return estimatedShares The estimated number of AMM LP tokens s the user will receive.
     function previewOpenPosition(
         uint256 collateralAmount, 
         uint256 wbtcToBorrow, 
