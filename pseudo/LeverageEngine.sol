@@ -165,8 +165,7 @@ contract LeverageEngine is AccessControl {
         // This function might be different based on actual implementation.
         wbtcVault.borrow(wbtcToBorrow);
 
-        // Deposit collateral to strategy
-        strategy.deposit(collateralAmount);
+        // Swap WBTC with the strategy underlying aasset
 
         // Deposit borrowed WBTC to strategy and get back shares
         uint256 sharesReceived = strategy.deposit(wbtcToBorrow);
