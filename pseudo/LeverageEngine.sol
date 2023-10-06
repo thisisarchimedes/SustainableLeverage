@@ -344,7 +344,7 @@ contract LeverageEngine is AccessControl {
         require(collateralAmount.mul(strategies[strategy].maximumMultiplier) >= wbtcToBorrow, "Borrow exceeds maximum multiplier");
 
         // Here, we make an assumption that the strategy has a function to give us an estimate of the shares
-        //estimatedShares = strategy.previewDeposit(collateralAmount.add(wbtcToBorrow));
+        //estimatedShares = leverageDepositor.previewDeposit(collateralAmount.add(wbtcToBorrow));
     }
 
     /// @notice Preview the amount of WBTC expected from closing a position.
