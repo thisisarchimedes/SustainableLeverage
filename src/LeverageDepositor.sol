@@ -1,25 +1,18 @@
-// SPDX-License-Identifier: MIT
-
-pragma solidity ^0.8.18;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity >=0.8.21;
 
 import "openzeppelin-contracts/token/ERC20/IERC20.sol";
-
+import { ILeverageDepositor } from "./interfaces/ILeverageDepositor.sol";
 /// @title LeverageDepositor Contract
-/// @notice This contract facilitates the swapping between WBTC and WETH (or USDC in future) and interacts with strategies.
-contract LeverageDepositor  {
+/// @notice This contract facilitates the swapping between WBTC and WETH (or USDC in future) and interacts with
+/// strategies.
 
+contract LeverageDepositor is ILeverageDepositor {
     // ERC20 interface for WBTC and WETH (or USDC)
     IERC20 internal wbtc;
     IERC20 internal weth; // (or usdc in future)
 
-    // Routes for swapping
-    enum SwapRoute {
-        WBTC,
-        WBTCWETH_CURVE_TRIPOOL,
-        WBTCWETH_UNISWAPV3_003,
-        // Add more routes as needed
-    }
-
+    // Add more routes as needed
     constructor(address _wbtc, address _weth) {
         wbtc = IERC20(_wbtc);
         weth = IERC20(_weth);
@@ -29,7 +22,8 @@ contract LeverageDepositor  {
     /// @param strategy Address of the strategy to deposit into.
     /// @param route The route to use for swapping.
     /// @param amount Amount of WBTC to deposit.
-    function deposit(address strategy, SwapRoute route, uint256 amount) external onlyOwner {
+    // TODO - add access control
+    function deposit(address strategy, SwapRoute route, uint256 amount) external returns (uint256 receivedShares) {
         require(amount > 0, "Amount should be greater than 0");
 
         // Transfer WBTC from sender to this contract
@@ -46,17 +40,16 @@ contract LeverageDepositor  {
         // Despoit WETH to strategy
 
         // return shars
+        return receivedShares;
     }
-
-
 
     /// @notice Redeem from strategy and optionally swap WETH to WBTC
     /// @param strategy Address of the strategy to withdraw from.
     /// @param route The route to use for swapping back.
     /// @param shares Shares to withdraw from strategy.
-    function redeem(address strategy, SwapRoute route, uint256 shares) external onlyOwner {
+    /// TODO : ADD ACCESS CONTROL
+    function redeem(address strategy, SwapRoute route, uint256 shares) external {
         require(shares > 0, "Shares should be greater than 0");
-
 
         if (route == SwapRoute.WBTCWETH_CURVE_TRIPOOL) {
             // Code to swap WETH to WBTC using Curve TriPool
@@ -65,6 +58,5 @@ contract LeverageDepositor  {
         } // Add more routes as needed
 
         // Redeem and transfer WBTC to sender
-       
     }
 }

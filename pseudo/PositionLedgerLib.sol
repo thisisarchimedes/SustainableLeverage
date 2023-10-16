@@ -3,7 +3,6 @@ pragma solidity ^0.8.18;
 /// @title PositionLedger Library
 /// @notice This library manages the ledger entries for leveraged positions.
 library PositionLedgerLib {
-
     enum PositionState {
         LIVE,
         EXPIRED,
@@ -24,7 +23,7 @@ library PositionLedgerLib {
 
     // Ledger storage structure to be defined in the calling contract
     struct LedgerStorage {
-        mapping(uint256 => LedgerEntry) entries;  // Mapping from NFT ID to LedgerEntry
+        mapping(uint256 => LedgerEntry) entries; // Mapping from NFT ID to LedgerEntry
     }
 
     function getCollateralAmount(LedgerStorage storage self, uint256 nftID) external view returns (uint256) {

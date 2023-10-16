@@ -6,7 +6,9 @@ import "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import "./PositionLedgerLib.sol";
 import { IWBTCVault } from "./interfaces/IWBTCVault.sol";
-import { LeverageDepositor } from "./LeverageDepositor.sol";
+import { ILeverageDepositor } from "./interfaces/ILeverageDepositor.sol";
+import { PositionToken } from "./PositionToken.sol";
+import { console2 } from "forge-std/console2.sol";
 /// @title LeverageEngine Contract
 /// @notice This contract facilitates the management of strategy configurations and admin parameters for the Leverage
 /// Engine.
@@ -26,8 +28,11 @@ contract LeverageEngine is AccessControl {
     // WBTC Vault
     IWBTCVault public wbtcVault;
 
+    // Position NFT
+    PositionToken public nft;
+
     // Leverage Depositor
-    LeverageDepositor public leverageDepositor;
+    ILeverageDepositor public leverageDepositor;
 
     /// @notice Strategy configurations structure
     /// @param quota WBTC Quota for the strategy
@@ -45,13 +50,11 @@ contract LeverageEngine is AccessControl {
     mapping(address => StrategyConfig) internal strategies;
 
     // Global admin parameters
-    uint256 internal liquidationFee; // Fee taken after returning all debt during liquidation
-    uint256 internal exitFee; // Fee (taken from profits) taken after returning all debt during exit by user
-    address internal feeCollector; // Address that collects fees
-    address internal leverageDepositor; // Address of the Leverage Depositor contract
+    uint256 public liquidationFee; // Fee taken after returning all debt during liquidation
+    uint256 public exitFee; // Fee (taken from profits) taken after returning all debt during exit by user
+    address public feeCollector; // Address that collects fees
 
     //Errors
-    error NotEnoughQuota();
     error ExceedBorrowLimit();
     error LessThanMinimumShares();
     // Events
@@ -71,9 +74,12 @@ contract LeverageEngine is AccessControl {
 
     PositionLedgerLib.LedgerStorage internal ledger;
 
-    constructor(IWBTCVault _wbtcVault) {
+    constructor(IWBTCVault _wbtcVault, ILeverageDepositor _leverageDepositor, PositionToken _nft) {
         wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
         wbtcVault = _wbtcVault;
+        leverageDepositor = _leverageDepositor;
+        nft = _nft;
+        _grantRole(ADMIN_ROLE, msg.sender);
     }
     ///////////// Admin functions /////////////
 
@@ -95,7 +101,7 @@ contract LeverageEngine is AccessControl {
         onlyRole(ADMIN_ROLE)
     {
         // Validate MM and LB relationship
-        require(_maximumMultiplier < (1e8 / (_liquidationBuffer - 1e8)), "Invalid MM or LB value");
+        require(_maximumMultiplier < (1e16 / (_liquidationBuffer - 1e8)), "Invalid MM or LB value");
 
         strategies[strategy] = StrategyConfig({
             quota: _quota,
@@ -179,16 +185,15 @@ contract LeverageEngine is AccessControl {
         uint256 wbtcToBorrow,
         address strategy,
         uint256 minStrategyShares,
-        uint256 swapRoute
+        ILeverageDepositor.SwapRoute swapRoute
     )
         external
     {
-        // Check if strategy is whitelisted and has non-zero quota
-        if (strategies[strategy].quota - wbtcToBorrow < 0) revert NotEnoughQuota();
-
+        // update strategy qouta - reduce by the amount of borrowed WBTC and it would revert if the strategy has no
+        // quota
+        strategies[strategy].quota -= wbtcToBorrow;
         // Check Maximum Multiplier condition
         if (collateralAmount * strategies[strategy].maximumMultiplier / 1e8 < wbtcToBorrow) revert ExceedBorrowLimit();
-
         // Transfer collateral and borrowed WBTC to LeverageEngine
         wbtc.safeTransferFrom(msg.sender, address(this), collateralAmount);
         // Assuming WBTC Vault has a function borrow that lets you borrow WBTC.
@@ -196,7 +201,7 @@ contract LeverageEngine is AccessControl {
         wbtcVault.borrow(wbtcToBorrow);
 
         // Deposit borrowed WBTC to LeverageDepositor->strategy and get back shares
-        uint256 sharesReceived = leverageDepositor.deposit(wbtcToBorrow, strategy, swapRoute);
+        uint256 sharesReceived = leverageDepositor.deposit(strategy, swapRoute, collateralAmount + wbtcToBorrow);
         if (sharesReceived < minStrategyShares) revert LessThanMinimumShares();
 
         // Update Ledger
@@ -208,15 +213,13 @@ contract LeverageEngine is AccessControl {
         newEntry.positionExpirationBlock = block.number + strategies[strategy].positionLifetime;
         newEntry.liquidationBuffer = strategies[strategy].liquidationBuffer;
         newEntry.state = PositionLedgerLib.PositionState.LIVE;
-        // TODO add NFT logic
-        // uint256 nftID = nft.mint(msg.sender); // Mint NFT and send to user
-        // ledger.setLedgerEntry(nftID, newEntry);
-
-        // update strategy qouta - reduce by the amount of borrowed WBTC
-        strategies[strategy].quota -= wbtcToBorrow;
-        // Send nft to user
+        uint256 nftID = nft.mint(msg.sender); // Mint NFT and send to user
+        ledger.setLedgerEntry(nftID, newEntry);
 
         // emit event
+        emit PositionOpened(
+            nftID, msg.sender, strategy, collateralAmount, wbtcToBorrow, newEntry.positionExpirationBlock
+        );
     }
 
     ///////////// View functions /////////////
@@ -239,10 +242,7 @@ contract LeverageEngine is AccessControl {
         require(strategies[strategy].quota > 0, "Invalid strategy");
 
         // Check Maximum Multiplier condition
-        require(
-            collateralAmount.mul(strategies[strategy].maximumMultiplier) >= wbtcToBorrow,
-            "Borrow exceeds maximum multiplier"
-        );
+        if (collateralAmount * strategies[strategy].maximumMultiplier / 1e8 < wbtcToBorrow) revert ExceedBorrowLimit();
 
         // Here, we make an assumption that the strategy has a function to give us an estimate of the shares
         //estimatedShares = leverageDepositor.previewDeposit(collateralAmount.add(wbtcToBorrow));
@@ -255,21 +255,7 @@ contract LeverageEngine is AccessControl {
         return strategies[strategy];
     }
 
-    /// @notice Get the global liquidation fee.
-    /// @return The global liquidation fee.
-    function getLiquidationFee() external view returns (uint256) {
-        return liquidationFee;
-    }
-
-    /// @notice Get the global exit fee.
-    /// @return The global exit fee.
-    function getExitFee() external view returns (uint256) {
-        return exitFee;
-    }
-
-    /// @notice Get the global fee collector address.
-    /// @return The address of the fee collector.
-    function getFeeCollector() external view returns (address) {
-        return feeCollector;
+    function getPosition(uint256 nftID) external view returns (PositionLedgerLib.LedgerEntry memory) {
+        return ledger.getLedgerEntry(nftID);
     }
 }

@@ -31,6 +31,10 @@ library PositionLedgerLib {
         return self.entries[nftID].collateralAmount;
     }
 
+    function getLedgerEntry(LedgerStorage storage self, uint256 nftID) external view returns (LedgerEntry memory) {
+        return self.entries[nftID];
+    }
+
     // ... [Similar functions for other ledger entry attributes]
 
     function setLedgerEntry(LedgerStorage storage self, uint256 nftID, LedgerEntry memory entry) internal {
