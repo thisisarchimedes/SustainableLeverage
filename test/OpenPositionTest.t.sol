@@ -8,7 +8,7 @@ import { PositionLedgerLib } from "../src/PositionLedgerLib.sol";
 import { LeverageEngine } from "../src/LeverageEngine.sol";
 import { PositionToken } from "../src/PositionToken.sol";
 import "../src/LeverageDepositor.sol";
-import { WBTCVaultMock } from "src/test/WBTCVaultMock.sol";
+import { WBTCVault } from "src/WBTCVault.sol";
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -19,7 +19,7 @@ contract OpenPositionTest is PRBTest, StdCheats {
     LeverageEngine internal leverageEngine;
     PositionToken internal positionToken;
     LeverageDepositor internal leverageDepositor;
-    WBTCVaultMock internal wbtcVaultMock;
+    WBTCVault internal wbtcVaultMock;
     ProxyAdmin internal proxyAdmin;
     TransparentUpgradeableProxy internal proxy;
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
@@ -38,7 +38,7 @@ contract OpenPositionTest is PRBTest, StdCheats {
         proxyAdmin = new ProxyAdmin(address(this));
         positionToken = new PositionToken();
         leverageDepositor = new LeverageDepositor(WBTC,WETH);
-        wbtcVaultMock = new WBTCVaultMock();
+        wbtcVaultMock = new WBTCVault(WBTC);
         leverageEngine = new LeverageEngine();
         bytes memory initData = abi.encodeWithSelector(
             LeverageEngine.initialize.selector,
@@ -67,7 +67,7 @@ contract OpenPositionTest is PRBTest, StdCheats {
         );
     }
 
-    function testShouldAbleToOpenPos() external {
+    function test_ShouldAbleToOpenPos() external {
         deal(WBTC, address(this), 10e8);
         ERC20(WBTC).approve(address(leverageEngine), 10e8);
         leverageEngine.setStrategyConfig(ETHPLUSETH_STRATEGY, 100e8, 1000, 3e8, 1.25e8);
