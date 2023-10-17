@@ -9,6 +9,7 @@ import { WBTCVault } from "src/WBTCVault.sol";
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import { SwapAdapter } from "../src/SwapAdapter.sol";
 
 contract BaseTest {
     LeverageEngine internal leverageEngine;
@@ -17,6 +18,7 @@ contract BaseTest {
     WBTCVault internal wbtcVaultMock;
     ProxyAdmin internal proxyAdmin;
     TransparentUpgradeableProxy internal proxy;
+    SwapAdapter internal swapAdapter;
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant ETHPLUSETH_STRATEGY = 0xf3E920f099B19Ce604d672F0e87AAce490558fCA;
@@ -27,13 +29,20 @@ contract BaseTest {
         leverageDepositor = new LeverageDepositor(WBTC,WETH);
         wbtcVaultMock = new WBTCVault(WBTC);
         leverageEngine = new LeverageEngine();
+        swapAdapter = new SwapAdapter(WBTC, address(leverageDepositor));
         bytes memory initData = abi.encodeWithSelector(
             LeverageEngine.initialize.selector,
             address(wbtcVaultMock),
             address(leverageDepositor),
-            address(positionToken)
+            address(positionToken),
+            address(swapAdapter)
         );
         proxy = new TransparentUpgradeableProxy(address(leverageEngine), address(proxyAdmin), initData);
         leverageEngine = LeverageEngine(address(proxy));
+    }
+    //erc721 receiver
+
+    function onERC721Received(address, address, uint256, bytes memory) public returns (bytes4) {
+        return this.onERC721Received.selector;
     }
 }

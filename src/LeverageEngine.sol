@@ -8,6 +8,8 @@ import "./PositionLedgerLib.sol";
 import { IWBTCVault } from "./interfaces/IWBTCVault.sol";
 import { ILeverageDepositor } from "./interfaces/ILeverageDepositor.sol";
 import { PositionToken } from "./PositionToken.sol";
+import { SwapAdapter } from "./SwapAdapter.sol";
+import { IMultiPoolStrategy } from "./interfaces/IMultiPoolStrategy.sol";
 
 /// @title LeverageEngine Contract
 /// @notice This contract facilitates the management of strategy configurations and admin parameters for the Leverage
@@ -32,6 +34,9 @@ contract LeverageEngine is AccessControlUpgradeable {
 
     // Leverage Depositor
     ILeverageDepositor public leverageDepositor;
+
+    // Swap Adapter
+    SwapAdapter public swapAdapter;
 
     /// @notice Strategy configurations structure
     /// @param quota WBTC Quota for the strategy
@@ -90,13 +95,22 @@ contract LeverageEngine is AccessControlUpgradeable {
         _disableInitializers();
     }
 
-    function initialize(address _wbtcVault, address _leverageDepositor, address _nft) external initializer {
+    function initialize(
+        address _wbtcVault,
+        address _leverageDepositor,
+        address _nft,
+        address _swapAdapter
+    )
+        external
+        initializer
+    {
         __AccessControl_init();
         _grantRole(ADMIN_ROLE, msg.sender);
         wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
         wbtcVault = IWBTCVault(_wbtcVault);
         leverageDepositor = ILeverageDepositor(_leverageDepositor);
         nft = PositionToken(_nft);
+        swapAdapter = SwapAdapter(_swapAdapter);
     }
 
     ///////////// Admin functions /////////////
@@ -205,13 +219,15 @@ contract LeverageEngine is AccessControlUpgradeable {
     /// @param wbtcToBorrow Amount of WBTC to borrow.
     /// @param strategy Strategy to be used for leveraging.
     /// @param minStrategyShares Minimum amount of strategy shares expected in return.
-    /// @param swapRoute Route to be used for swapping (sent to leverageDepositor).
+    /// @param swapRoute Route to be used for swapping
     function openPosition(
         uint256 collateralAmount,
         uint256 wbtcToBorrow,
         address strategy,
         uint256 minStrategyShares,
-        ILeverageDepositor.SwapRoute swapRoute
+        SwapAdapter.SwapRoute swapRoute,
+        bytes calldata swapData,
+        address exchange
     )
         external
     {
@@ -224,10 +240,16 @@ contract LeverageEngine is AccessControlUpgradeable {
         wbtc.safeTransferFrom(msg.sender, address(this), collateralAmount);
         // Assuming WBTC Vault has a function borrow that lets you borrow WBTC.
         // This function might be different based on actual implementation.
-        wbtcVault.borrow(wbtcToBorrow);
-        wbtc.approve(address(leverageDepositor), collateralAmount + wbtcToBorrow);
+        uint256 totalAmount = collateralAmount + wbtcToBorrow;
+        wbtcVault.borrow(wbtcToBorrow); //TODO: directly transfer from vault to swapadapter
+        wbtc.transfer(address(swapAdapter), totalAmount);
+        address strategyUnderlyingToken = IMultiPoolStrategy(strategy).asset();
+        // Swap borrowed WBTC to strategy token
+        uint256 receivedAmount =
+            swapAdapter.swap(wbtc, IERC20(strategyUnderlyingToken), totalAmount, exchange, swapData, swapRoute);
+        //TODO: ADD CHAINLINK ORACLE TO PROTECT BORROWED BTC
         // Deposit borrowed WBTC to LeverageDepositor->strategy and get back shares
-        uint256 sharesReceived = leverageDepositor.deposit(strategy, swapRoute, collateralAmount + wbtcToBorrow);
+        uint256 sharesReceived = leverageDepositor.deposit(strategy, strategyUnderlyingToken, receivedAmount);
         if (sharesReceived < minStrategyShares) revert LessThanMinimumShares();
 
         // Update Ledger
@@ -244,7 +266,12 @@ contract LeverageEngine is AccessControlUpgradeable {
 
         // emit event
         emit PositionOpened(
-            nftID, msg.sender, strategy, collateralAmount, wbtcToBorrow, newEntry.positionExpirationBlock
+            nftID,
+            msg.sender,
+            newEntry.strategyType,
+            newEntry.collateralAmount,
+            newEntry.wbtcDebtAmount,
+            newEntry.positionExpirationBlock
         );
     }
 
