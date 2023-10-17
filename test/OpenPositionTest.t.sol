@@ -10,6 +10,8 @@ import { PositionToken } from "../src/PositionToken.sol";
 import "../src/LeverageDepositor.sol";
 import { WBTCVaultMock } from "src/test/WBTCVaultMock.sol";
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
+import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 /// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
 /// https://book.getfoundry.sh/forge/writing-tests
 
@@ -18,6 +20,8 @@ contract OpenPositionTest is PRBTest, StdCheats {
     PositionToken internal positionToken;
     LeverageDepositor internal leverageDepositor;
     WBTCVaultMock internal wbtcVaultMock;
+    ProxyAdmin internal proxyAdmin;
+    TransparentUpgradeableProxy internal proxy;
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant ETHPLUSETH_STRATEGY = 0xf3E920f099B19Ce604d672F0e87AAce490558fCA;
@@ -31,10 +35,19 @@ contract OpenPositionTest is PRBTest, StdCheats {
 
         // Otherwise, run the test against the mainnet fork.
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
+        proxyAdmin = new ProxyAdmin(address(this));
         positionToken = new PositionToken();
         leverageDepositor = new LeverageDepositor(WBTC,WETH);
         wbtcVaultMock = new WBTCVaultMock();
-        leverageEngine = new LeverageEngine(wbtcVaultMock,leverageDepositor,positionToken);
+        leverageEngine = new LeverageEngine();
+        bytes memory initData = abi.encodeWithSelector(
+            LeverageEngine.initialize.selector,
+            address(wbtcVaultMock),
+            address(leverageDepositor),
+            address(positionToken)
+        );
+        proxy = new TransparentUpgradeableProxy(address(leverageEngine), address(proxyAdmin), initData);
+        leverageEngine = LeverageEngine(address(proxy));
         deal(WBTC, address(wbtcVaultMock), 100e8);
         deal(WETH, address(leverageDepositor), 1000e18);
     }

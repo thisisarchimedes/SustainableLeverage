@@ -1,20 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.21;
 
-import "openzeppelin-contracts/access/AccessControl.sol";
+import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import "./PositionLedgerLib.sol";
 import { IWBTCVault } from "./interfaces/IWBTCVault.sol";
 import { ILeverageDepositor } from "./interfaces/ILeverageDepositor.sol";
 import { PositionToken } from "./PositionToken.sol";
-import { console2 } from "forge-std/console2.sol";
+
 /// @title LeverageEngine Contract
 /// @notice This contract facilitates the management of strategy configurations and admin parameters for the Leverage
 /// Engine.
 /// @notice Leverage Engine is upgradable
-
-contract LeverageEngine is AccessControl {
+contract LeverageEngine is AccessControlUpgradeable {
     using PositionLedgerLib for PositionLedgerLib.LedgerStorage;
     using SafeERC20 for IERC20;
 
@@ -23,7 +22,7 @@ contract LeverageEngine is AccessControl {
     bytes32 public constant MONITOR_ROLE = keccak256("MONITOR_ROLE");
 
     // WBTC token
-    IERC20 immutable wbtc;
+    IERC20 public wbtc;
 
     // WBTC Vault
     IWBTCVault public wbtcVault;
@@ -87,13 +86,19 @@ contract LeverageEngine is AccessControl {
 
     PositionLedgerLib.LedgerStorage internal ledger;
 
-    constructor(IWBTCVault _wbtcVault, ILeverageDepositor _leverageDepositor, PositionToken _nft) {
-        wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
-        wbtcVault = _wbtcVault;
-        leverageDepositor = _leverageDepositor;
-        nft = _nft;
-        _grantRole(ADMIN_ROLE, msg.sender);
+    constructor() {
+        _disableInitializers();
     }
+
+    function initialize(address _wbtcVault, address _leverageDepositor, address _nft) external initializer {
+        __AccessControl_init();
+        _grantRole(ADMIN_ROLE, msg.sender);
+        wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
+        wbtcVault = IWBTCVault(_wbtcVault);
+        leverageDepositor = ILeverageDepositor(_leverageDepositor);
+        nft = PositionToken(_nft);
+    }
+
     ///////////// Admin functions /////////////
 
     /// @notice Set the configuration for a specific strategy.
