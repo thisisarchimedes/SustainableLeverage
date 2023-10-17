@@ -46,7 +46,14 @@ contract LeverageEngine is AccessControl {
         uint256 liquidationBuffer;
     }
 
+    enum StrategyConfigUpdate {
+        QUOTA,
+        POSITION_LIFETIME,
+        MAXIMUM_MULTIPLIER,
+        LIQUIDATION_BUFFER
+    }
     // Mapping of strategies to their configurations
+
     mapping(address => StrategyConfig) internal strategies;
 
     // Global admin parameters
@@ -57,9 +64,15 @@ contract LeverageEngine is AccessControl {
     //Errors
     error ExceedBorrowLimit();
     error LessThanMinimumShares();
-    // Events
 
-    event StrategyConfigUpdated(address indexed strategy);
+    // Events
+    event StrategyConfigUpdated(
+        address indexed strategy,
+        uint256 quota,
+        uint256 positionLifetime,
+        uint256 maximumMultiplier,
+        uint256 liquidationBuffer
+    );
     event StrategyRemoved(address indexed strategy);
     event GlobalParameterUpdated(string parameter, uint256 value);
     event FeeCollectorUpdated(address newFeeCollector);
@@ -110,7 +123,7 @@ contract LeverageEngine is AccessControl {
             liquidationBuffer: _liquidationBuffer
         });
 
-        emit StrategyConfigUpdated(strategy);
+        emit StrategyConfigUpdated(strategy, _quota, _positionLifetime, _maximumMultiplier, _liquidationBuffer);
     }
 
     /// @notice Removes a strategy from the LeverageEngine.
@@ -127,28 +140,36 @@ contract LeverageEngine is AccessControl {
         emit StrategyRemoved(strategy);
     }
 
-    /// @notice Set the position lifetime for a specific strategy.
-    /// @param strategy The address of the strategy to configure.
-    /// @param numberOfBlocksToLive The new lifetime of positions in blocks.
-    function setPositionLifetime(address strategy, uint256 numberOfBlocksToLive) external onlyRole(ADMIN_ROLE) {
-        strategies[strategy].positionLifetime = numberOfBlocksToLive;
-        emit StrategyConfigUpdated(strategy);
-    }
-
-    /// @notice Set the maximum multiplier for a specific strategy.
-    /// @param strategy The address of the strategy to configure.
-    /// @param value The new maximum multiplier value.
-    function setMaximumMultiplier(address strategy, uint256 value) external onlyRole(ADMIN_ROLE) {
-        strategies[strategy].maximumMultiplier = value;
-        emit StrategyConfigUpdated(strategy);
-    }
-
-    /// @notice Set the liquidation buffer for a specific strategy.
-    /// @param strategy The address of the strategy to configure.
-    /// @param value The new liquidation buffer value.
-    function setLiquidationBuffer(address strategy, uint256 value) external onlyRole(ADMIN_ROLE) {
-        strategies[strategy].liquidationBuffer = value;
-        emit StrategyConfigUpdated(strategy);
+    /// @notice Update a strategy's configuration.
+    /// @dev Validates the relationship between MM and LB before setting the config.
+    /// @param strategy The address of the strategy to update.
+    /// @param value The parameter to update.
+    /// @param configType The update type.
+    function updateStrategyConfig(
+        address strategy,
+        uint256 value,
+        StrategyConfigUpdate configType
+    )
+        external
+        onlyRole(ADMIN_ROLE)
+    {
+        StrategyConfig memory config = strategies[strategy];
+        if (configType == StrategyConfigUpdate.QUOTA) {
+            config.quota = value;
+        } else if (configType == StrategyConfigUpdate.POSITION_LIFETIME) {
+            config.positionLifetime = value;
+        } else if (configType == StrategyConfigUpdate.MAXIMUM_MULTIPLIER) {
+            // Validate MM and LB relationship
+            require(value < (1e16 / (config.liquidationBuffer - 1e8)), "Invalid MM or LB value");
+            config.maximumMultiplier = value;
+        } else if (configType == StrategyConfigUpdate.LIQUIDATION_BUFFER) {
+            require(config.maximumMultiplier < (1e16 / (value - 1e8)), "Invalid MM or LB value");
+            config.liquidationBuffer = value;
+        }
+        strategies[strategy] = config;
+        emit StrategyConfigUpdated(
+            strategy, config.quota, config.positionLifetime, config.maximumMultiplier, config.liquidationBuffer
+        );
     }
 
     /// @notice Set the global liquidation fee.
@@ -199,7 +220,7 @@ contract LeverageEngine is AccessControl {
         // Assuming WBTC Vault has a function borrow that lets you borrow WBTC.
         // This function might be different based on actual implementation.
         wbtcVault.borrow(wbtcToBorrow);
-
+        wbtc.approve(address(leverageDepositor), collateralAmount + wbtcToBorrow);
         // Deposit borrowed WBTC to LeverageDepositor->strategy and get back shares
         uint256 sharesReceived = leverageDepositor.deposit(strategy, swapRoute, collateralAmount + wbtcToBorrow);
         if (sharesReceived < minStrategyShares) revert LessThanMinimumShares();

@@ -7,7 +7,7 @@ import { StdCheats } from "forge-std/StdCheats.sol";
 import { PositionLedgerLib } from "../src/PositionLedgerLib.sol";
 import { LeverageEngine } from "../src/LeverageEngine.sol";
 import { PositionToken } from "../src/PositionToken.sol";
-import "../src/test/LeverageDepositorMock.sol";
+import "../src/LeverageDepositor.sol";
 import { WBTCVaultMock } from "src/test/WBTCVaultMock.sol";
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 /// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
@@ -16,7 +16,7 @@ import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 contract OpenPositionTest is PRBTest, StdCheats {
     LeverageEngine internal leverageEngine;
     PositionToken internal positionToken;
-    LeverageDepositorMock internal leverageDepositor;
+    LeverageDepositor internal leverageDepositor;
     WBTCVaultMock internal wbtcVaultMock;
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -30,12 +30,13 @@ contract OpenPositionTest is PRBTest, StdCheats {
         }
 
         // Otherwise, run the test against the mainnet fork.
-        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 16_428_000 });
+        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
         positionToken = new PositionToken();
-        leverageDepositor = new LeverageDepositorMock();
+        leverageDepositor = new LeverageDepositor(WBTC,WETH);
         wbtcVaultMock = new WBTCVaultMock();
         leverageEngine = new LeverageEngine(wbtcVaultMock,leverageDepositor,positionToken);
         deal(WBTC, address(wbtcVaultMock), 100e8);
+        deal(WETH, address(leverageDepositor), 1000e18);
     }
 
     function test_ShouldRevertWithArithmeticOverflow() external {
@@ -69,21 +70,4 @@ contract OpenPositionTest is PRBTest, StdCheats {
     function onERC721Received(address, address, uint256, bytes memory) public returns (bytes4) {
         return this.onERC721Received.selector;
     }
-    /// @dev Fork test that runs against an Ethereum Mainnet fork. For this to work, you need to set `API_KEY_ALCHEMY`
-    /// in your environment You can get an API key for free at https://alchemy.com.
-    // function testFork_Example() external {
-    //     // Silently pass this test if there is no API key.
-    //     string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
-    //     if (bytes(alchemyApiKey).length == 0) {
-    //         return;
-    //     }
-
-    //     // Otherwise, run the test against the mainnet fork.
-    //     vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 16_428_000 });
-    //     address usdc = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    //     address holder = 0x7713974908Be4BEd47172370115e8b1219F4A5f0;
-    //     uint256 actualBalance = IERC20(usdc).balanceOf(holder);
-    //     uint256 expectedBalance = 196_307_713.810457e6;
-    //     assertEq(actualBalance, expectedBalance);
-    // }
 }

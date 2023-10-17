@@ -3,10 +3,11 @@ pragma solidity >=0.8.21;
 
 import "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { ILeverageDepositor } from "./interfaces/ILeverageDepositor.sol";
+import { IMultiPoolStrategy } from "./interfaces/IMultiPoolStrategy.sol";
+
 /// @title LeverageDepositor Contract
 /// @notice This contract facilitates the swapping between WBTC and WETH (or USDC in future) and interacts with
 /// strategies.
-
 contract LeverageDepositor is ILeverageDepositor {
     // ERC20 interface for WBTC and WETH (or USDC)
     IERC20 internal wbtc;
@@ -23,6 +24,7 @@ contract LeverageDepositor is ILeverageDepositor {
     /// @param route The route to use for swapping.
     /// @param amount Amount of WBTC to deposit.
     // TODO - add access control
+    // TODO - add real logic now only gets WBTC and deposit 1:1 WETH to strategy
     function deposit(address strategy, SwapRoute route, uint256 amount) external returns (uint256 receivedShares) {
         require(amount > 0, "Amount should be greater than 0");
 
@@ -36,11 +38,10 @@ contract LeverageDepositor is ILeverageDepositor {
             // Code to swap WBTC to WETH using Uniswap V3 with 0.3% fee
             // After swapping, you should have WETH in this contract
         } // Add more routes as needed
-
+        amount *= 10e10; // TODO - remove this line after adding real logic this is for weth decimals
         // Despoit WETH to strategy
-
-        // return shars
-        return receivedShares;
+        weth.approve(strategy, amount);
+        receivedShares = IMultiPoolStrategy(strategy).deposit(amount, address(this));
     }
 
     /// @notice Redeem from strategy and optionally swap WETH to WBTC
