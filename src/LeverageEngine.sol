@@ -290,34 +290,6 @@ contract LeverageEngine is AccessControlUpgradeable {
         );
     }
 
-    function _checkOracles(address targetToken, uint256 wbtcAmount, uint256 receivedTokenAmount) internal view {
-        uint8 targetTokenDecimals = IERC20Detailed(targetToken).decimals();
-        uint8 targetTokenOracleDecimals = AggregatorV3Interface(oracles[targetToken]).decimals();
-        uint256 wbtcPrice = _getLatestPrice(address(wbtc));
-        uint256 targetTokenPrice = _getLatestPrice(targetToken);
-
-        uint256 expectedTargetTokenAmount = (
-            ((wbtcAmount * wbtcPrice / 1e8) * (10 ** (targetTokenDecimals + targetTokenOracleDecimals)) / 1e8)
-                / targetTokenPrice
-        ) * (10_000 - openPositionSlippage) / 10_000;
-        if (receivedTokenAmount < expectedTargetTokenAmount) revert NotEnoughTokenReceived();
-    }
-
-    function _getLatestPrice(address token) internal view returns (uint256 uPrice) {
-        if (address(oracles[token]) == address(0)) revert OracleNotSet();
-
-        (
-            ,
-            //uint80 roundID
-            int256 price, //uint256 startedAt
-            ,
-            ,
-        ) = AggregatorV3Interface(oracles[token]).latestRoundData();
-
-        if (price < 0) revert OraclePriceError();
-
-        uPrice = uint256(price);
-    }
     ///////////// View functions /////////////
 
     /// @notice Preview the number of AMM LP tokensexpected from opening a position.
@@ -353,5 +325,38 @@ contract LeverageEngine is AccessControlUpgradeable {
 
     function getPosition(uint256 nftID) external view returns (PositionLedgerLib.LedgerEntry memory) {
         return ledger.getLedgerEntry(nftID);
+    }
+
+    /**
+     * @notice Get the token prices from oracles and check if the received token amount is enough
+     * @param targetToken Token of the strategy
+     * @param wbtcAmount Total WBTC amount to swap and deposit into strategy
+     * @param receivedTokenAmount Total amount of token received from swap
+     */
+    function _checkOracles(address targetToken, uint256 wbtcAmount, uint256 receivedTokenAmount) internal view {
+        uint8 targetTokenDecimals = IERC20Detailed(targetToken).decimals();
+        uint8 targetTokenOracleDecimals = AggregatorV3Interface(oracles[targetToken]).decimals();
+        uint256 wbtcPrice = _getLatestPrice(address(wbtc));
+        uint256 targetTokenPrice = _getLatestPrice(targetToken);
+
+        uint256 expectedTargetTokenAmount = (
+            ((wbtcAmount * wbtcPrice / 1e8) * (10 ** (targetTokenDecimals + targetTokenOracleDecimals)) / 1e8)
+                / targetTokenPrice
+        ) * (10_000 - openPositionSlippage) / 10_000;
+        if (receivedTokenAmount < expectedTargetTokenAmount) revert NotEnoughTokenReceived();
+    }
+
+    /**
+     * @notice Get the latest price of a token from its oracle
+     * @param token Token address
+     */
+    function _getLatestPrice(address token) internal view returns (uint256 uPrice) {
+        if (address(oracles[token]) == address(0)) revert OracleNotSet();
+
+        (, int256 price,,,) = AggregatorV3Interface(oracles[token]).latestRoundData();
+
+        if (price < 0) revert OraclePriceError();
+
+        uPrice = uint256(price);
     }
 }
