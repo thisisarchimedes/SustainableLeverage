@@ -277,7 +277,8 @@ contract LeverageEngine is AccessControlUpgradeable {
         // Swap borrowed WBTC to strategy token
         uint256 receivedAmount =
             swapAdapter.swap(wbtc, IERC20(strategyUnderlyingToken), totalAmount, exchange, swapData, swapRoute);
-        _checkOracles(strategyUnderlyingToken, totalAmount, receivedAmount);
+        uint256 expectedTargetTokenAmount = _checkOracles(strategyUnderlyingToken, totalAmount);
+        if (receivedAmount < expectedTargetTokenAmount) revert NotEnoughTokenReceived();
         // Deposit borrowed WBTC to LeverageDepositor->strategy and get back shares
         uint256 sharesReceived = leverageDepositor.deposit(strategy, strategyUnderlyingToken, receivedAmount);
         if (sharesReceived < minStrategyShares) revert LessThanMinimumShares();
@@ -346,19 +347,25 @@ contract LeverageEngine is AccessControlUpgradeable {
      * @notice Get the token prices from oracles and check if the received token amount is enough
      * @param targetToken Token of the strategy
      * @param wbtcAmount Total WBTC amount to swap and deposit into strategy
-     * @param receivedTokenAmount Total amount of token received from swap
+     * @return expectedTargetTokenAmount Expected amount of target token
      */
-    function _checkOracles(address targetToken, uint256 wbtcAmount, uint256 receivedTokenAmount) internal view {
+    function _checkOracles(
+        address targetToken,
+        uint256 wbtcAmount
+    )
+        internal
+        view
+        returns (uint256 expectedTargetTokenAmount)
+    {
         uint8 targetTokenDecimals = IERC20Detailed(targetToken).decimals();
         uint8 targetTokenOracleDecimals = AggregatorV3Interface(oracles[targetToken]).decimals();
         uint256 wbtcPrice = _getLatestPrice(address(wbtc));
         uint256 targetTokenPrice = _getLatestPrice(targetToken);
 
-        uint256 expectedTargetTokenAmount = (
+        expectedTargetTokenAmount = (
             ((wbtcAmount * wbtcPrice / 1e8) * (10 ** (targetTokenDecimals + targetTokenOracleDecimals)) / 1e8)
                 / targetTokenPrice
         ) * (10_000 - openPositionSlippage) / 10_000;
-        if (receivedTokenAmount < expectedTargetTokenAmount) revert NotEnoughTokenReceived();
     }
 
     /**

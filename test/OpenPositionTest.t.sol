@@ -2,6 +2,8 @@
 pragma solidity >=0.8.21 <0.9.0;
 
 import "./BaseTest.sol";
+import "./helpers/OracleTestHelper.sol";
+import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
 /// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
 /// https://book.getfoundry.sh/forge/writing-tests
 
@@ -64,5 +66,57 @@ contract OpenPositionTest is PRBTest, StdCheats, BaseTest {
         PositionLedgerLib.LedgerEntry memory position = leverageEngine.getPosition(0);
         assertEq(position.collateralAmount, 5e8);
         assertEq(position.wbtcDebtAmount, 15e8);
+    }
+
+    function test_oracleCalculationWETH() external {
+        uint256 wbtcAmount = 10 * 1e8;
+        OracleTestHelper oracleTestHelper = new OracleTestHelper();
+        bytes memory initData = abi.encodeWithSelector(
+            LeverageEngine.initialize.selector,
+            address(wbtcVaultMock),
+            address(leverageDepositor),
+            address(positionToken),
+            address(swapAdapter)
+        );
+        TransparentUpgradeableProxy proxy =
+            new TransparentUpgradeableProxy(address(oracleTestHelper), address(this), initData);
+        oracleTestHelper = OracleTestHelper(address(proxy));
+        oracleTestHelper.setOracle(WBTC, WBTCUSDORACLE);
+        oracleTestHelper.setOracle(WETH, ETHUSDORACLE);
+
+        AggregatorV3Interface wbtcOracle = AggregatorV3Interface(WBTCUSDORACLE);
+        (, int256 wbtcPrice,,,) = wbtcOracle.latestRoundData();
+        AggregatorV3Interface ethOracle = AggregatorV3Interface(ETHUSDORACLE);
+        (, int256 ethPrice,,,) = ethOracle.latestRoundData();
+
+        uint256 expected = (wbtcAmount * uint256(wbtcPrice) * 1e10) / uint256(ethPrice);
+        expected = expected * 9900 / 10_000;
+        assertEq(oracleTestHelper.checkOracles(WETH, wbtcAmount), expected);
+    }
+
+    function test_oracleCalculationUSDC() external {
+        uint256 wbtcAmount = 10 * 1e8;
+        OracleTestHelper oracleTestHelper = new OracleTestHelper();
+        bytes memory initData = abi.encodeWithSelector(
+            LeverageEngine.initialize.selector,
+            address(wbtcVaultMock),
+            address(leverageDepositor),
+            address(positionToken),
+            address(swapAdapter)
+        );
+        TransparentUpgradeableProxy proxy =
+            new TransparentUpgradeableProxy(address(oracleTestHelper), address(this), initData);
+        oracleTestHelper = OracleTestHelper(address(proxy));
+        oracleTestHelper.setOracle(WBTC, WBTCUSDORACLE);
+        oracleTestHelper.setOracle(USDC, USDCUSDORACLE);
+
+        AggregatorV3Interface wbtcOracle = AggregatorV3Interface(WBTCUSDORACLE);
+        (, int256 wbtcPrice,,,) = wbtcOracle.latestRoundData();
+        AggregatorV3Interface usdcOracle = AggregatorV3Interface(USDCUSDORACLE);
+        (, int256 usdcPrice,,,) = usdcOracle.latestRoundData();
+
+        uint256 expected = (wbtcAmount * uint256(wbtcPrice)) / (uint256(usdcPrice) * 1e2);
+        expected = expected * 9900 / 10_000;
+        assertEq(oracleTestHelper.checkOracles(USDC, wbtcAmount), expected);
     }
 }
