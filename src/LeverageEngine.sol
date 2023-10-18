@@ -2,7 +2,7 @@
 pragma solidity >=0.8.21;
 
 import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import "./interfaces/IERC20Detailed.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import "./PositionLedgerLib.sol";
 import { IWBTCVault } from "./interfaces/IWBTCVault.sol";
@@ -10,11 +10,12 @@ import { ILeverageDepositor } from "./interfaces/ILeverageDepositor.sol";
 import { PositionToken } from "./PositionToken.sol";
 import { SwapAdapter } from "./SwapAdapter.sol";
 import { IMultiPoolStrategy } from "./interfaces/IMultiPoolStrategy.sol";
-
+import { AggregatorV3Interface } from "./interfaces/AggregatorV3Interface.sol";
 /// @title LeverageEngine Contract
 /// @notice This contract facilitates the management of strategy configurations and admin parameters for the Leverage
 /// Engine.
 /// @notice Leverage Engine is upgradable
+
 contract LeverageEngine is AccessControlUpgradeable {
     using PositionLedgerLib for PositionLedgerLib.LedgerStorage;
     using SafeERC20 for IERC20;
@@ -56,18 +57,25 @@ contract LeverageEngine is AccessControlUpgradeable {
         MAXIMUM_MULTIPLIER,
         LIQUIDATION_BUFFER
     }
-    // Mapping of strategies to their configurations
 
+    // Mapping of strategies to their configurations
     mapping(address => StrategyConfig) internal strategies;
+
+    /// Mapping of oracles token => oracle
+    mapping(address => address) public oracles;
 
     // Global admin parameters
     uint256 public liquidationFee; // Fee taken after returning all debt during liquidation
     uint256 public exitFee; // Fee (taken from profits) taken after returning all debt during exit by user
     address public feeCollector; // Address that collects fees
+    uint256 public openPositionSlippage; // in 10000 so 10000 = 100%
 
     //Errors
     error ExceedBorrowLimit();
     error LessThanMinimumShares();
+    error OracleNotSet();
+    error NotEnoughTokenReceived();
+    error OraclePriceError();
 
     // Events
     event StrategyConfigUpdated(
@@ -88,6 +96,7 @@ contract LeverageEngine is AccessControlUpgradeable {
         uint256 wbtcToBorrow,
         uint256 positionExpireBlock
     );
+    event OracleSet(address token, address oracle);
 
     PositionLedgerLib.LedgerStorage internal ledger;
 
@@ -111,6 +120,7 @@ contract LeverageEngine is AccessControlUpgradeable {
         leverageDepositor = ILeverageDepositor(_leverageDepositor);
         nft = PositionToken(_nft);
         swapAdapter = SwapAdapter(_swapAdapter);
+        openPositionSlippage = 100;
     }
 
     ///////////// Admin functions /////////////
@@ -191,6 +201,11 @@ contract LeverageEngine is AccessControlUpgradeable {
         );
     }
 
+    function setOracle(address token, address oracle) external onlyRole(ADMIN_ROLE) {
+        oracles[token] = oracle;
+        emit OracleSet(token, oracle);
+    }
+
     /// @notice Set the global liquidation fee.
     /// @param fee The new liquidation fee percentage.
     function setLiquidationFee(uint256 fee) external onlyRole(ADMIN_ROLE) {
@@ -247,7 +262,7 @@ contract LeverageEngine is AccessControlUpgradeable {
         // Swap borrowed WBTC to strategy token
         uint256 receivedAmount =
             swapAdapter.swap(wbtc, IERC20(strategyUnderlyingToken), totalAmount, exchange, swapData, swapRoute);
-        //TODO: ADD CHAINLINK ORACLE TO PROTECT BORROWED BTC
+        _checkOracles(strategyUnderlyingToken, totalAmount, receivedAmount);
         // Deposit borrowed WBTC to LeverageDepositor->strategy and get back shares
         uint256 sharesReceived = leverageDepositor.deposit(strategy, strategyUnderlyingToken, receivedAmount);
         if (sharesReceived < minStrategyShares) revert LessThanMinimumShares();
@@ -275,6 +290,34 @@ contract LeverageEngine is AccessControlUpgradeable {
         );
     }
 
+    function _checkOracles(address targetToken, uint256 wbtcAmount, uint256 receivedTokenAmount) internal view {
+        uint8 targetTokenDecimals = IERC20Detailed(targetToken).decimals();
+        uint8 targetTokenOracleDecimals = AggregatorV3Interface(oracles[targetToken]).decimals();
+        uint256 wbtcPrice = _getLatestPrice(address(wbtc));
+        uint256 targetTokenPrice = _getLatestPrice(targetToken);
+
+        uint256 expectedTargetTokenAmount = (
+            ((wbtcAmount * wbtcPrice / 1e8) * (10 ** (targetTokenDecimals + targetTokenOracleDecimals)) / 1e8)
+                / targetTokenPrice
+        ) * (10_000 - openPositionSlippage) / 10_000;
+        if (receivedTokenAmount < expectedTargetTokenAmount) revert NotEnoughTokenReceived();
+    }
+
+    function _getLatestPrice(address token) internal view returns (uint256 uPrice) {
+        if (address(oracles[token]) == address(0)) revert OracleNotSet();
+
+        (
+            ,
+            //uint80 roundID
+            int256 price, //uint256 startedAt
+            ,
+            ,
+        ) = AggregatorV3Interface(oracles[token]).latestRoundData();
+
+        if (price < 0) revert OraclePriceError();
+
+        uPrice = uint256(price);
+    }
     ///////////// View functions /////////////
 
     /// @notice Preview the number of AMM LP tokensexpected from opening a position.
