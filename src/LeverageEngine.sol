@@ -76,6 +76,7 @@ contract LeverageEngine is AccessControlUpgradeable {
     error OracleNotSet();
     error NotEnoughTokenReceived();
     error OraclePriceError();
+    error ExceedBorrowQuota();
 
     // Events
     event StrategyConfigUpdated(
@@ -201,9 +202,22 @@ contract LeverageEngine is AccessControlUpgradeable {
         );
     }
 
+    /**
+     *  @notice Set the oracle address for a token
+     * @param token address of the token
+     * @param oracle address of the oracle
+     */
     function setOracle(address token, address oracle) external onlyRole(ADMIN_ROLE) {
         oracles[token] = oracle;
         emit OracleSet(token, oracle);
+    }
+
+    /**
+     * @notice Change the swap adapter address
+     * @param _swapAdapter The address of the new swap adapter.
+     */
+    function changeSwapAdapter(address _swapAdapter) external onlyRole(ADMIN_ROLE) {
+        swapAdapter = SwapAdapter(_swapAdapter);
     }
 
     /// @notice Set the global liquidation fee.
@@ -257,7 +271,8 @@ contract LeverageEngine is AccessControlUpgradeable {
         // This function might be different based on actual implementation.
         uint256 totalAmount = collateralAmount + wbtcToBorrow;
         wbtcVault.borrow(wbtcToBorrow); //TODO: directly transfer from vault to swapadapter
-        wbtc.transfer(address(swapAdapter), totalAmount);
+        wbtc.transfer(address(swapAdapter), totalAmount); // TODO remove that when we implement wbtcvault and transfer
+            // directly
         address strategyUnderlyingToken = IMultiPoolStrategy(strategy).asset();
         // Swap borrowed WBTC to strategy token
         uint256 receivedAmount =
@@ -296,24 +311,24 @@ contract LeverageEngine is AccessControlUpgradeable {
     /// @param collateralAmount Amount of WBTC the user is planning to deposit as collateral.
     /// @param wbtcToBorrow Amount of WBTC the user is planning to borrow.
     /// @param strategy The strategy user is considering.
+    /// @param minimumExpected Minimum amount of tokens expected after swap from WBTC to strategy token.
     /// @return estimatedShares The estimated number of AMM LP tokens s the user will receive.
     function previewOpenPosition(
         uint256 collateralAmount,
         uint256 wbtcToBorrow,
-        address strategy
+        address strategy,
+        uint256 minimumExpected
     )
         external
         view
         returns (uint256 estimatedShares)
     {
-        // Check if strategy is whitelisted and has non-zero quota
-        require(strategies[strategy].quota > 0, "Invalid strategy");
-
+        if (strategies[strategy].quota < wbtcToBorrow) revert ExceedBorrowQuota();
         // Check Maximum Multiplier condition
         if (collateralAmount * strategies[strategy].maximumMultiplier / 1e8 < wbtcToBorrow) revert ExceedBorrowLimit();
 
         // Here, we make an assumption that the strategy has a function to give us an estimate of the shares
-        //estimatedShares = leverageDepositor.previewDeposit(collateralAmount.add(wbtcToBorrow));
+        estimatedShares = IMultiPoolStrategy(strategy).previewDeposit(minimumExpected);
     }
 
     /// @notice Get the configuration for a specific strategy.
