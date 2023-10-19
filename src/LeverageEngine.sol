@@ -359,8 +359,8 @@ contract LeverageEngine is AccessControlUpgradeable {
     {
         uint8 targetTokenDecimals = IERC20Detailed(targetToken).decimals();
         uint8 targetTokenOracleDecimals = AggregatorV3Interface(oracles[targetToken]).decimals();
-        uint256 wbtcPrice = _getLatestPrice(address(wbtc));
-        uint256 targetTokenPrice = _getLatestPrice(targetToken);
+        uint256 wbtcPrice = _getLatestPrice(address(wbtc)); // in USD
+        uint256 targetTokenPrice = _getLatestPrice(targetToken); // in USD
 
         expectedTargetTokenAmount = (
             ((wbtcAmount * wbtcPrice / 1e8) * (10 ** (targetTokenDecimals + targetTokenOracleDecimals)) / 1e8)
