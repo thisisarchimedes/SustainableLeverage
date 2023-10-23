@@ -2,17 +2,20 @@
 pragma solidity >=0.8.21;
 
 import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import "./interfaces/IERC20Detailed.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import "./PositionLedgerLib.sol";
 import { IWBTCVault } from "./interfaces/IWBTCVault.sol";
 import { ILeverageDepositor } from "./interfaces/ILeverageDepositor.sol";
 import { PositionToken } from "./PositionToken.sol";
-
+import { SwapAdapter } from "./SwapAdapter.sol";
+import { IMultiPoolStrategy } from "./interfaces/IMultiPoolStrategy.sol";
+import { AggregatorV3Interface } from "./interfaces/AggregatorV3Interface.sol";
 /// @title LeverageEngine Contract
 /// @notice This contract facilitates the management of strategy configurations and admin parameters for the Leverage
 /// Engine.
 /// @notice Leverage Engine is upgradable
+
 contract LeverageEngine is AccessControlUpgradeable {
     using PositionLedgerLib for PositionLedgerLib.LedgerStorage;
     using SafeERC20 for IERC20;
@@ -33,6 +36,9 @@ contract LeverageEngine is AccessControlUpgradeable {
     // Leverage Depositor
     ILeverageDepositor public leverageDepositor;
 
+    // Swap Adapter
+    SwapAdapter public swapAdapter;
+
     /// @notice Strategy configurations structure
     /// @param quota WBTC Quota for the strategy
     /// @param positionLifetime Lifetime of a position in blocks
@@ -51,18 +57,26 @@ contract LeverageEngine is AccessControlUpgradeable {
         MAXIMUM_MULTIPLIER,
         LIQUIDATION_BUFFER
     }
-    // Mapping of strategies to their configurations
 
+    // Mapping of strategies to their configurations
     mapping(address => StrategyConfig) internal strategies;
+
+    /// Mapping of oracles token => oracle
+    mapping(address => address) public oracles;
 
     // Global admin parameters
     uint256 public liquidationFee; // Fee taken after returning all debt during liquidation
     uint256 public exitFee; // Fee (taken from profits) taken after returning all debt during exit by user
     address public feeCollector; // Address that collects fees
+    uint256 public openPositionSlippage; // in 10000 so 10000 = 100%
 
     //Errors
     error ExceedBorrowLimit();
     error LessThanMinimumShares();
+    error OracleNotSet();
+    error NotEnoughTokenReceived();
+    error OraclePriceError();
+    error ExceedBorrowQuota();
 
     // Events
     event StrategyConfigUpdated(
@@ -83,6 +97,7 @@ contract LeverageEngine is AccessControlUpgradeable {
         uint256 wbtcToBorrow,
         uint256 positionExpireBlock
     );
+    event OracleSet(address token, address oracle);
 
     PositionLedgerLib.LedgerStorage internal ledger;
 
@@ -90,13 +105,23 @@ contract LeverageEngine is AccessControlUpgradeable {
         _disableInitializers();
     }
 
-    function initialize(address _wbtcVault, address _leverageDepositor, address _nft) external initializer {
+    function initialize(
+        address _wbtcVault,
+        address _leverageDepositor,
+        address _nft,
+        address _swapAdapter
+    )
+        external
+        initializer
+    {
         __AccessControl_init();
         _grantRole(ADMIN_ROLE, msg.sender);
         wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
         wbtcVault = IWBTCVault(_wbtcVault);
         leverageDepositor = ILeverageDepositor(_leverageDepositor);
         nft = PositionToken(_nft);
+        swapAdapter = SwapAdapter(_swapAdapter);
+        openPositionSlippage = 100;
     }
 
     ///////////// Admin functions /////////////
@@ -177,6 +202,24 @@ contract LeverageEngine is AccessControlUpgradeable {
         );
     }
 
+    /**
+     *  @notice Set the oracle address for a token
+     * @param token address of the token
+     * @param oracle address of the oracle
+     */
+    function setOracle(address token, address oracle) external onlyRole(ADMIN_ROLE) {
+        oracles[token] = oracle;
+        emit OracleSet(token, oracle);
+    }
+
+    /**
+     * @notice Change the swap adapter address
+     * @param _swapAdapter The address of the new swap adapter.
+     */
+    function changeSwapAdapter(address _swapAdapter) external onlyRole(ADMIN_ROLE) {
+        swapAdapter = SwapAdapter(_swapAdapter);
+    }
+
     /// @notice Set the global liquidation fee.
     /// @param fee The new liquidation fee percentage.
     function setLiquidationFee(uint256 fee) external onlyRole(ADMIN_ROLE) {
@@ -205,13 +248,15 @@ contract LeverageEngine is AccessControlUpgradeable {
     /// @param wbtcToBorrow Amount of WBTC to borrow.
     /// @param strategy Strategy to be used for leveraging.
     /// @param minStrategyShares Minimum amount of strategy shares expected in return.
-    /// @param swapRoute Route to be used for swapping (sent to leverageDepositor).
+    /// @param swapRoute Route to be used for swapping
     function openPosition(
         uint256 collateralAmount,
         uint256 wbtcToBorrow,
         address strategy,
         uint256 minStrategyShares,
-        ILeverageDepositor.SwapRoute swapRoute
+        SwapAdapter.SwapRoute swapRoute,
+        bytes calldata swapData,
+        address exchange
     )
         external
     {
@@ -224,10 +269,18 @@ contract LeverageEngine is AccessControlUpgradeable {
         wbtc.safeTransferFrom(msg.sender, address(this), collateralAmount);
         // Assuming WBTC Vault has a function borrow that lets you borrow WBTC.
         // This function might be different based on actual implementation.
-        wbtcVault.borrow(wbtcToBorrow);
-        wbtc.approve(address(leverageDepositor), collateralAmount + wbtcToBorrow);
+        uint256 totalAmount = collateralAmount + wbtcToBorrow;
+        wbtcVault.borrow(wbtcToBorrow); //TODO: directly transfer from vault to swapadapter
+        wbtc.transfer(address(swapAdapter), totalAmount); // TODO remove that when we implement wbtcvault and transfer
+            // directly
+        address strategyUnderlyingToken = IMultiPoolStrategy(strategy).asset();
+        // Swap borrowed WBTC to strategy token
+        uint256 receivedAmount =
+            swapAdapter.swap(wbtc, IERC20(strategyUnderlyingToken), totalAmount, exchange, swapData, swapRoute);
+        uint256 expectedTargetTokenAmount = _checkOracles(strategyUnderlyingToken, totalAmount);
+        if (receivedAmount < expectedTargetTokenAmount) revert NotEnoughTokenReceived();
         // Deposit borrowed WBTC to LeverageDepositor->strategy and get back shares
-        uint256 sharesReceived = leverageDepositor.deposit(strategy, swapRoute, collateralAmount + wbtcToBorrow);
+        uint256 sharesReceived = leverageDepositor.deposit(strategy, strategyUnderlyingToken, receivedAmount);
         if (sharesReceived < minStrategyShares) revert LessThanMinimumShares();
 
         // Update Ledger
@@ -244,7 +297,12 @@ contract LeverageEngine is AccessControlUpgradeable {
 
         // emit event
         emit PositionOpened(
-            nftID, msg.sender, strategy, collateralAmount, wbtcToBorrow, newEntry.positionExpirationBlock
+            nftID,
+            msg.sender,
+            newEntry.strategyType,
+            newEntry.collateralAmount,
+            newEntry.wbtcDebtAmount,
+            newEntry.positionExpirationBlock
         );
     }
 
@@ -254,24 +312,24 @@ contract LeverageEngine is AccessControlUpgradeable {
     /// @param collateralAmount Amount of WBTC the user is planning to deposit as collateral.
     /// @param wbtcToBorrow Amount of WBTC the user is planning to borrow.
     /// @param strategy The strategy user is considering.
+    /// @param minimumExpected Minimum amount of tokens expected after swap from WBTC to strategy token.
     /// @return estimatedShares The estimated number of AMM LP tokens s the user will receive.
     function previewOpenPosition(
         uint256 collateralAmount,
         uint256 wbtcToBorrow,
-        address strategy
+        address strategy,
+        uint256 minimumExpected
     )
         external
         view
         returns (uint256 estimatedShares)
     {
-        // Check if strategy is whitelisted and has non-zero quota
-        require(strategies[strategy].quota > 0, "Invalid strategy");
-
+        if (strategies[strategy].quota < wbtcToBorrow) revert ExceedBorrowQuota();
         // Check Maximum Multiplier condition
         if (collateralAmount * strategies[strategy].maximumMultiplier / 1e8 < wbtcToBorrow) revert ExceedBorrowLimit();
 
         // Here, we make an assumption that the strategy has a function to give us an estimate of the shares
-        //estimatedShares = leverageDepositor.previewDeposit(collateralAmount.add(wbtcToBorrow));
+        estimatedShares = IMultiPoolStrategy(strategy).previewDeposit(minimumExpected);
     }
 
     /// @notice Get the configuration for a specific strategy.
@@ -283,5 +341,44 @@ contract LeverageEngine is AccessControlUpgradeable {
 
     function getPosition(uint256 nftID) external view returns (PositionLedgerLib.LedgerEntry memory) {
         return ledger.getLedgerEntry(nftID);
+    }
+
+    /**
+     * @notice Get the token prices from oracles and check if the received token amount is enough
+     * @param targetToken Token of the strategy
+     * @param wbtcAmount Total WBTC amount to swap and deposit into strategy
+     * @return expectedTargetTokenAmount Expected amount of target token
+     */
+    function _checkOracles(
+        address targetToken,
+        uint256 wbtcAmount
+    )
+        internal
+        view
+        returns (uint256 expectedTargetTokenAmount)
+    {
+        uint8 targetTokenDecimals = IERC20Detailed(targetToken).decimals();
+        uint8 targetTokenOracleDecimals = AggregatorV3Interface(oracles[targetToken]).decimals();
+        uint256 wbtcPrice = _getLatestPrice(address(wbtc)); // in USD
+        uint256 targetTokenPrice = _getLatestPrice(targetToken); // in USD
+
+        expectedTargetTokenAmount = (
+            ((wbtcAmount * wbtcPrice / 1e8) * (10 ** (targetTokenDecimals + targetTokenOracleDecimals)) / 1e8)
+                / targetTokenPrice
+        ) * (10_000 - openPositionSlippage) / 10_000;
+    }
+
+    /**
+     * @notice Get the latest price of a token from its oracle
+     * @param token Token address
+     */
+    function _getLatestPrice(address token) internal view returns (uint256 uPrice) {
+        if (address(oracles[token]) == address(0)) revert OracleNotSet();
+
+        (, int256 price,,,) = AggregatorV3Interface(oracles[token]).latestRoundData();
+
+        if (price < 0) revert OraclePriceError();
+
+        uPrice = uint256(price);
     }
 }
