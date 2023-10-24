@@ -1,7 +1,6 @@
-# SustainableLeverage [![Github Actions][gha-badge]][gha]
+# SustainableLeverage [![CI](https://github.com/thisisarchimedes/SustainableLeverage/actions/workflows/ci.yml/badge.svg)](https://github.com/thisisarchimedes/SustainableLeverage/actions/workflows/ci.yml)
 
-Sustainable Leverage v2 [gha]: https://github.com/thisisarchimedes/SustainableLeverage/actions [gha-badge]:
-https://github.com/thisisarchimedes/SustainableLeverage/actions/workflows/ci.yml/badge.svg
+Sustainable Leverage v2
 
 ## Usage
 
