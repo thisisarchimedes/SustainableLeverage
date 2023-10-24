@@ -1,6 +1,6 @@
-# SustainableLeverage
- Sustainable Leverage v2
+# SustainableLeverage [![CI](https://github.com/thisisarchimedes/SustainableLeverage/actions/workflows/ci.yml/badge.svg)](https://github.com/thisisarchimedes/SustainableLeverage/actions/workflows/ci.yml)
 
+Sustainable Leverage v2
 
 ## Usage
 
@@ -96,5 +96,3 @@ simply copy paste the path):
 ```sh
 $ pnpm test:coverage:report
 ```
-
-

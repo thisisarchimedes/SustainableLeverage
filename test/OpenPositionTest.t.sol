@@ -8,6 +8,7 @@ import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol"
 /// https://book.getfoundry.sh/forge/writing-tests
 
 contract OpenPositionTest is PRBTest, StdCheats, BaseTest {
+    /* solhint-disable  */
     /// @dev A function invoked before each test case is run.
     function setUp() public virtual {
         string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
