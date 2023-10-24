@@ -2,6 +2,7 @@
 pragma solidity >=0.8.21 <0.9.0;
 
 import { Script } from "forge-std/Script.sol";
+import { console2 } from "forge-std/console2.sol";
 
 abstract contract BaseScript is Script {
     /// @dev Included to enable compilation of the script without a $MNEMONIC environment variable.
@@ -15,27 +16,38 @@ abstract contract BaseScript is Script {
 
     /// @dev Used to derive the broadcaster's address if $ETH_FROM is not defined.
     string internal mnemonic;
+    address[] deployedContracts;
+    string[] deployedContractsNames;
+    string out;
 
-    /// @dev Initializes the transaction broadcaster like this:
-    ///
-    /// - If $ETH_FROM is defined, use it.
-    /// - Otherwise, derive the broadcaster address from $MNEMONIC.
-    /// - If $MNEMONIC is not defined, default to a test mnemonic.
-    ///
-    /// The use case for $ETH_FROM is to specify the broadcaster key and its address via the command line.
     constructor() {
-        address from = vm.envOr({ name: "ETH_FROM", defaultValue: address(0) });
-        if (from != address(0)) {
-            broadcaster = from;
-        } else {
-            mnemonic = vm.envOr({ name: "MNEMONIC", defaultValue: TEST_MNEMONIC });
-            (broadcaster,) = deriveRememberKey({ mnemonic: mnemonic, index: 0 });
-        }
+        console2.log("here");
+        broadcaster = vm.rememberKey(vm.envUint("DEPLOYER_PKEY"));
     }
 
     modifier broadcast() {
         vm.startBroadcast(broadcaster);
         _;
         vm.stopBroadcast();
+    }
+
+    function _writeDeploymentsToJson() internal {
+        out = "";
+        line("[");
+        for (uint256 i = 0; i < deployedContracts.length; ++i) {
+            bool end = i + 1 == deployedContracts.length;
+            line("  {");
+            line(string.concat('    "address": "', vm.toString(deployedContracts[i]), '",'));
+            line(string.concat('    "name": "', deployedContractsNames[i], '"'));
+            line(end ? "  }" : "  },");
+        }
+        line("]");
+        string memory mainFile =
+            string.concat(vm.projectRoot(), "/deployments/", vm.toString(block.timestamp), "-deployments.json");
+        vm.writeFile(mainFile, out);
+    }
+
+    function line(string memory s) internal {
+        out = string.concat(out, s, "\n");
     }
 }
