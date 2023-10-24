@@ -43,8 +43,14 @@ abstract contract BaseScript is Script {
         }
         /* solhint-enable  */
         line("]");
-        string memory mainFile =
-            string.concat(vm.projectRoot(), "/deployments/", vm.toString(block.timestamp), "-deployments.json");
+        string memory mainFile = string.concat(
+            vm.projectRoot(),
+            "/deployments/",
+            vm.toString(block.timestamp),
+            "-",
+            vm.toString(block.chainid),
+            "-deployments.json"
+        );
         vm.writeFile(mainFile, out);
     }
 
