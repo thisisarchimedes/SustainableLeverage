@@ -11,7 +11,6 @@ import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { SwapAdapter } from "../src/SwapAdapter.sol";
-import { console2 } from "forge-std/console2.sol";
 
 contract DeployContracts is BaseScript {
     LeverageEngine internal leverageEngine;
