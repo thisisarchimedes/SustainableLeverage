@@ -4,6 +4,7 @@ env:
   API_KEY_ALCHEMY: ${{ secrets.API_KEY_ALCHEMY }}
   DEPLOYER_PKEY: ${{ secrets.DEPLOYER_PKEY }}
   AWS_FORK_URL: ${{ secrets.AWS_FORK_URL }}
+  DEPLOYER_ADDRESS: ${{ secrets.DEPLOYER_ADDRESS }}
   FOUNDRY_PROFILE: "ci"
 
 on:
@@ -109,8 +110,8 @@ jobs:
       - name: "Set deployer balance on the fork"
         run:
           curl  -X \ POST -H \ "Content-Type:application/json" --data \
-          '{"jsonrpc":"2.0","method":"hardhat_setBalance","params":["${{secrets.DEPLOYER_ADDRESS}}","0x75557863725914323419136"],"id":67}'
-          ${{secrets.AWS_FORK_URL}}
+          '{"jsonrpc":"2.0","method":"hardhat_setBalance","params":["$DEPLOYER_ADDRESS","0x75557863725914323419136"],"id":67}'
+          $AWS_FORK_URL
       - name: "Deploy the contracts"
         run:
           "forge script script/DeployContracts.s.sol --fork-url http://ec2-54-211-119-50.compute-1.amazonaws.com:8545
