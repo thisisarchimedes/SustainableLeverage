@@ -4,6 +4,7 @@ pragma solidity >=0.8.21 <0.9.0;
 import { Script } from "forge-std/Script.sol";
 
 abstract contract BaseScript is Script {
+    /* solhint-disable  */
     /// @dev Included to enable compilation of the script without a $MNEMONIC environment variable.
     string internal constant TEST_MNEMONIC = "test test test test test test test test test test test junk";
 
@@ -29,6 +30,7 @@ abstract contract BaseScript is Script {
         vm.stopBroadcast();
     }
 
+    /* solhint-disable  */
     function _writeDeploymentsToJson() internal {
         out = "";
         line("[");
@@ -39,6 +41,7 @@ abstract contract BaseScript is Script {
             line(string.concat('    "name": "', deployedContractsNames[i], '"'));
             line(end ? "  }" : "  },");
         }
+        /* solhint-enable  */
         line("]");
         string memory mainFile =
             string.concat(vm.projectRoot(), "/deployments/", vm.toString(block.timestamp), "-deployments.json");

@@ -1,6 +1,7 @@
-# SustainableLeverage
- Sustainable Leverage v2
+# SustainableLeverage [![Github Actions][gha-badge]][gha]
 
+Sustainable Leverage v2 [gha]: https://github.com/thisisarchimedes/SustainableLeverage/actions [gha-badge]:
+https://github.com/thisisarchimedes/SustainableLeverage/actions/workflows/ci.yml/badge.svg
 
 ## Usage
 
@@ -96,5 +97,3 @@ simply copy paste the path):
 ```sh
 $ pnpm test:coverage:report
 ```
-
-
