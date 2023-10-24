@@ -16,8 +16,8 @@ abstract contract BaseScript is Script {
 
     /// @dev Used to derive the broadcaster's address if $ETH_FROM is not defined.
     string internal mnemonic;
-    address[] deployedContracts;
-    string[] deployedContractsNames;
+    address[] internal deployedContracts;
+    string[] internal deployedContractsNames;
     string out;
 
     constructor() {
