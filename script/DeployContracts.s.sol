@@ -53,7 +53,8 @@ contract DeployContracts is BaseScript {
             address(wbtcVaultMock),
             address(leverageDepositor),
             address(positionToken),
-            address(swapAdapter)
+            address(swapAdapter),
+            broadcaster
         );
         proxy = new TransparentUpgradeableProxy(address(leverageEngine), address(proxyAdmin), initData);
         deployedContracts.push(address(proxy));
