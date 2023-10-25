@@ -1,0 +1,30 @@
+[
+  {
+    "address": "0x28e6ac7c7D48c6D80cD0141AC169BbA5d43caB24",
+    "name": "ProxyAdmin"
+  },
+  {
+    "address": "0x3A68dD343379E914aeAec70E6EDbef81BB9bF6C2",
+    "name": "PositionToken"
+  },
+  {
+    "address": "0xe2A297542a5a0e601C904668daC34E4884304F51",
+    "name": "LeverageDepositor"
+  },
+  {
+    "address": "0xe7B5EDE6433761ff68547C7Ac827FF6Aa1Bc72aC",
+    "name": "WBTCVault"
+  },
+  {
+    "address": "0x2862c2FAA31b04600315A689Fd609a3659081A87",
+    "name": "LeverageEngineImplementation"
+  },
+  {
+    "address": "0x666DDd9Db7118040226Fdc59B20dF3c1d44CDf50",
+    "name": "SwapAdapter"
+  },
+  {
+    "address": "0x8aa7085bC934b782afFf351cEdD494fd4E0F9CAf",
+    "name": "LeverageEngine"
+  }
+]
