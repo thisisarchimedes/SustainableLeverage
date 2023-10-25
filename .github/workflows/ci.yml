@@ -103,7 +103,6 @@ jobs:
       - name: "Check out the repo"
         uses: "actions/checkout@v4"
         with:
-          token: ${{ secrets.PAT }}
           submodules: "recursive"
 
       - name: "Install Foundry"
@@ -123,7 +122,8 @@ jobs:
           export AWS_FORK_URL=$AWS_FORK_URL
       - name: "Deploy the contracts"
         run:
-          "forge script script/DeployContracts.s.sol --fork-url ${{ secrets.AWS_FORK_URL }} --broadcast -vvvvv --slow"
+          "forge script script/DeployContracts.s.sol --fork-url ${{ secrets.AWS_FORK_URL }} --broadcast -vvvvv --slow
+          --skip-simulation"
 
       - name: "Commit the deployment changes"
         uses: stefanzweifel/git-auto-commit-action@v5
