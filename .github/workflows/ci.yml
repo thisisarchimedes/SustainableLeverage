@@ -119,7 +119,7 @@ jobs:
           pip install virtualenv 
           python -m venv pyenv
           source pyenv/bin/activate
-          export AWS_FORK_URL=$AWS_FORK_URL
+          export AWS_FORK_URL=${{secrets.AWS_FORK_URL}}
       - name: "Deploy the contracts"
         run:
           "forge script script/DeployContracts.s.sol --fork-url ${{ secrets.AWS_FORK_URL }} --broadcast -vvvvv --slow
