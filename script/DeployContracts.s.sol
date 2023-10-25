@@ -16,7 +16,7 @@ contract DeployContracts is BaseScript {
     LeverageEngine internal leverageEngine;
     PositionToken internal positionToken;
     LeverageDepositor internal leverageDepositor;
-    WBTCVault internal wbtcVaultMock;
+    WBTCVault internal wbtcVault;
     ProxyAdmin internal proxyAdmin;
     TransparentUpgradeableProxy internal proxy;
     SwapAdapter internal swapAdapter;
@@ -39,8 +39,8 @@ contract DeployContracts is BaseScript {
         leverageDepositor = new LeverageDepositor(WBTC,WETH);
         deployedContracts.push(address(leverageDepositor));
         deployedContractsNames.push("LeverageDepositor");
-        wbtcVaultMock = new WBTCVault(WBTC);
-        deployedContracts.push(address(wbtcVaultMock));
+        wbtcVault = new WBTCVault(WBTC);
+        deployedContracts.push(address(wbtcVault));
         deployedContractsNames.push("WBTCVault");
         leverageEngine = new LeverageEngine();
         deployedContracts.push(address(leverageEngine));
@@ -50,7 +50,7 @@ contract DeployContracts is BaseScript {
         deployedContractsNames.push("SwapAdapter");
         bytes memory initData = abi.encodeWithSelector(
             LeverageEngine.initialize.selector,
-            address(wbtcVaultMock),
+            address(wbtcVault),
             address(leverageDepositor),
             address(positionToken),
             address(swapAdapter),
@@ -64,5 +64,17 @@ contract DeployContracts is BaseScript {
         leverageEngine.setOracle(WETH, ETHUSDORACLE);
         leverageEngine.setOracle(USDC, USDCUSDORACLE);
         _writeDeploymentsToJson();
+        if (block.chainid == 1337) {
+            bytes32 storageSlot = keccak256(abi.encode(address(wbtcVault), 0));
+            uint256 amount = 100e18;
+            string[] memory inputs = new string[](5);
+            inputs[0] = "python3";
+            inputs[1] = "script/setupFork.py";
+            inputs[2] = vm.toString(storageSlot);
+            inputs[3] = vm.toString(WBTC);
+            inputs[4] = vm.toString(bytes32(amount));
+
+            vm.ffi(inputs);
+        }
     }
 }
