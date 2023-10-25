@@ -5,7 +5,7 @@ import "./BaseTest.sol";
 /// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
 /// https://book.getfoundry.sh/forge/writing-tests
 
-contract SwapAdapterTest is PRBTest, StdCheats, BaseTest {
+contract SwapAdapterTest is BaseTest {
     /// @dev A function invoked before each test case is run.
     function setUp() public virtual {
         string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
@@ -29,7 +29,13 @@ contract SwapAdapterTest is PRBTest, StdCheats, BaseTest {
         IERC20(WBTC).transfer(address(swapAdapter), 1e8);
         uint256 wethBalanceBefore = IERC20(WETH).balanceOf(address(leverageDepositor));
         swapAdapter.swap(
-            IERC20(WBTC), IERC20(WETH), 1e8, address(swapAdapter), payload, SwapAdapter.SwapRoute.UNISWAPV3
+            IERC20(WBTC),
+            IERC20(WETH),
+            1e8,
+            address(swapAdapter),
+            payload,
+            SwapAdapter.SwapRoute.UNISWAPV3,
+            address(leverageDepositor)
         );
         uint256 wethBalanceAfter = IERC20(WETH).balanceOf(address(leverageDepositor));
         assertGt(wethBalanceAfter - wethBalanceBefore, 0);

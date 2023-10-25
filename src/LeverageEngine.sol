@@ -11,6 +11,7 @@ import { PositionToken } from "./PositionToken.sol";
 import { SwapAdapter } from "./SwapAdapter.sol";
 import { IMultiPoolStrategy } from "./interfaces/IMultiPoolStrategy.sol";
 import { AggregatorV3Interface } from "./interfaces/AggregatorV3Interface.sol";
+import { console2 } from "forge-std/console2.sol";
 /// @title LeverageEngine Contract
 /// @notice This contract facilitates the management of strategy configurations and admin parameters for the Leverage
 /// Engine.
@@ -121,7 +122,8 @@ contract LeverageEngine is AccessControlUpgradeable {
         address _wbtcVault,
         address _leverageDepositor,
         address _nft,
-        address _swapAdapter
+        address _swapAdapter,
+        address _feeCollector
     )
         external
         initializer
@@ -134,6 +136,8 @@ contract LeverageEngine is AccessControlUpgradeable {
         nft = PositionToken(_nft);
         swapAdapter = SwapAdapter(_swapAdapter);
         openPositionSlippage = 100;
+        exitFee = 50;
+        feeCollector = _feeCollector;
     }
 
     ///////////// Admin functions /////////////
@@ -287,8 +291,15 @@ contract LeverageEngine is AccessControlUpgradeable {
             // directly
         address strategyUnderlyingToken = IMultiPoolStrategy(strategy).asset();
         // Swap borrowed WBTC to strategy token
-        uint256 receivedAmount =
-            swapAdapter.swap(wbtc, IERC20(strategyUnderlyingToken), totalAmount, exchange, swapData, swapRoute);
+        uint256 receivedAmount = swapAdapter.swap(
+            wbtc,
+            IERC20(strategyUnderlyingToken),
+            totalAmount,
+            exchange,
+            swapData,
+            swapRoute,
+            address(leverageDepositor)
+        );
         uint256 expectedTargetTokenAmount = _checkOracles(strategyUnderlyingToken, totalAmount);
         if (receivedAmount < expectedTargetTokenAmount) revert NotEnoughTokensReceived();
         // Deposit borrowed WBTC to LeverageDepositor->strategy and get back shares
@@ -367,17 +378,11 @@ contract LeverageEngine is AccessControlUpgradeable {
 
         // Unwind the position
         uint256 assetsReceived = leverageDepositor.redeem(position.strategyType, position.strategyShares);
+        address strategyAsset = IMultiPoolStrategy(position.strategyType).asset();
         // Swap the assets to WBTC
-        wbtc.approve(address(swapAdapter), assetsReceived);
-        uint256 wbtcReceived = swapAdapter.swap(
-            IERC20(IMultiPoolStrategy(position.strategyType).asset()),
-            wbtc,
-            assetsReceived,
-            exchange,
-            swapData,
-            swapRoute
-        );
-
+        IERC20(strategyAsset).transfer(address(swapAdapter), assetsReceived);
+        uint256 wbtcReceived =
+            swapAdapter.swap(IERC20(strategyAsset), wbtc, assetsReceived, exchange, swapData, swapRoute, address(this));
         // Repay WBTC debt
         if (wbtcReceived < position.wbtcDebtAmount) revert NotEnoughWBTC();
 
@@ -385,7 +390,7 @@ contract LeverageEngine is AccessControlUpgradeable {
         wbtc.transfer(address(wbtcVault), position.wbtcDebtAmount);
 
         // Deduct the exit fee
-        uint256 exitFeeAmount = wbtcReceived - (position.wbtcDebtAmount) * (exitFee) / (BASE_DENOMINATOR);
+        uint256 exitFeeAmount = (wbtcReceived - position.wbtcDebtAmount) * exitFee / BASE_DENOMINATOR;
         wbtc.transfer(feeCollector, exitFeeAmount);
 
         // Send the rest of WBTC to the user

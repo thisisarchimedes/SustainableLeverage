@@ -28,14 +28,15 @@ contract SwapAdapter {
         uint256 fromAmount,
         address exchange,
         bytes calldata payload,
-        SwapRoute route
+        SwapRoute route,
+        address recipient
     )
         external
         payable
         returns (uint256 receivedAmount)
     {
         if (route == SwapRoute.UNISWAPV3) {
-            receivedAmount = swapOnUniswapV3(fromToken, toToken, fromAmount, payload);
+            receivedAmount = swapOnUniswapV3(fromToken, toToken, fromAmount, payload, recipient);
         }
     }
 
@@ -43,7 +44,8 @@ contract SwapAdapter {
         IERC20 fromToken,
         IERC20 toToken,
         uint256 fromAmount,
-        bytes calldata payload
+        bytes calldata payload,
+        address recipient
     )
         internal
         returns (uint256 receivedAmount)
@@ -51,16 +53,16 @@ contract SwapAdapter {
         UniswapV3Data memory data = abi.decode(payload, (UniswapV3Data));
 
         fromToken.approve(UNISWAPV3_ROUTER, fromAmount);
-        uint256 balanceBefore = toToken.balanceOf(leverageDepositor);
+        uint256 balanceBefore = toToken.balanceOf(recipient);
         ISwapRouterUniV3(UNISWAPV3_ROUTER).exactInput(
             ISwapRouterUniV3.ExactInputParams({
                 path: data.path,
-                recipient: address(leverageDepositor),
+                recipient: recipient,
                 deadline: data.deadline,
                 amountIn: fromAmount,
                 amountOutMinimum: 1
             })
         );
-        receivedAmount = toToken.balanceOf(leverageDepositor) - balanceBefore;
+        receivedAmount = toToken.balanceOf(recipient) - balanceBefore;
     }
 }

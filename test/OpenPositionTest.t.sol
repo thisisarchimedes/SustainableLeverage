@@ -7,7 +7,7 @@ import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol"
 /// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
 /// https://book.getfoundry.sh/forge/writing-tests
 
-contract OpenPositionTest is PRBTest, StdCheats, BaseTest {
+contract OpenPositionTest is BaseTest {
     /* solhint-disable  */
     /// @dev A function invoked before each test case is run.
     function setUp() public virtual {
@@ -77,7 +77,8 @@ contract OpenPositionTest is PRBTest, StdCheats, BaseTest {
             address(wbtcVaultMock),
             address(leverageDepositor),
             address(positionToken),
-            address(swapAdapter)
+            address(swapAdapter),
+            address(feeCollector)
         );
         TransparentUpgradeableProxy proxy =
             new TransparentUpgradeableProxy(address(oracleTestHelper), address(this), initData);
@@ -103,7 +104,8 @@ contract OpenPositionTest is PRBTest, StdCheats, BaseTest {
             address(wbtcVaultMock),
             address(leverageDepositor),
             address(positionToken),
-            address(swapAdapter)
+            address(swapAdapter),
+            address(feeCollector)
         );
         TransparentUpgradeableProxy proxy =
             new TransparentUpgradeableProxy(address(oracleTestHelper), address(this), initData);
