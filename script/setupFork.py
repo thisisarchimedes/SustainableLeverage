@@ -4,7 +4,7 @@ import sys
 
 
 def set_wbtc_balance_of_vault(storageSlot, wbtc_address, amount):
-    aws_fork_url = os.environ.get("AWS_FORK_URL")
+    aws_fork_url = os.environ["AWS_FORK_URL"]
     requests.post(
         aws_fork_url,
         json={
