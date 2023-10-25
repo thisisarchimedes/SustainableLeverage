@@ -69,7 +69,7 @@ contract DeployContracts is BaseScript {
             bytes32 storageSlot = keccak256(abi.encode(address(wbtcVault), 0));
             uint256 amount = 100e18;
             string[] memory inputs = new string[](5);
-            inputs[0] = "python3";
+            inputs[0] = "python";
             inputs[1] = "script/setupFork.py";
             inputs[2] = vm.toString(storageSlot);
             inputs[3] = vm.toString(WBTC);

@@ -114,12 +114,9 @@ jobs:
           '{"jsonrpc":"2.0","method":"hardhat_setBalance","params":["'"${{ secrets.DEPLOYER_ADDRESS }}"'","0x75557863725914323419136"],"id":67}' \
           "${{ secrets.AWS_FORK_URL }}"
       - name: "Prepare Python environment"
-        run: |
-          pip install --upgrade pip
-          pip install virtualenv 
-          python -m venv pyenv
-          source pyenv/bin/activate
-          export AWS_FORK_URL=${{secrets.AWS_FORK_URL}}
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
       - name: "Deploy the contracts"
         run:
           "forge script script/DeployContracts.s.sol --fork-url ${{ secrets.AWS_FORK_URL }} --broadcast -vvvvv --slow
