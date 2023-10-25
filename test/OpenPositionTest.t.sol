@@ -19,7 +19,7 @@ contract OpenPositionTest is BaseTest {
         // Otherwise, run the test against the mainnet fork.
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
         _prepareContracts();
-        deal(WBTC, address(wbtcVaultMock), 100e8);
+        deal(WBTC, address(wbtcVault), 100e8);
     }
 
     function test_ShouldRevertWithArithmeticOverflow() external {
@@ -74,7 +74,7 @@ contract OpenPositionTest is BaseTest {
         OracleTestHelper oracleTestHelper = new OracleTestHelper();
         bytes memory initData = abi.encodeWithSelector(
             LeverageEngine.initialize.selector,
-            address(wbtcVaultMock),
+            address(wbtcVault),
             address(leverageDepositor),
             address(positionToken),
             address(swapAdapter),
@@ -101,7 +101,7 @@ contract OpenPositionTest is BaseTest {
         OracleTestHelper oracleTestHelper = new OracleTestHelper();
         bytes memory initData = abi.encodeWithSelector(
             LeverageEngine.initialize.selector,
-            address(wbtcVaultMock),
+            address(wbtcVault),
             address(leverageDepositor),
             address(positionToken),
             address(swapAdapter),

@@ -2,7 +2,7 @@
 pragma solidity >=0.8.21 <0.9.0;
 
 import { PositionLedgerLib } from "../src/PositionLedgerLib.sol";
-import { LeverageEngine } from "../src/LeverageEngine.sol";
+import "../src/LeverageEngine.sol";
 import { PositionToken } from "../src/PositionToken.sol";
 import "../src/LeverageDepositor.sol";
 import { WBTCVault } from "src/WBTCVault.sol";
@@ -19,10 +19,11 @@ contract BaseTest is PRBTest, StdCheats {
     LeverageEngine internal leverageEngine;
     PositionToken internal positionToken;
     LeverageDepositor internal leverageDepositor;
-    WBTCVault internal wbtcVaultMock;
+    WBTCVault internal wbtcVault;
     ProxyAdmin internal proxyAdmin;
     TransparentUpgradeableProxy internal proxy;
     SwapAdapter internal swapAdapter;
+    IERC20 internal wbtc;
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -36,12 +37,12 @@ contract BaseTest is PRBTest, StdCheats {
         proxyAdmin = new ProxyAdmin(address(this));
         positionToken = new PositionToken();
         leverageDepositor = new LeverageDepositor(WBTC,WETH);
-        wbtcVaultMock = new WBTCVault(WBTC);
+        wbtcVault = new WBTCVault(WBTC);
         leverageEngine = new LeverageEngine();
         swapAdapter = new SwapAdapter(WBTC, address(leverageDepositor));
         bytes memory initData = abi.encodeWithSelector(
             LeverageEngine.initialize.selector,
-            address(wbtcVaultMock),
+            address(wbtcVault),
             address(leverageDepositor),
             address(positionToken),
             address(swapAdapter),
@@ -52,6 +53,7 @@ contract BaseTest is PRBTest, StdCheats {
         leverageEngine.setOracle(WBTC, WBTCUSDORACLE);
         leverageEngine.setOracle(WETH, ETHUSDORACLE);
         leverageEngine.setOracle(USDC, USDCUSDORACLE);
+        wbtc = IERC20(WBTC);
     }
     //erc721 receiver
 

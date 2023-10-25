@@ -21,7 +21,7 @@ contract OpenPositionTest is BaseTest {
         // Otherwise, run the test against the mainnet fork.
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
         _prepareContracts();
-        deal(WBTC, address(wbtcVaultMock), 100e8);
+        deal(WBTC, address(wbtcVault), 100e8);
     }
 
     function _openPosition() internal {
@@ -58,6 +58,13 @@ contract OpenPositionTest is BaseTest {
                 deadline: block.timestamp + 1000
             })
         );
+
+        uint256 wbtcBalanceBeforeClose = wbtc.balanceOf(address(wbtcVault));
+
         leverageEngine.closePosition(0, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
+        uint256 wbtcBalanceAfterClose = wbtc.balanceOf(address(wbtcVault));
+        PositionLedgerLib.LedgerEntry memory position = leverageEngine.getPosition(0);
+        assertEq(uint8(position.state), uint8(PositionLedgerLib.PositionState.CLOSED));
+        assertEq(wbtcBalanceAfterClose - wbtcBalanceBeforeClose, position.wbtcDebtAmount);
     }
 }
