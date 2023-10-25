@@ -119,7 +119,7 @@ jobs:
           pip install --upgrade pip
           pip install virtualenv 
           python -m venv pyenv
-          source .venv/bin/activate
+          source pyenv/bin/activate
           export AWS_FORK_URL=$AWS_FORK_URL
       - name: "Deploy the contracts"
         run:
