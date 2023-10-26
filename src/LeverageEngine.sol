@@ -11,7 +11,7 @@ import { PositionToken } from "./PositionToken.sol";
 import { SwapAdapter } from "./SwapAdapter.sol";
 import { IMultiPoolStrategy } from "./interfaces/IMultiPoolStrategy.sol";
 import { AggregatorV3Interface } from "./interfaces/AggregatorV3Interface.sol";
-import { console2 } from "forge-std/console2.sol";
+
 /// @title LeverageEngine Contract
 /// @notice This contract facilitates the management of strategy configurations and admin parameters for the Leverage
 /// Engine.
@@ -132,6 +132,7 @@ contract LeverageEngine is AccessControlUpgradeable {
         _grantRole(ADMIN_ROLE, msg.sender);
         wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
         wbtcVault = IWBTCVault(_wbtcVault);
+        wbtc.approve(_wbtcVault, type(uint256).max);
         leverageDepositor = ILeverageDepositor(_leverageDepositor);
         nft = PositionToken(_nft);
         swapAdapter = SwapAdapter(_swapAdapter);
@@ -359,6 +360,8 @@ contract LeverageEngine is AccessControlUpgradeable {
     /// @param nftID The ID of the NFT representing the position.
     /// @param minWBTC Minimum amount of WBTC expected after position closure.
     /// @param swapRoute Route to be used for swapping
+    /// @param swapData Swap data for the swap adapter
+    /// @param exchange Exchange to be used for swapping
     function closePosition(
         uint256 nftID,
         uint256 minWBTC,
@@ -387,7 +390,7 @@ contract LeverageEngine is AccessControlUpgradeable {
         if (wbtcReceived < position.wbtcDebtAmount) revert NotEnoughWBTC();
 
         // Return WBTC debt to WBTC vault
-        wbtc.transfer(address(wbtcVault), position.wbtcDebtAmount);
+        wbtcVault.repay(nftID, position.wbtcDebtAmount);
 
         // Deduct the exit fee
         uint256 exitFeeAmount = (wbtcReceived - position.wbtcDebtAmount) * exitFee / BASE_DENOMINATOR;
