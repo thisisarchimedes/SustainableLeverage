@@ -450,9 +450,10 @@ contract LeverageEngine is AccessControlUpgradeable {
      * @param token Token address
      */
     function _getLatestPrice(address token) internal view returns (uint256 uPrice) {
-        if (address(oracles[token]) == address(0)) revert OracleNotSet();
+        address oracle = oracles[token];
+        if (oracle == address(0)) revert OracleNotSet();
 
-        (, int256 price,,,) = AggregatorV3Interface(oracles[token]).latestRoundData();
+        (, int256 price,,,) = AggregatorV3Interface(oracle).latestRoundData();
 
         if (price < 0) revert OraclePriceError();
 
