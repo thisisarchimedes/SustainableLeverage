@@ -103,6 +103,7 @@ jobs:
       - name: "Check out the repo"
         uses: "actions/checkout@v4"
         with:
+          token: ${{secrets.PAT}}
           submodules: "recursive"
 
       - name: "Install Foundry"
