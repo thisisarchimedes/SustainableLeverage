@@ -1,30 +1,30 @@
 [
   {
-    "address": "0xE9589A19aB5689ba6AaE4005935592B4C06c1ED7",
+    "address": "0x88e4E50949FF76cAe573965ca400f0d60b4eA638",
     "name": "ProxyAdmin"
   },
   {
-    "address": "0x21F7537654c9594a3dC90A360b71266865252dCA",
+    "address": "0xE0C3dDdEBef5f9b4619052C8241E187f6450902E",
     "name": "PositionToken"
   },
   {
-    "address": "0xa6b5a210fa5097C4D5BAabD9224Bf92bc203F8f3",
+    "address": "0x431810955ba12e54EA18abe124871ed6377D8Fcc",
     "name": "LeverageDepositor"
   },
   {
-    "address": "0x13A8361f023eE2dEc9Dc511b0dd84b04365EB328",
+    "address": "0x41c25Db9756aD7D29A0Ea870f4D8e09F40b38700",
     "name": "WBTCVault"
   },
   {
-    "address": "0x73d3E1d9766E144D06895722846B559AF372Fb7A",
+    "address": "0x9b5a6338A7e5BbF96Ff232086256CF5c24a699e4",
     "name": "LeverageEngineImplementation"
   },
   {
-    "address": "0xCed8eCf89942F4bA3084e610925B04219339b377",
+    "address": "0x4f3A44e0642148eDB1fF3ce8A5d6E59601431800",
     "name": "SwapAdapter"
   },
   {
-    "address": "0x07ea84E821316572190eb421C979467aeFD192d9",
+    "address": "0x86C0754cf52bF43249e808aC2e433A25D8c482fE",
     "name": "LeverageEngine"
   }
 ]
