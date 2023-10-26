@@ -4,10 +4,11 @@ pragma solidity >=0.8.21 <0.9.0;
 import "./BaseTest.sol";
 import "./helpers/OracleTestHelper.sol";
 import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
+import { IERC721A } from "ERC721A/IERC721A.sol";
 /// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
 /// https://book.getfoundry.sh/forge/writing-tests
 
-contract OpenPositionTest is BaseTest {
+contract ClosePositionTest is BaseTest {
     /* solhint-disable  */
     address positionReceiver = makeAddr("receiver");
 
@@ -46,6 +47,31 @@ contract OpenPositionTest is BaseTest {
         positionToken.transferFrom(address(this), positionReceiver, 0);
         vm.expectRevert(LeverageEngine.NotOwner.selector);
         leverageEngine.closePosition(0, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
+    }
+
+    function test_ShouldRevertWithNotEnoughTokensReceived() external {
+        _openPosition();
+        bytes memory payload = abi.encode(
+            SwapAdapter.UniswapV3Data({
+                path: abi.encodePacked(WETH, uint24(3000), WBTC),
+                deadline: block.timestamp + 1000
+            })
+        );
+        vm.expectRevert(LeverageEngine.NotEnoughTokensReceived.selector);
+        leverageEngine.closePosition(0, 5e8, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
+    }
+
+    function test_ShouldRevertIfPositionAlreadyClosed() external {
+        _openPosition();
+        bytes memory payload = abi.encode(
+            SwapAdapter.UniswapV3Data({
+                path: abi.encodePacked(WETH, uint24(3000), WBTC),
+                deadline: block.timestamp + 1000
+            })
+        );
+        leverageEngine.closePosition(0, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
+        vm.expectRevert(IERC721A.OwnerQueryForNonexistentToken.selector);
+        leverageEngine.closePosition(0, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
     }
 
     function test_ShouldClosePosition() external {

@@ -395,7 +395,7 @@ contract LeverageEngine is AccessControlUpgradeable {
 
         // Send the rest of WBTC to the user
         uint256 wbtcLeft = wbtcReceived - position.wbtcDebtAmount - exitFeeAmount;
-        if (wbtcLeft < minWBTC) revert NotEnoughWBTC();
+        if (wbtcLeft < minWBTC) revert NotEnoughTokensReceived();
         wbtc.transfer(msg.sender, wbtcLeft);
 
         // Update the ledger
