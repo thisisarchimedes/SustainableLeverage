@@ -16,6 +16,7 @@
   src = "src"
   test = "test"
   fs_permissions = [{ access = "read-write", path = "./"}]
+  ffi = true
 
 
 [profile.ci]

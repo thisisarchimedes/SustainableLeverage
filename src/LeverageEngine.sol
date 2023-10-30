@@ -11,6 +11,7 @@ import { PositionToken } from "./PositionToken.sol";
 import { SwapAdapter } from "./SwapAdapter.sol";
 import { IMultiPoolStrategy } from "./interfaces/IMultiPoolStrategy.sol";
 import { AggregatorV3Interface } from "./interfaces/AggregatorV3Interface.sol";
+
 /// @title LeverageEngine Contract
 /// @notice This contract facilitates the management of strategy configurations and admin parameters for the Leverage
 /// Engine.
@@ -23,6 +24,7 @@ contract LeverageEngine is AccessControlUpgradeable {
     // Define roles
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant MONITOR_ROLE = keccak256("MONITOR_ROLE");
+    uint256 constant BASE_DENOMINATOR = 10_000;
 
     // WBTC token
     IERC20 public wbtc;
@@ -65,18 +67,21 @@ contract LeverageEngine is AccessControlUpgradeable {
     mapping(address => address) public oracles;
 
     // Global admin parameters
-    uint256 public liquidationFee; // Fee taken after returning all debt during liquidation
-    uint256 public exitFee; // Fee (taken from profits) taken after returning all debt during exit by user
-    address public feeCollector; // Address that collects fees
+    uint256 public liquidationFee; // Fee taken after returning all debt during liquidation in 10000
+    uint256 public exitFee; // Fee (taken from profits) taken after returning all debt during exit by user in 10000
+    address public feeCollector; // Address that collects fees in 10000
     uint256 public openPositionSlippage; // in 10000 so 10000 = 100%
 
     //Errors
     error ExceedBorrowLimit();
     error LessThanMinimumShares();
     error OracleNotSet();
-    error NotEnoughTokenReceived();
+    error NotEnoughTokensReceived();
     error OraclePriceError();
     error ExceedBorrowQuota();
+    error NotOwner();
+    error PositionNotLive();
+    error NotEnoughWBTC();
 
     // Events
     event StrategyConfigUpdated(
@@ -97,6 +102,14 @@ contract LeverageEngine is AccessControlUpgradeable {
         uint256 wbtcToBorrow,
         uint256 positionExpireBlock
     );
+    event PositionClosed(
+        uint256 indexed nftID,
+        address indexed user,
+        address indexed strategy,
+        uint256 receivedAmount,
+        uint256 wbtcDebtAmount,
+        uint256 exitFee
+    );
     event OracleSet(address token, address oracle);
 
     PositionLedgerLib.LedgerStorage internal ledger;
@@ -109,7 +122,8 @@ contract LeverageEngine is AccessControlUpgradeable {
         address _wbtcVault,
         address _leverageDepositor,
         address _nft,
-        address _swapAdapter
+        address _swapAdapter,
+        address _feeCollector
     )
         external
         initializer
@@ -118,10 +132,13 @@ contract LeverageEngine is AccessControlUpgradeable {
         _grantRole(ADMIN_ROLE, msg.sender);
         wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
         wbtcVault = IWBTCVault(_wbtcVault);
+        wbtc.approve(_wbtcVault, type(uint256).max);
         leverageDepositor = ILeverageDepositor(_leverageDepositor);
         nft = PositionToken(_nft);
         swapAdapter = SwapAdapter(_swapAdapter);
         openPositionSlippage = 100;
+        exitFee = 50;
+        feeCollector = _feeCollector;
     }
 
     ///////////// Admin functions /////////////
@@ -275,10 +292,17 @@ contract LeverageEngine is AccessControlUpgradeable {
             // directly
         address strategyUnderlyingToken = IMultiPoolStrategy(strategy).asset();
         // Swap borrowed WBTC to strategy token
-        uint256 receivedAmount =
-            swapAdapter.swap(wbtc, IERC20(strategyUnderlyingToken), totalAmount, exchange, swapData, swapRoute);
+        uint256 receivedAmount = swapAdapter.swap(
+            wbtc,
+            IERC20(strategyUnderlyingToken),
+            totalAmount,
+            exchange,
+            swapData,
+            swapRoute,
+            address(leverageDepositor)
+        );
         uint256 expectedTargetTokenAmount = _checkOracles(strategyUnderlyingToken, totalAmount);
-        if (receivedAmount < expectedTargetTokenAmount) revert NotEnoughTokenReceived();
+        if (receivedAmount < expectedTargetTokenAmount) revert NotEnoughTokensReceived();
         // Deposit borrowed WBTC to LeverageDepositor->strategy and get back shares
         uint256 sharesReceived = leverageDepositor.deposit(strategy, strategyUnderlyingToken, receivedAmount);
         if (sharesReceived < minStrategyShares) revert LessThanMinimumShares();
@@ -332,6 +356,62 @@ contract LeverageEngine is AccessControlUpgradeable {
         estimatedShares = IMultiPoolStrategy(strategy).previewDeposit(minimumExpected);
     }
 
+    /// @notice Allows a user to close their leverage position.
+    /// @param nftID The ID of the NFT representing the position.
+    /// @param minWBTC Minimum amount of WBTC expected after position closure.
+    /// @param swapRoute Route to be used for swapping
+    /// @param swapData Swap data for the swap adapter
+    /// @param exchange Exchange to be used for swapping
+    function closePosition(
+        uint256 nftID,
+        uint256 minWBTC,
+        SwapAdapter.SwapRoute swapRoute,
+        bytes calldata swapData,
+        address exchange
+    )
+        external
+    {
+        // Check if the user owns the NFT
+        if (nft.ownerOf(nftID) != msg.sender) revert NotOwner();
+
+        PositionLedgerLib.LedgerEntry memory position = ledger.entries[nftID];
+
+        // Check if the NFT state is LIVE
+        if (position.state != PositionLedgerLib.PositionState.LIVE) revert PositionNotLive();
+
+        // Unwind the position
+        uint256 assetsReceived = leverageDepositor.redeem(position.strategyType, position.strategyShares);
+        address strategyAsset = IMultiPoolStrategy(position.strategyType).asset();
+        // Swap the assets to WBTC
+        IERC20(strategyAsset).transfer(address(swapAdapter), assetsReceived);
+        uint256 wbtcReceived =
+            swapAdapter.swap(IERC20(strategyAsset), wbtc, assetsReceived, exchange, swapData, swapRoute, address(this));
+        // Repay WBTC debt
+        if (wbtcReceived < position.wbtcDebtAmount) revert NotEnoughWBTC();
+
+        // Return WBTC debt to WBTC vault
+        wbtcVault.repay(nftID, position.wbtcDebtAmount);
+
+        // Deduct the exit fee
+        uint256 exitFeeAmount = (wbtcReceived - position.wbtcDebtAmount) * exitFee / BASE_DENOMINATOR;
+        wbtc.transfer(feeCollector, exitFeeAmount);
+
+        // Send the rest of WBTC to the user
+        uint256 wbtcLeft = wbtcReceived - position.wbtcDebtAmount - exitFeeAmount;
+        if (wbtcLeft < minWBTC) revert NotEnoughTokensReceived();
+        wbtc.transfer(msg.sender, wbtcLeft);
+
+        // Update the ledger
+        position.state = PositionLedgerLib.PositionState.CLOSED;
+        ledger.setLedgerEntry(nftID, position);
+
+        // Burn the NFT
+        nft.burn(nftID);
+
+        // emit event
+        emit PositionClosed(nftID, msg.sender, position.strategyType, wbtcLeft, position.wbtcDebtAmount, exitFeeAmount);
+    }
+
     /// @notice Get the configuration for a specific strategy.
     /// @param strategy The address of the strategy to retrieve configuration for.
     /// @return The strategy configuration.
@@ -365,7 +445,7 @@ contract LeverageEngine is AccessControlUpgradeable {
         expectedTargetTokenAmount = (
             ((wbtcAmount * wbtcPrice / 1e8) * (10 ** (targetTokenDecimals + targetTokenOracleDecimals)) / 1e8)
                 / targetTokenPrice
-        ) * (10_000 - openPositionSlippage) / 10_000;
+        ) * (BASE_DENOMINATOR - openPositionSlippage) / BASE_DENOMINATOR;
     }
 
     /**
@@ -373,9 +453,10 @@ contract LeverageEngine is AccessControlUpgradeable {
      * @param token Token address
      */
     function _getLatestPrice(address token) internal view returns (uint256 uPrice) {
-        if (address(oracles[token]) == address(0)) revert OracleNotSet();
+        address oracle = oracles[token];
+        if (oracle == address(0)) revert OracleNotSet();
 
-        (, int256 price,,,) = AggregatorV3Interface(oracles[token]).latestRoundData();
+        (, int256 price,,,) = AggregatorV3Interface(oracle).latestRoundData();
 
         if (price < 0) revert OraclePriceError();
 

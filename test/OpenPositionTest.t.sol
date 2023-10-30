@@ -7,7 +7,7 @@ import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol"
 /// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
 /// https://book.getfoundry.sh/forge/writing-tests
 
-contract OpenPositionTest is PRBTest, StdCheats, BaseTest {
+contract OpenPositionTest is BaseTest {
     /* solhint-disable  */
     /// @dev A function invoked before each test case is run.
     function setUp() public virtual {
@@ -19,7 +19,7 @@ contract OpenPositionTest is PRBTest, StdCheats, BaseTest {
         // Otherwise, run the test against the mainnet fork.
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
         _prepareContracts();
-        deal(WBTC, address(wbtcVaultMock), 100e8);
+        deal(WBTC, address(wbtcVault), 100e8);
     }
 
     function test_ShouldRevertWithArithmeticOverflow() external {
@@ -74,10 +74,11 @@ contract OpenPositionTest is PRBTest, StdCheats, BaseTest {
         OracleTestHelper oracleTestHelper = new OracleTestHelper();
         bytes memory initData = abi.encodeWithSelector(
             LeverageEngine.initialize.selector,
-            address(wbtcVaultMock),
+            address(wbtcVault),
             address(leverageDepositor),
             address(positionToken),
-            address(swapAdapter)
+            address(swapAdapter),
+            address(feeCollector)
         );
         TransparentUpgradeableProxy proxy =
             new TransparentUpgradeableProxy(address(oracleTestHelper), address(this), initData);
@@ -100,10 +101,11 @@ contract OpenPositionTest is PRBTest, StdCheats, BaseTest {
         OracleTestHelper oracleTestHelper = new OracleTestHelper();
         bytes memory initData = abi.encodeWithSelector(
             LeverageEngine.initialize.selector,
-            address(wbtcVaultMock),
+            address(wbtcVault),
             address(leverageDepositor),
             address(positionToken),
-            address(swapAdapter)
+            address(swapAdapter),
+            address(feeCollector)
         );
         TransparentUpgradeableProxy proxy =
             new TransparentUpgradeableProxy(address(oracleTestHelper), address(this), initData);

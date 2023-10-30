@@ -41,8 +41,9 @@ contract LeverageDepositor is ILeverageDepositor {
     /// @param strategy Address of the strategy to withdraw from.
     /// @param shares Shares to withdraw from strategy.
     /// TODO : ADD ACCESS CONTROL
-    function redeem(address strategy, uint256 shares) external {
+    function redeem(address strategy, uint256 shares) external returns (uint256 redeemedAmount) {
         require(shares > 0, "Shares should be greater than 0");
         // Redeem from strategy
+        redeemedAmount = IMultiPoolStrategy(strategy).redeem(shares, msg.sender, address(this), 0);
     }
 }
