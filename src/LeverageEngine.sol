@@ -100,7 +100,8 @@ contract LeverageEngine is AccessControlUpgradeable {
         address indexed strategy,
         uint256 collateralAmount,
         uint256 wbtcToBorrow,
-        uint256 positionExpireBlock
+        uint256 positionExpireBlock,
+        uint256 sharesReceived
     );
     event PositionClosed(
         uint256 indexed nftID,
@@ -326,7 +327,8 @@ contract LeverageEngine is AccessControlUpgradeable {
             newEntry.strategyType,
             newEntry.collateralAmount,
             newEntry.wbtcDebtAmount,
-            newEntry.positionExpirationBlock
+            newEntry.positionExpirationBlock,
+            sharesReceived
         );
     }
 

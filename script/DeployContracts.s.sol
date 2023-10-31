@@ -66,8 +66,9 @@ contract DeployContracts is BaseScript {
         leverageEngine.setOracle(USDC, USDCUSDORACLE);
         _writeDeploymentsToJson();
         if (block.chainid == 1337) {
+            leverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY, 10_000e8, 1000, 3e8, 1.25e8);
             bytes32 storageSlot = keccak256(abi.encode(address(wbtcVault), 0));
-            uint256 amount = 100e18;
+            uint256 amount = 1_000_000e8;
             string[] memory inputs = new string[](5);
             inputs[0] = "python";
             inputs[1] = "script/setupFork.py";
