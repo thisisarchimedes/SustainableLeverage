@@ -26,10 +26,11 @@ contract DeployContracts is BaseScript {
     address public constant FRAXBPALUSD_STRATEGY = 0xB888b8204Df31B54728e963ebA5465A95b695103;
 
     function run() public {
-        address broadcaster = vm.rememberKey(0x199d07e2c6ffc3618140ecde20ebcb54bd26623b015b38fbaddee407b30bcc96); // THIS
+        address broadcaster = vm.rememberKey(0xb7f3cdcc39c740a28a063f57af7583d3bea1b4473772f4a43721777680475740); // THIS
             // IS DUMMY KEY
         vm.startBroadcast(broadcaster);
-        leverageEngine = LeverageEngine(0xc5bFaE119f2E67646c80d358Eb36426C5f9dDFdB); // UPDATE THIS WITH LATEST ADDRESS
+
+        leverageEngine = LeverageEngine(0xb03b1ce3513486550F9393Ac6103E5b4b159ED28); // UPDATE THIS WITH LATEST ADDRESS
 
         ERC20(WBTC).approve(address(leverageEngine), 1e8);
         bytes memory payload = abi.encode(
@@ -39,12 +40,12 @@ contract DeployContracts is BaseScript {
             })
         );
         leverageEngine.openPosition(
-            1e8, 2e8, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
+            1e8, 2e8, FRAXBPALUSD_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
         );
 
         if (block.chainid == 1337) {
             bytes32 storageSlot = keccak256(abi.encode(address(broadcaster), 0));
-            uint256 amount = 100e18;
+            uint256 amount = 1000e8;
             string[] memory inputs = new string[](5);
             inputs[0] = "python3";
             inputs[1] = "script/setupFork.py";
