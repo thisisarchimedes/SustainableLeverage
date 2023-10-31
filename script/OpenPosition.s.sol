@@ -14,6 +14,7 @@ import { SwapAdapter } from "../src/SwapAdapter.sol";
 import { console2 } from "forge-std/console2.sol";
 
 contract DeployContracts is BaseScript {
+    /* solhint-disable  */
     LeverageEngine internal leverageEngine;
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
