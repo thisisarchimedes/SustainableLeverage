@@ -39,7 +39,7 @@ contract DeployContracts is Script {
             })
         );
         leverageEngine.openPosition(
-            1e8, 2e8, FRAXBPALUSD_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
+            0.1e8, 0.1e8, FRAXBPALUSD_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
         );
 
         if (block.chainid == 1337) {
