@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.21;
 
-import { BaseScript } from "./Base.s.sol";
 import { PositionLedgerLib } from "../src/PositionLedgerLib.sol";
 import { LeverageEngine } from "../src/LeverageEngine.sol";
 import { PositionToken } from "../src/PositionToken.sol";
@@ -12,8 +11,9 @@ import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { SwapAdapter } from "../src/SwapAdapter.sol";
 import { console2 } from "forge-std/console2.sol";
+import { Script } from "forge-std/Script.sol";
 
-contract DeployContracts is BaseScript {
+contract DeployContracts is Script {
     /* solhint-disable  */
     LeverageEngine internal leverageEngine;
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
