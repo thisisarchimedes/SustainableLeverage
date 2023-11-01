@@ -9,7 +9,9 @@ crucial for the deployment and interaction with the contracts.
 
 To set the `DEPLOYER_PKEY` environment variable, run the following command in your terminal:
 
-\```export DEPLOYER_PKEY=0xb7f3cdcc39c740a28a063f57af7583d3bea1b4473772f4a43721777680475740 \```
+```sh
+export DEPLOYER_PKEY=0xb7f3cdcc39c740a28a063f57af7583d3bea1b4473772f4a43721777680475740
+```
 
 ## Usage
 
