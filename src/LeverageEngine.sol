@@ -101,7 +101,8 @@ contract LeverageEngine is AccessControlUpgradeable {
         uint256 collateralAmount,
         uint256 wbtcToBorrow,
         uint256 positionExpireBlock,
-        uint256 sharesReceived
+        uint256 sharesReceived,
+        uint256 liqudationBuffer
     );
     event PositionClosed(
         uint256 indexed nftID,
@@ -307,15 +308,15 @@ contract LeverageEngine is AccessControlUpgradeable {
         // Deposit borrowed WBTC to LeverageDepositor->strategy and get back shares
         uint256 sharesReceived = leverageDepositor.deposit(strategy, strategyUnderlyingToken, receivedAmount);
         if (sharesReceived < minStrategyShares) revert LessThanMinimumShares();
-
+        StrategyConfig memory strategyConfig = strategies[strategy];
         // Update Ledger
         PositionLedgerLib.LedgerEntry memory newEntry;
         newEntry.collateralAmount = collateralAmount;
         newEntry.strategyType = strategy;
         newEntry.strategyShares = sharesReceived;
         newEntry.wbtcDebtAmount = wbtcToBorrow;
-        newEntry.positionExpirationBlock = block.number + strategies[strategy].positionLifetime;
-        newEntry.liquidationBuffer = strategies[strategy].liquidationBuffer;
+        newEntry.positionExpirationBlock = block.number + strategyConfig.positionLifetime;
+        newEntry.liquidationBuffer = strategyConfig.liquidationBuffer;
         newEntry.state = PositionLedgerLib.PositionState.LIVE;
         uint256 nftID = nft.mint(msg.sender); // Mint NFT and send to user
         ledger.setLedgerEntry(nftID, newEntry);
@@ -328,7 +329,8 @@ contract LeverageEngine is AccessControlUpgradeable {
             newEntry.collateralAmount,
             newEntry.wbtcDebtAmount,
             newEntry.positionExpirationBlock,
-            sharesReceived
+            sharesReceived,
+            strategyConfig.liquidationBuffer
         );
     }
 
