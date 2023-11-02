@@ -29,7 +29,7 @@ contract DeployContracts is Script {
         address broadcaster = vm.rememberKey(0xb7f3cdcc39c740a28a063f57af7583d3bea1b4473772f4a43721777680475740); // THIS
             // IS DUMMY KEY
         vm.startBroadcast(broadcaster);
-        leverageEngine = LeverageEngine(0x031B101080777417811752b5Aa059Fc188e58F2F); // UPDATE THIS WITH LATEST ADDRESS
+        leverageEngine = LeverageEngine(0x1828EF596A7DAf37Eb4bbB78f8a369d8a364875f); // UPDATE THIS WITH LATEST ADDRESS
 
         ERC20(WBTC).approve(address(leverageEngine), 1e8);
         bytes memory payload = abi.encode(
