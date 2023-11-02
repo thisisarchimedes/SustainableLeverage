@@ -102,7 +102,7 @@ contract LeverageEngine is AccessControlUpgradeable {
         uint256 wbtcToBorrow,
         uint256 positionExpireBlock,
         uint256 sharesReceived,
-        uint256 liqudationBuffer
+        uint256 liquidationBuffer
     );
     event PositionClosed(
         uint256 indexed nftID,
