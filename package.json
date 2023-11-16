@@ -7,7 +7,7 @@
     "url": "https://github.com/PaulRBerg"
   },
   "devDependencies": {
-    "prettier": "^3.0.0"
+    "prettier": "^3.1.0"
   },
   "keywords": [
     "blockchain",
