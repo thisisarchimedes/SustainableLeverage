@@ -133,16 +133,15 @@ jobs:
         run:
           "forge script script/DeployContracts.s.sol --fork-url ${{ secrets.AWS_FORK_URL }} --broadcast -vvvvv --slow
           --skip-simulation"
-      
+
       - name: Copy run-latest.json File
         run: |
           FILE_PATH=$(find /home/runner/work/SustainableLeverage/SustainableLeverage/broadcast/DeployContracts.s.sol -name 'run-latest.json')
           if [ -z "$FILE_PATH" ]; then
               echo "run-latest.json not found"
-              exit 1
+              exit 1 
           fi
           cp "$FILE_PATH" /home/runner/work/SustainableLeverage/deployments/1337-deployments.json
-
 
       - name: "Commit the deployment changes"
         uses: stefanzweifel/git-auto-commit-action@v5
