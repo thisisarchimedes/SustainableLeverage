@@ -24,9 +24,6 @@ jobs:
         with:
           submodules: "recursive"
 
-      - name: "Install Foundry"
-        uses: "foundry-rs/foundry-toolchain@v1"
-
       - name: "Install Pnpm"
         uses: "pnpm/action-setup@v2"
         with:
@@ -39,12 +36,14 @@ jobs:
           node-version: "lts/*"
 
       - name: "Install the Node.js dependencies"
-        run: "pnpm install --no-frozen-lockfile"
+        run: |
+          pnpm install --no-frozen-lockfile
+          npm install -g solhint 
 
       - name: "Lint the contracts"
         run: | 
-          pnpm lint src/
-          pnpm lint test/
+          solhint src/*.sol
+          pnpm lint test/*.sol
 
       - name: "Add lint summary"
         run: |
