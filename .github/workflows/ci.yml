@@ -42,7 +42,9 @@ jobs:
         run: "pnpm install --no-frozen-lockfile"
 
       - name: "Lint the contracts"
-        run: "pnpm lint"
+        run: | 
+          pnpm lint src/
+          pnpm lint test/
 
       - name: "Add lint summary"
         run: |
