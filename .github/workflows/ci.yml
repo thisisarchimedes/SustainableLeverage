@@ -141,7 +141,9 @@ jobs:
               echo "run-latest.json not found"
               exit 1 
           fi
-          cp "$FILE_PATH" /home/runner/work/SustainableLeverage/deployments/1337-deployments.json
+          echo $GITHUB_WORKSPACE/deployments/1337-deployments.json
+          echo $FILE_PATH
+          cp "$FILE_PATH" $GITHUB_WORKSPACE/deployments/1337-deployments.json
 
       - name: "Commit the deployment changes"
         uses: stefanzweifel/git-auto-commit-action@v5
