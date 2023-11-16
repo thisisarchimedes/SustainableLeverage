@@ -19,7 +19,7 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: "Check out the repo"
-        uses: "actions/checkout@v3"
+        uses: "actions/checkout@v4"
         with:
           submodules: "recursive"
 
@@ -52,7 +52,7 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: "Check out the repo"
-        uses: "actions/checkout@v3"
+        uses: "actions/checkout@v4"
         with:
           submodules: "recursive"
 
@@ -72,7 +72,7 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: "Check out the repo"
-        uses: "actions/checkout@v3"
+        uses: "actions/checkout@v4"
         with:
           submodules: "recursive"
 
@@ -95,7 +95,7 @@ jobs:
         run: |
           echo "## Tests result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
-  deploy:
+  deploy_to_staging:
     needs: ["test"]
     runs-on: "ubuntu-latest"
     permissions: "write-all"
