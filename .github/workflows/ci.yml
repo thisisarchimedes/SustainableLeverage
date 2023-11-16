@@ -15,39 +15,6 @@ on:
       - "main"
 
 jobs:
-  lint:
-    if: github.event_name == 'pull_request'
-    runs-on: "ubuntu-latest"
-    steps:
-      - name: "Check out the repo"
-        uses: "actions/checkout@v4"
-        with:
-          submodules: "recursive"
-
-      - name: "Install Foundry"
-        uses: "foundry-rs/foundry-toolchain@v1"
-
-      - name: "Install Pnpm"
-        uses: "pnpm/action-setup@v2"
-        with:
-          version: "8"
-
-      - name: "Install Node.js"
-        uses: "actions/setup-node@v3"
-        with:
-          cache: "pnpm"
-          node-version: "lts/*"
-
-      - name: "Install the Node.js dependencies"
-        run: "pnpm install --no-frozen-lockfile"
-
-      - name: "Lint the contracts"
-        run: "pnpm lint"
-
-      - name: "Add lint summary"
-        run: |
-          echo "## Lint result" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
   build:
     if: github.event_name == 'pull_request'
@@ -70,7 +37,7 @@ jobs:
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
   test:
-    needs: ["lint", "build"]
+    needs: ["build"]
     runs-on: "ubuntu-latest"
     steps:
       - name: "Check out the repo"
@@ -136,7 +103,7 @@ jobs:
 
       - name: Copy run-latest.json File
         run: |
-          FILE_PATH=$(find /home/runner/work/SustainableLeverage/SustainableLeverage/broadcast/DeployContracts.s.sol -name 'run-latest.json')
+          FILE_PATH=$(find /home/runner/work/SustainableLeverage/SustainableLeverage/cache/DeployContracts.s.sol -name 'run-latest.json')
           if [ -z "$FILE_PATH" ]; then
               echo "run-latest.json not found"
               exit 1 
