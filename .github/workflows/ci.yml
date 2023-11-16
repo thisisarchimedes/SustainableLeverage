@@ -103,7 +103,7 @@ jobs:
 
       - name: Copy run-latest.json File
         run: |
-          FILE_PATH=$(find /home/runner/work/SustainableLeverage/SustainableLeverage/cache/DeployContracts.s.sol -name 'run-latest.json')
+          FILE_PATH=$(find /home/runner/work/SustainableLeverage/SustainableLeverage/broadcast/DeployContracts.s.sol -name 'run-latest.json')
           if [ -z "$FILE_PATH" ]; then
               echo "run-latest.json not found"
               exit 1 
