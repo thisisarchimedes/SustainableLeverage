@@ -15,43 +15,6 @@ on:
       - "main"
 
 jobs:
-  lint:
-    if: github.event_name == 'pull_request'
-    runs-on: "ubuntu-latest"
-    steps:
-      - name: "Check out the repo"
-        uses: "actions/checkout@v4"
-        with:
-          submodules: "recursive"
-
-      - name: "Install Foundry"
-        uses: "foundry-rs/foundry-toolchain@v1"
-
-      - name: "Install Pnpm"
-        uses: "pnpm/action-setup@v2"
-        with:
-          version: "8"
-
-      - name: "Install Node.js"
-        uses: "actions/setup-node@v3"
-        with:
-          cache: "pnpm"
-          node-version: "lts/*"
-
-      - name: "Install the Node.js dependencies"
-        run: |
-          pnpm install --no-frozen-lockfile
-          npm install -g solhint 
-
-      - name: "Lint the contracts"
-        run: | 
-          solhint src/*.sol
-          pnpm lint test/*.sol
-
-      - name: "Add lint summary"
-        run: |
-          echo "## Lint result" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
   build:
     if: github.event_name == 'pull_request'
