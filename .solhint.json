@@ -10,6 +10,7 @@
       ">=0.8.21"
     ],
     "func-name-mixedcase": "off",
+    "no-console": "off",
     "func-visibility": [
       "error",
       {
