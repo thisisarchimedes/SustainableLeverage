@@ -143,6 +143,20 @@ contract LeverageEngine is AccessControlUpgradeable {
         feeCollector = _feeCollector;
     }
 
+    function GetWBTCAmountForUnderlyingToken(address underlyingToken, uint amount) view returns(uint256 wbtcAmount){
+
+        uint256 wbtcOracleDecimals = oracle.getOracleDecimalsForToken(underlyingToken);
+        uint256 underlyingTokenOracleDecimals = oracle.getOracleDecimalsForToken(underlyingToken);
+
+
+        uint256 underlyingTokenPrice = oracle.getLastPrice(underlyingToken);
+        uint256 WBTCPrice = oracle.getLastPrice(WBTC);
+
+        wbtcAmount = underlyingTokenPrice * underlyingTokenDecimals / WBTCPrice;
+
+        // TODO: We want to return wbtcAmount with the same decimals as WBTC
+    }
+
     ///////////// Admin functions /////////////
 
     /// @notice Set the configuration for a specific strategy.
