@@ -2,6 +2,7 @@
 pragma solidity >=0.8.21;
 
 import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "./interfaces/ILeverageEngine.sol";
 import "./interfaces/IERC20Detailed.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import "./PositionLedgerLib.sol";
@@ -16,8 +17,7 @@ import { AggregatorV3Interface } from "./interfaces/AggregatorV3Interface.sol";
 /// @notice This contract facilitates the management of strategy configurations and admin parameters for the Leverage
 /// Engine.
 /// @notice Leverage Engine is upgradable
-
-contract LeverageEngine is AccessControlUpgradeable {
+contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     using PositionLedgerLib for PositionLedgerLib.LedgerStorage;
     using SafeERC20 for IERC20;
 
@@ -40,25 +40,6 @@ contract LeverageEngine is AccessControlUpgradeable {
 
     // Swap Adapter
     SwapAdapter public swapAdapter;
-
-    /// @notice Strategy configurations structure
-    /// @param quota WBTC Quota for the strategy
-    /// @param positionLifetime Lifetime of a position in blocks
-    /// @param maximumMultiplier Maximum borrowing power multiplier
-    /// @param liquidationBuffer Threshold for liquidation
-    struct StrategyConfig {
-        uint256 quota;
-        uint256 positionLifetime;
-        uint256 maximumMultiplier;
-        uint256 liquidationBuffer;
-    }
-
-    enum StrategyConfigUpdate {
-        QUOTA,
-        POSITION_LIFETIME,
-        MAXIMUM_MULTIPLIER,
-        LIQUIDATION_BUFFER
-    }
 
     // Mapping of strategies to their configurations
     mapping(address => StrategyConfig) internal strategies;
