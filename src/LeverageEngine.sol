@@ -24,6 +24,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     // Define roles
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant MONITOR_ROLE = keccak256("MONITOR_ROLE");
+    bytes32 public constant EXPIRED_VAULT_ROLE = keccak256("EXPIRED_VAULT_ROLE");
     uint256 constant BASE_DENOMINATOR = 10_000;
 
     // WBTC token
@@ -40,6 +41,9 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
     // Swap Adapter
     SwapAdapter public swapAdapter;
+
+    // Expired Vault
+    address public expiredVault;
 
     // Mapping of strategies to their configurations
     mapping(address => StrategyConfig) internal strategies;
@@ -75,6 +79,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     event StrategyRemoved(address indexed strategy);
     event GlobalParameterUpdated(string parameter, uint256 value);
     event FeeCollectorUpdated(address newFeeCollector);
+    event ExpiredVaultUpdated(address newExpiredVault);
     event PositionOpened(
         uint256 indexed nftID,
         address indexed user,
@@ -241,6 +246,17 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         emit FeeCollectorUpdated(collector);
     }
 
+    /// @notice Set the expired vault role.
+    /// @param _expiredVault The new expired vault address.
+    function setExpiredVault(address _expiredVault) external onlyRole(ADMIN_ROLE) {
+        if (expiredVault != address(0)) {
+            _revokeRole(EXPIRED_VAULT_ROLE, expiredVault);
+        }
+        expiredVault = _expiredVault;
+        _grantRole(EXPIRED_VAULT_ROLE, _expiredVault);
+        emit ExpiredVaultUpdated(_expiredVault);
+    }
+
     ///////////// User functions /////////////
 
     /// @notice Allows a user to open a leverage position.
@@ -395,6 +411,18 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
         // emit event
         emit PositionClosed(nftID, msg.sender, position.strategyType, wbtcLeft, position.wbtcDebtAmount, exitFeeAmount);
+    }
+
+    /// @notice ExpiredVault will call this function to close an expired position.
+    /// @param nftID The ID of the NFT representing the position.
+    function closeExpiredPosition(uint256 nftID, uint256 receivedAmount) external onlyRole(EXPIRED_VAULT_ROLE) {
+        PositionLedgerLib.LedgerEntry storage position = ledger.entries[nftID];
+
+        position.state = PositionLedgerLib.PositionState.CLOSED;
+        position.claimableAmount = 0;
+
+        // emit event
+        emit PositionClosed(nftID, msg.sender, position.strategyType, receivedAmount, position.wbtcDebtAmount, 0);
     }
 
     /// @notice Get the configuration for a specific strategy.
