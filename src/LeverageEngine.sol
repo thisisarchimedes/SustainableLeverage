@@ -416,6 +416,42 @@ contract LeverageEngine is AccessControlUpgradeable {
         emit PositionClosed(nftID, msg.sender, position.strategyType, wbtcLeft, position.wbtcDebtAmount, exitFeeAmount);
     }
 
+    function previewClosePosition(
+        uint256 nftID,
+        SwapAdapter.SwapRoute swapRoute,
+        bytes calldata swapData
+    )
+        external
+        view
+        returns (uint256 estimatedWBTC)
+    {
+        PositionLedgerLib.LedgerEntry memory position = ledger.entries[nftID];
+
+        // Check if the NFT state is LIVE
+        if (position.state != PositionLedgerLib.PositionState.LIVE) return 0;
+
+        // Estimate the assets received from unwinding the position
+        uint256 estimatedAssetsReceived =
+            leverageDepositor.previewRedeem(position.strategyType, position.strategyShares);
+
+        address strategyAsset = IMultiPoolStrategy(position.strategyType).asset();
+
+        // Estimate the WBTC received after swapping
+        uint256 estimatedWBTCReceived = swapAdapter.estimateSwap(
+            IERC20(strategyAsset),
+            wbtc,
+            estimatedAssetsReceived,
+            swapData, // This also might need to be passed or determined differently
+            swapRoute
+        );
+
+        // Estimate the exit fee
+        uint256 estimatedExitFee = (estimatedWBTCReceived - position.wbtcDebtAmount) * exitFee / BASE_DENOMINATOR;
+
+        // Calculate the estimated WBTC left after repaying debt and exit fee
+        estimatedWBTC = estimatedWBTCReceived - position.wbtcDebtAmount - estimatedExitFee;
+    }
+
     /// @notice Get the configuration for a specific strategy.
     /// @param strategy The address of the strategy to retrieve configuration for.
     /// @return The strategy configuration.

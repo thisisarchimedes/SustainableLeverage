@@ -11,4 +11,6 @@ interface ILeverageDepositor {
         returns (uint256 receivedShares);
 
     function redeem(address strategy, uint256 strategyShares) external returns (uint256);
+
+    function previewRedeem(address strategy, uint256 shares) external view returns (uint256 estimatedAmount);
 }

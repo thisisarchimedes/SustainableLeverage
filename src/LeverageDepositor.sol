@@ -46,4 +46,16 @@ contract LeverageDepositor is ILeverageDepositor {
         // Redeem from strategy
         redeemedAmount = IMultiPoolStrategy(strategy).redeem(shares, msg.sender, address(this), 0);
     }
+
+    /// @notice Estimates the amount that would be redeemed from strategy
+    /// @param strategy Address of the strategy to estimate withdraw from.
+    /// @param shares Shares to estimate withdrawal from strategy.
+    /// @return estimatedAmount Estimated amount that would be redeemed
+    function previewRedeem(address strategy, uint256 shares) external view returns (uint256 estimatedAmount) {
+        require(shares > 0, "Shares should be greater than 0");
+
+        // Estimate redeem from strategy
+        // Note: The IMultiPoolStrategy interface must have a corresponding view function to estimate redeem
+        estimatedAmount = IMultiPoolStrategy(strategy).previewRedeem(shares);
+    }
 }

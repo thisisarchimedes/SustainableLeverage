@@ -3,12 +3,14 @@ pragma solidity >=0.8.21;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ISwapRouterUniV3 } from "./interfaces/ISwapRouterUniV3.sol";
+import { IQuoter } from "./interfaces/IQuoter.sol"; // Import the Quoter interface
 
 //TODO: Implement swap on different exchanges such as curvev2 pools and balancer
 contract SwapAdapter {
     IERC20 immutable wbtc;
     address public leverageDepositor;
     address constant UNISWAPV3_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
+    address constant UNISWAPV3_QUOTER = 0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6;
 
     constructor(address _wbtc, address _leverageDepositor) {
         wbtc = IERC20(_wbtc);
@@ -64,5 +66,36 @@ contract SwapAdapter {
             })
         );
         receivedAmount = toToken.balanceOf(recipient) - balanceBefore;
+    }
+
+    function estimateSwap(
+        IERC20 fromToken,
+        IERC20 toToken,
+        uint256 fromAmount,
+        bytes calldata payload,
+        SwapRoute route
+    )
+        external
+        view
+        returns (uint256 estimatedAmount)
+    {
+        if (route == SwapRoute.UNISWAPV3) {
+            estimatedAmount = estimateSwapOnUniswapV3(fromToken, toToken, fromAmount, payload);
+        }
+    }
+
+    function estimateSwapOnUniswapV3(
+        IERC20 fromToken,
+        IERC20 toToken,
+        uint256 fromAmount,
+        bytes calldata payload
+    )
+        internal
+        view
+        returns (uint256 estimatedAmount)
+    {
+        UniswapV3Data memory data = abi.decode(payload, (UniswapV3Data));
+
+        estimatedAmount = IQuoter(UNISWAPV3_QUOTER).quoteExactInput(data.path, fromAmount);
     }
 }
