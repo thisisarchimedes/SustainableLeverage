@@ -435,8 +435,9 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         // Burn the NFT
         nft.burn(nftID);
 
-        // emit event
-        emit PositionClosed(nftID, msg.sender, position.strategyType, receivedAmount, position.wbtcDebtAmount, 0);
+        // Emit event
+        // No exit fee is charged for expired positions
+        emit PositionClosed(nftID, sender, position.strategyType, receivedAmount, position.wbtcDebtAmount, 0);
     }
 
     /// @notice Get the configuration for a specific strategy.
