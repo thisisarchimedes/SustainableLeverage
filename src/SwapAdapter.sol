@@ -69,8 +69,6 @@ contract SwapAdapter {
     }
 
     function estimateSwap(
-        IERC20 fromToken,
-        IERC20 toToken,
         uint256 fromAmount,
         bytes calldata payload,
         SwapRoute route
@@ -80,13 +78,11 @@ contract SwapAdapter {
         returns (uint256 estimatedAmount)
     {
         if (route == SwapRoute.UNISWAPV3) {
-            estimatedAmount = estimateSwapOnUniswapV3(fromToken, toToken, fromAmount, payload);
+            estimatedAmount = estimateSwapOnUniswapV3(fromAmount, payload);
         }
     }
 
     function estimateSwapOnUniswapV3(
-        IERC20 fromToken,
-        IERC20 toToken,
         uint256 fromAmount,
         bytes calldata payload
     )
