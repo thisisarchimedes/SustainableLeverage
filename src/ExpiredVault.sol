@@ -17,6 +17,10 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
     // Errors
     error InsufficientFunds();
 
+    // Events
+    event Deposit(address indexed depositor, uint256 amount);
+    event Claim(address indexed claimer, uint256 indexed nftID, uint256 amount);
+
     // Define roles
     bytes32 public constant MONITOR_ROLE = keccak256("MONITOR_ROLE");
 
@@ -44,8 +48,14 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
     /// @notice Deposits WBTC into the vault from expired or liquidated positions.
     /// @param amount Amount of WBTC to deposit into the vault.
     function deposit(uint256 amount) external onlyRole(MONITOR_ROLE) {
+        // Pull funds from the depositor
         wbtc.safeTransferFrom(msg.sender, address(this), amount);
+        
+        // Update the vault balance
         balance += amount;
+
+        // Emit event
+        emit Deposit(msg.sender, amount);
     }
 
     ///////////// User functions /////////////
@@ -69,5 +79,8 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
         // Checks the ownership of the NFT and reverts if the caller is not the owner
         // Checks the position state as well
         leverageEngine.closeExpiredPosition(nftID, msg.sender);
+
+        // Emit event
+        emit Claim(msg.sender, nftID, position.claimableAmount);
     }
 }
