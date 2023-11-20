@@ -66,6 +66,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     error ExceedBorrowQuota();
     error NotOwner();
     error PositionNotLive();
+    error PositionNotExpired();
     error NotEnoughWBTC();
 
     // Events
@@ -415,11 +416,24 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
     /// @notice ExpiredVault will call this function to close an expired position.
     /// @param nftID The ID of the NFT representing the position.
-    function closeExpiredPosition(uint256 nftID, uint256 receivedAmount) external onlyRole(EXPIRED_VAULT_ROLE) {
+    function closeExpiredPosition(uint256 nftID, address sender) external onlyRole(EXPIRED_VAULT_ROLE) {
+        // Check if the user owns the NFT
+        if (nft.ownerOf(nftID) != sender) revert NotOwner();
+
         PositionLedgerLib.LedgerEntry storage position = ledger.entries[nftID];
 
+        // Check if the NFT state is LIVE
+        if (position.state != PositionLedgerLib.PositionState.EXPIRED) revert PositionNotExpired();
+
+        // Rememver the received amount for emitting the event
+        uint256 receivedAmount = position.claimableAmount;
+
+        // Update the ledger
         position.state = PositionLedgerLib.PositionState.CLOSED;
         position.claimableAmount = 0;
+
+        // Burn the NFT
+        nft.burn(nftID);
 
         // emit event
         emit PositionClosed(nftID, msg.sender, position.strategyType, receivedAmount, position.wbtcDebtAmount, 0);
