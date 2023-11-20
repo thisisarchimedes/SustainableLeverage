@@ -55,7 +55,6 @@ contract LeverageDepositor is ILeverageDepositor {
         require(shares > 0, "Shares should be greater than 0");
 
         // Estimate redeem from strategy
-        // Note: The IMultiPoolStrategy interface must have a corresponding view function to estimate redeem
         estimatedAmount = IMultiPoolStrategy(strategy).previewRedeem(shares);
     }
 }

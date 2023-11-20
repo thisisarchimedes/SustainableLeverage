@@ -3,7 +3,7 @@ pragma solidity >=0.8.21;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ISwapRouterUniV3 } from "./interfaces/ISwapRouterUniV3.sol";
-import { IQuoter } from "./interfaces/IQuoter.sol"; // Import the Quoter interface
+import { IQuoter } from "./interfaces/IQuoter.sol";
 
 //TODO: Implement swap on different exchanges such as curvev2 pools and balancer
 contract SwapAdapter {

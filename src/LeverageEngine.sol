@@ -437,13 +437,8 @@ contract LeverageEngine is AccessControlUpgradeable {
         address strategyAsset = IMultiPoolStrategy(position.strategyType).asset();
 
         // Estimate the WBTC received after swapping
-        uint256 estimatedWBTCReceived = swapAdapter.estimateSwap(
-            IERC20(strategyAsset),
-            wbtc,
-            estimatedAssetsReceived,
-            swapData, // This also might need to be passed or determined differently
-            swapRoute
-        );
+        uint256 estimatedWBTCReceived =
+            swapAdapter.estimateSwap(IERC20(strategyAsset), wbtc, estimatedAssetsReceived, swapData, swapRoute);
 
         // Estimate the exit fee
         uint256 estimatedExitFee = (estimatedWBTCReceived - position.wbtcDebtAmount) * exitFee / BASE_DENOMINATOR;
