@@ -14,14 +14,20 @@ import "./PositionLedgerLib.sol";
 contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
 
+    // Errors
+    error InsufficientFunds();
+
     // Define roles
     bytes32 public constant MONITOR_ROLE = keccak256("MONITOR_ROLE");
 
     // WBTC token
     IERC20 public wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
 
+    // Vault's balance
+    uint256 public balance;
+
     // Leverage Engine
-    ILeverageEngine leverageEngine;
+    ILeverageEngine public leverageEngine;
 
     constructor() {
         _disableInitializers();
@@ -39,6 +45,7 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
     /// @param amount Amount of WBTC to deposit into the vault.
     function deposit(uint256 amount) external onlyRole(MONITOR_ROLE) {
         wbtc.safeTransferFrom(msg.sender, address(this), amount);
+        balance += amount;
     }
 
     ///////////// User functions /////////////
@@ -48,10 +55,12 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
     function claim(uint256 nftID) external {
         PositionLedgerLib.LedgerEntry memory position = leverageEngine.getPosition(nftID);
 
-        require(wbtc.balanceOf(address(this)) >= position.claimableAmount, "Not enough WBTC in the vault");
+        if(balance < position.claimableAmount) revert InsufficientFunds();
+
+        // Update the vault balance
+        balance -= position.claimableAmount;
 
         // Transfer the claimable amount to the user
-        // TODO reentrancy
         if (position.claimableAmount > 0) {
             wbtc.safeTransfer(msg.sender, position.claimableAmount);
         }
