@@ -10,6 +10,7 @@ import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { SwapAdapter } from "../src/SwapAdapter.sol";
+import { ChainlinkOracle } from "../src/ports/ChainlinkOracle.sol";
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
@@ -21,6 +22,7 @@ contract BaseTest is PRBTest, StdCheats {
     LeverageDepositor internal leverageDepositor;
     WBTCVault internal wbtcVault;
     ProxyAdmin internal proxyAdmin;
+    IOracle internal oracle;
     TransparentUpgradeableProxy internal proxy;
     SwapAdapter internal swapAdapter;
     IERC20 internal wbtc;
@@ -50,22 +52,19 @@ contract BaseTest is PRBTest, StdCheats {
         );
         proxy = new TransparentUpgradeableProxy(address(leverageEngine), address(proxyAdmin), initData);
         leverageEngine = LeverageEngine(address(proxy));
-        leverageEngine.setOracle(WBTC, WBTCUSDORACLE);
-        leverageEngine.setOracle(WETH, ETHUSDORACLE);
-        leverageEngine.setOracle(USDC, USDCUSDORACLE);
+        leverageEngine.setOracle(WBTC, new ChainlinkOracle(WBTCUSDORACLE));
+        leverageEngine.setOracle(WETH, new ChainlinkOracle(ETHUSDORACLE));
+        leverageEngine.setOracle(USDC, new ChainlinkOracle(USDCUSDORACLE));
         wbtc = IERC20(WBTC);
-        LeverageEngine.StrategyConfig memory strategyConfig =  LeverageEngine.StrategyConfig({
-            quota:100e8,
-            maximumMultiplier:3e8,
-            positionLifetime:1000,
-            liquidationBuffer:1.25e8,
-            liquidationFee:0.02e8
-
-        }
-
-        );
-         leverageEngine.setStrategyConfig(ETHPLUSETH_STRATEGY,strategyConfig);
-         leverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY,strategyConfig);
+        LeverageEngine.StrategyConfig memory strategyConfig = LeverageEngine.StrategyConfig({
+            quota: 100e8,
+            maximumMultiplier: 3e8,
+            positionLifetime: 1000,
+            liquidationBuffer: 1.25e8,
+            liquidationFee: 0.02e8
+        });
+        leverageEngine.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
+        leverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
     }
     //erc721 receiver
 

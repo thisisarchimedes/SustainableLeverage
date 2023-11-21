@@ -35,7 +35,7 @@ contract OpenPositionTest is BaseTest {
     function test_ShouldAbleToOpenPosForWETHStrat() external {
         deal(WBTC, address(this), 10e8);
         ERC20(WBTC).approve(address(leverageEngine), 10e8);
-       
+
         bytes memory payload = abi.encode(
             SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WBTC, uint24(3000), WETH),
@@ -53,7 +53,7 @@ contract OpenPositionTest is BaseTest {
     function test_ShouldAbleToOpenPosForUSDCStrat() external {
         deal(WBTC, address(this), 10e8);
         ERC20(WBTC).approve(address(leverageEngine), 10e8);
-        
+
         bytes memory payload = abi.encode(
             SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WBTC, uint24(500), WETH, uint24(3000), USDC),
@@ -82,8 +82,8 @@ contract OpenPositionTest is BaseTest {
         TransparentUpgradeableProxy proxy =
             new TransparentUpgradeableProxy(address(oracleTestHelper), address(this), initData);
         oracleTestHelper = OracleTestHelper(address(proxy));
-        oracleTestHelper.setOracle(WBTC, WBTCUSDORACLE);
-        oracleTestHelper.setOracle(WETH, ETHUSDORACLE);
+        oracleTestHelper.setOracle(WBTC, new ChainlinkOracle(WBTCUSDORACLE));
+        oracleTestHelper.setOracle(WETH, new ChainlinkOracle(ETHUSDORACLE));
 
         AggregatorV3Interface wbtcOracle = AggregatorV3Interface(WBTCUSDORACLE);
         (, int256 wbtcPrice,,,) = wbtcOracle.latestRoundData();
@@ -109,8 +109,8 @@ contract OpenPositionTest is BaseTest {
         TransparentUpgradeableProxy proxy =
             new TransparentUpgradeableProxy(address(oracleTestHelper), address(this), initData);
         oracleTestHelper = OracleTestHelper(address(proxy));
-        oracleTestHelper.setOracle(WBTC, WBTCUSDORACLE);
-        oracleTestHelper.setOracle(USDC, USDCUSDORACLE);
+        oracleTestHelper.setOracle(WBTC, new ChainlinkOracle(WBTCUSDORACLE));
+        oracleTestHelper.setOracle(USDC, new ChainlinkOracle(USDCUSDORACLE));
 
         AggregatorV3Interface wbtcOracle = AggregatorV3Interface(WBTCUSDORACLE);
         (, int256 wbtcPrice,,,) = wbtcOracle.latestRoundData();

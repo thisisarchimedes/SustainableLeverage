@@ -35,3 +35,4 @@
 
   - Liquidation buffer is same decimal as debt (WBTC - 8 decimals), and is represented as >1 number (1.1, 1.2, 1.3 etc)
   - Liquidation fee per strategy and the same decimal as debt (WBTC - 8 decimals). It is a %
+  - Have the Oracle upgradeable so we can switch from Chainlink if we want to

@@ -11,6 +11,7 @@ import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { SwapAdapter } from "../src/SwapAdapter.sol";
+import { ChainlinkOracle } from "../src/ports/ChainlinkOracle.sol";
 import { console2 } from "forge-std/console2.sol";
 
 contract DeployContracts is BaseScript {
@@ -61,21 +62,20 @@ contract DeployContracts is BaseScript {
         deployedContracts.push(address(proxy));
         deployedContractsNames.push("LeverageEngine");
         leverageEngine = LeverageEngine(address(proxy));
-        leverageEngine.setOracle(WBTC, WBTCUSDORACLE);
-        leverageEngine.setOracle(WETH, ETHUSDORACLE);
-        leverageEngine.setOracle(USDC, USDCUSDORACLE);
+        leverageEngine.setOracle(WBTC, new ChainlinkOracle(WBTCUSDORACLE));
+        leverageEngine.setOracle(WETH, new ChainlinkOracle(ETHUSDORACLE));
+        leverageEngine.setOracle(USDC, new ChainlinkOracle(USDCUSDORACLE));
         _writeDeploymentsToJson();
         if (block.chainid == 1337) {
-          LeverageEngine.StrategyConfig memory strategyConfig =  LeverageEngine.StrategyConfig({
-            quota:10000e8,
-            maximumMultiplier:3e8,
-            positionLifetime:1000,
-            liquidationBuffer:1.25e8,
-            liquidationFee:0.02e8
+            LeverageEngine.StrategyConfig memory strategyConfig = LeverageEngine.StrategyConfig({
+                quota: 10_000e8,
+                maximumMultiplier: 3e8,
+                positionLifetime: 1000,
+                liquidationBuffer: 1.25e8,
+                liquidationFee: 0.02e8
+            });
 
-        });
-
-            leverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY,strategyConfig);
+            leverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
             bytes32 storageSlot = keccak256(abi.encode(address(wbtcVault), 0));
             uint256 amount = 1_000_000e8;
             string[] memory inputs = new string[](5);
