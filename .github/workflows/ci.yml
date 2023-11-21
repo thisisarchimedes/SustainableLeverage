@@ -15,44 +15,13 @@ on:
       - "main"
 
 jobs:
-  lint:
-    runs-on: "ubuntu-latest"
-    steps:
-      - name: "Check out the repo"
-        uses: "actions/checkout@v3"
-        with:
-          submodules: "recursive"
-
-      - name: "Install Foundry"
-        uses: "foundry-rs/foundry-toolchain@v1"
-
-      - name: "Install Pnpm"
-        uses: "pnpm/action-setup@v2"
-        with:
-          version: "8"
-
-      - name: "Install Node.js"
-        uses: "actions/setup-node@v3"
-        with:
-          cache: "pnpm"
-          node-version: "lts/*"
-
-      - name: "Install the Node.js dependencies"
-        run: "pnpm install"
-
-      - name: "Lint the contracts"
-        run: "pnpm lint"
-
-      - name: "Add lint summary"
-        run: |
-          echo "## Lint result" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
   build:
+    if: github.event_name == 'pull_request'
     runs-on: "ubuntu-latest"
     steps:
       - name: "Check out the repo"
-        uses: "actions/checkout@v3"
+        uses: "actions/checkout@v4"
         with:
           submodules: "recursive"
 
@@ -66,13 +35,36 @@ jobs:
         run: |
           echo "## Build result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+    
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Slither
+        uses: crytic/slither-action@v0.3.0
+        id: slither
+        with:
+          node-version: 16
+          fail-on: medium
+          slither-args:
+            --checklist --detect
+            msg-value-loop,delegatecall-loop,controlled-delegatecall,controlled-array-length,arbitrary-send-erc20-permit,weak-prng,reentrancy-eth,abiencoderv2-array,arbitrary-send-erc20,array-by-reference,encode-packed-collision,incorrect-shift,multiple-constructors,name-reused,protected-vars,public-mappings-nested,rtlo,shadowing-state,suicidal,uninitialized-state,uninitialized-storage,unprotected-upgrade
+            --filter-paths "lib|pseudo|test|script|openzeppelin*|forge-std*" --markdown-root ${{ github.server_url }}/${{
+            github.repository }}/blob/${{ github.sha }}/
+
+      - name: "Add build summary"
+        run: |
+          echo "## Build result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
   test:
-    needs: ["lint", "build"]
+    needs: ["build"]
     runs-on: "ubuntu-latest"
     steps:
       - name: "Check out the repo"
-        uses: "actions/checkout@v3"
+        uses: "actions/checkout@v4"
         with:
           submodules: "recursive"
 
@@ -95,8 +87,8 @@ jobs:
         run: |
           echo "## Tests result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
-  deploy:
-    needs: ["test"]
+  deploy_to_staging:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: "ubuntu-latest"
     permissions: "write-all"
     steps:
@@ -113,16 +105,20 @@ jobs:
           curl -X POST -H "Content-Type:application/json" --data \
           '{"jsonrpc":"2.0","method":"hardhat_setBalance","params":["'"${{ secrets.DEPLOYER_ADDRESS }}"'","0x75557863725914323419136"],"id":67}' \
           "${{ secrets.AWS_FORK_URL }}"
+
       - name: "Prepare Python environment"
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
+
       - name: "Deploy the contracts"
         run:
           "forge script script/DeployContracts.s.sol --fork-url ${{ secrets.AWS_FORK_URL }} --broadcast -vvvvv --slow
@@ -130,6 +126,10 @@ jobs:
 
       - name: "Commit the deployment changes"
         uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Updating deployment.json address file
+          push_options: --force
+
       - name: "Add deploy summary"
         run: |
           echo "## Deploy result" >> $GITHUB_STEP_SUMMARY

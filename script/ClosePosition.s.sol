@@ -34,13 +34,11 @@ contract DeployContracts is Script {
         ERC20(WBTC).approve(address(leverageEngine), 1e8);
         bytes memory payload = abi.encode(
             SwapAdapter.UniswapV3Data({
-                path: abi.encodePacked(WBTC, uint24(500), WETH, uint24(3000), USDC),
+                path: abi.encodePacked(USDC, uint24(3000), WETH, uint24(500), WBTC),
                 deadline: block.timestamp + 1000
             })
         );
-        leverageEngine.openPosition(
-            0.1e8, 0.1e8, FRAXBPALUSD_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
-        );
+        leverageEngine.closePosition(28, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
 
         if (block.chainid == 1337) {
             bytes32 storageSlot = keccak256(abi.encode(address(broadcaster), 0));
