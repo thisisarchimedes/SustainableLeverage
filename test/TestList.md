@@ -4,7 +4,7 @@
     * Set liquidation fees V
     * Get current position value in WBTC (esitmation) - for USDC position (6 decimals) V
     * Get current position value in WBTC (esitmation) - for ETH position (18 decimals) V
-    * check if position is eligible for liquidation
+    * check if position is eligible for liquidation V
     * Call liquidation and check if poistion state is live
     * Calc preview to how much WBTC we will get (so we can send a min to liquidation and avoid attacks)
     * liquidate position if it is eligible for liquidation
