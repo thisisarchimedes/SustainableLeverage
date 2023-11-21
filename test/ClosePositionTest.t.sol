@@ -28,7 +28,7 @@ contract ClosePositionTest is BaseTest {
     function _openPosition() internal {
         deal(WBTC, address(this), 10e8);
         ERC20(WBTC).approve(address(leverageEngine), 10e8);
-        leverageEngine.setStrategyConfig(ETHPLUSETH_STRATEGY, 100e8, 1000, 3e8, 1.25e8);
+       
         bytes memory payload = abi.encode(
             SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WBTC, uint24(3000), WETH),

@@ -13,7 +13,7 @@ library PositionLedgerLib {
 
     struct LedgerEntry {
         uint256 collateralAmount;
-        address strategyType;
+        address strategyAddress;
         uint256 strategyShares;
         uint256 wbtcDebtAmount;
         uint256 positionExpirationBlock;
