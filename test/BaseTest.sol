@@ -54,6 +54,18 @@ contract BaseTest is PRBTest, StdCheats {
         leverageEngine.setOracle(WETH, ETHUSDORACLE);
         leverageEngine.setOracle(USDC, USDCUSDORACLE);
         wbtc = IERC20(WBTC);
+        LeverageEngine.StrategyConfig memory strategyConfig =  LeverageEngine.StrategyConfig({
+            quota:100e8,
+            maximumMultiplier:3e8,
+            positionLifetime:1000,
+            liquidationBuffer:1.25e8,
+            liquidationFee:0.02e8
+
+        }
+
+        );
+         leverageEngine.setStrategyConfig(ETHPLUSETH_STRATEGY,strategyConfig);
+         leverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY,strategyConfig);
     }
     //erc721 receiver
 

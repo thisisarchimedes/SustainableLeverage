@@ -28,7 +28,6 @@ contract OpenPositionTest is BaseTest {
     }
 
     function test_ShouldRevertWithExceedBorrowLimit() external {
-        leverageEngine.setStrategyConfig(ETHPLUSETH_STRATEGY, 100e8, 1000, 3e8, 1.25e8);
         vm.expectRevert(LeverageEngine.ExceedBorrowLimit.selector);
         leverageEngine.openPosition(5e8, 80e8, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
     }
@@ -36,7 +35,7 @@ contract OpenPositionTest is BaseTest {
     function test_ShouldAbleToOpenPosForWETHStrat() external {
         deal(WBTC, address(this), 10e8);
         ERC20(WBTC).approve(address(leverageEngine), 10e8);
-        leverageEngine.setStrategyConfig(ETHPLUSETH_STRATEGY, 100e8, 1000, 3e8, 1.25e8);
+       
         bytes memory payload = abi.encode(
             SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WBTC, uint24(3000), WETH),
@@ -54,7 +53,7 @@ contract OpenPositionTest is BaseTest {
     function test_ShouldAbleToOpenPosForUSDCStrat() external {
         deal(WBTC, address(this), 10e8);
         ERC20(WBTC).approve(address(leverageEngine), 10e8);
-        leverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY, 100e8, 1000, 3e8, 1.25e8);
+        
         bytes memory payload = abi.encode(
             SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WBTC, uint24(500), WETH, uint24(3000), USDC),

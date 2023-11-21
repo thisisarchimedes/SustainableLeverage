@@ -66,7 +66,16 @@ contract DeployContracts is BaseScript {
         leverageEngine.setOracle(USDC, USDCUSDORACLE);
         _writeDeploymentsToJson();
         if (block.chainid == 1337) {
-            leverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY, 10_000e8, 1000, 3e8, 1.25e8);
+          LeverageEngine.StrategyConfig memory strategyConfig =  LeverageEngine.StrategyConfig({
+            quota:10000e8,
+            maximumMultiplier:3e8,
+            positionLifetime:1000,
+            liquidationBuffer:1.25e8,
+            liquidationFee:0.02e8
+
+        });
+
+            leverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY,strategyConfig);
             bytes32 storageSlot = keccak256(abi.encode(address(wbtcVault), 0));
             uint256 amount = 1_000_000e8;
             string[] memory inputs = new string[](5);
