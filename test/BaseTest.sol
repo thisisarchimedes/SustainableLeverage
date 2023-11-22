@@ -89,4 +89,63 @@ contract BaseTest is PRBTest, StdCheats {
     function onERC721Received(address, address, uint256, bytes memory) public returns (bytes4) {
         return this.onERC721Received.selector;
     }
+
+    function openETHBasedPosition(uint256 collateralAmount, uint256 borrowAmount) internal returns (uint256 nftId) {
+        bytes memory payload = getWBTCWETHUniswapPayload();
+
+        deal(WBTC, address(this), 1000e8);
+
+        nftId = leverageEngine.openPosition(
+            collateralAmount, borrowAmount, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
+        );
+    }
+
+    function getWBTCWETHUniswapPayload() internal view returns (bytes memory payload) {
+        payload = abi.encode(
+            SwapAdapter.UniswapV3Data({
+                path: abi.encodePacked(WBTC, uint24(3000), WETH),
+                deadline: block.timestamp + 1000
+            })
+        );
+    }
+
+    function closeETHBasedPosition(uint256 nftId) internal {
+        bytes memory payload = getWETHWBTCUniswapPayload();
+
+        leverageEngine.closePosition(nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
+    }
+
+    function getWETHWBTCUniswapPayload() internal view returns (bytes memory payload) {
+        payload = abi.encode(
+            SwapAdapter.UniswapV3Data({
+                path: abi.encodePacked(WETH, uint24(3000), WBTC),
+                deadline: block.timestamp + 1000
+            })
+        );
+    }
+
+    function openUSDCBasedPosition(uint256 collateralAmount, uint256 borrowAmount) internal returns (uint256 nftId) {
+        bytes memory payload = getWBTCWUSDCUniswapPayload();
+
+        deal(WBTC, address(this), 1000e8);
+
+        nftId = leverageEngine.openPosition(
+            collateralAmount,
+            borrowAmount,
+            FRAXBPALUSD_STRATEGY,
+            0,
+            SwapAdapter.SwapRoute.UNISWAPV3,
+            payload,
+            address(0)
+        );
+    }
+
+    function getWBTCWUSDCUniswapPayload() internal view returns (bytes memory payload) {
+        payload = abi.encode(
+            SwapAdapter.UniswapV3Data({
+                path: abi.encodePacked(WBTC, uint24(500), WETH, uint24(3000), USDC),
+                deadline: block.timestamp + 1000
+            })
+        );
+    }
 }
