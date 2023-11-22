@@ -3,10 +3,11 @@ pragma solidity >=0.8.21;
 
 import { BaseScript } from "./Base.s.sol";
 import { PositionLedgerLib } from "../src/PositionLedgerLib.sol";
-import { LeverageEngine } from "../src/LeverageEngine.sol";
+import  "../src/LeverageEngine.sol";
 import { PositionToken } from "../src/PositionToken.sol";
 import "../src/LeverageDepositor.sol";
 import { WBTCVault } from "src/WBTCVault.sol";
+import { ILeverageEngine } from "src/interfaces/ILeverageEngine.sol";
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -67,7 +68,7 @@ contract DeployContracts is BaseScript {
         leverageEngine.setOracle(USDC, new ChainlinkOracle(USDCUSDORACLE));
         _writeDeploymentsToJson();
         if (block.chainid == 1337) {
-            LeverageEngine.StrategyConfig memory strategyConfig = LeverageEngine.StrategyConfig({
+            LeverageEngine.StrategyConfig memory strategyConfig = ILeverageEngine.StrategyConfig({
                 quota: 10_000e8,
                 maximumMultiplier: 3e8,
                 positionLifetime: 1000,

@@ -7,17 +7,19 @@ import "./interfaces/IERC20Detailed.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import "./PositionLedgerLib.sol";
 import { IWBTCVault } from "./interfaces/IWBTCVault.sol";
+import { IExpiredVault } from "./interfaces/IExpiredVault.sol";
 import { ILeverageDepositor } from "./interfaces/ILeverageDepositor.sol";
 import { IOracle } from "./interfaces/IOracle.sol";
 import { PositionToken } from "./PositionToken.sol";
 import { SwapAdapter } from "./SwapAdapter.sol";
 import { IMultiPoolStrategy } from "./interfaces/IMultiPoolStrategy.sol";
 import { AggregatorV3Interface } from "./interfaces/AggregatorV3Interface.sol";
-
+import { console2 } from "forge-std/console2.sol";
 /// @title LeverageEngine Contract
 /// @notice This contract facilitates the management of strategy configurations and admin parameters for the Leverage
 /// Engine.
 /// @notice Leverage Engine is upgradable
+
 contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     using PositionLedgerLib for PositionLedgerLib.LedgerStorage;
     using SafeERC20 for IERC20;
@@ -44,28 +46,8 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     // Swap Adapter
     SwapAdapter public swapAdapter;
 
-
     // Expired Vault
     address public expiredVault;
-    /// @notice Strategy configurations structure
-    /// @param quota WBTC Quota for the strategy
-    /// @param positionLifetime Lifetime of a position in blocks
-    /// @param maximumMultiplier Maximum borrowing power multiplier
-    /// @param liquidationBuffer Threshold for liquidation
-    struct StrategyConfig {
-        uint256 quota;
-        uint256 positionLifetime;
-        uint256 maximumMultiplier;
-        uint256 liquidationBuffer;
-        uint256 liquidationFee;
-    }
-
-    enum StrategyConfigUpdate {
-        QUOTA,
-        POSITION_LIFETIME,
-        MAXIMUM_MULTIPLIER,
-        LIQUIDATION_BUFFER
-    }
 
     // Mapping of strategies to their configurations
     mapping(address => StrategyConfig) internal strategies;
@@ -89,6 +71,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     error PositionNotLive();
     error PositionNotExpired();
     error NotEnoughWBTC();
+    error NotEligibleForLiquidation();
 
     // Events
     event StrategyConfigUpdated(
@@ -103,6 +86,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     event GlobalParameterUpdated(string parameter, uint256 value);
     event FeeCollectorUpdated(address newFeeCollector);
     event ExpiredVaultUpdated(address newExpiredVault);
+    event StrategyLiquidationFeeUpdated(address strategy, uint256 fee);
     event PositionOpened(
         uint256 indexed nftId,
         address indexed user,
@@ -227,7 +211,14 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         }
         expiredVault = _expiredVault;
         _grantRole(EXPIRED_VAULT_ROLE, _expiredVault);
+        wbtc.approve(_expiredVault, type(uint256).max);
         emit ExpiredVaultUpdated(_expiredVault);
+    }
+
+    function setLiquidationFee(address strategy, uint256 fee) external onlyRole(ADMIN_ROLE) {
+        strategies[strategy].liquidationFee = fee;
+
+        emit StrategyLiquidationFeeUpdated(strategy, fee);
     }
 
     ///////////// User functions /////////////
@@ -305,6 +296,66 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
             sharesReceived,
             strategyConfig.liquidationBuffer
         );
+    }
+
+    function liquidatePosition(
+        uint256 nftId,
+        uint256 minWBTC,
+        SwapAdapter.SwapRoute swapRoute,
+        bytes calldata swapData,
+        address exchange
+    )
+        external
+    {
+        PositionLedgerLib.LedgerEntry memory position = getPosition(nftId);
+
+        if (position.state != PositionLedgerLib.PositionState.LIVE) revert PositionNotLive();
+
+        /**
+         *
+         * 1. Close position
+         * 1.2. Find how many shares belong to this nftID
+         * 1.3. call strategy redeem with the amount of shares
+         * 1.4. now we get the underlying token (e.g.: ETH) back
+         * 2. Swap underlying token to WBTC
+         * 3. Check that the amount of WBTC we have is < debt * liquidationBuffer - if not, revert V
+         * 4. pay back debt V
+         * 5. if something left
+         * 5.1. take liquidation fee
+         * 5.2. send whatever left to expiration vault
+         */
+
+        // Unwind the position
+        uint256 assetsReceived = leverageDepositor.redeem(position.strategyAddress, position.strategyShares);
+        address strategyAsset = IMultiPoolStrategy(position.strategyAddress).asset();
+        // Swap the assets to WBTC
+        IERC20(strategyAsset).transfer(address(swapAdapter), assetsReceived);
+        uint256 wbtcReceived =
+            swapAdapter.swap(IERC20(strategyAsset), wbtc, assetsReceived, exchange, swapData, swapRoute, address(this));
+
+        // Repay WBTC debt
+        if (wbtcReceived > position.wbtcDebtAmount * position.liquidationBuffer / (10 ** WBTC_DECIMALS)) {
+            revert NotEligibleForLiquidation();
+        }
+
+        // Return WBTC debt to WBTC vault
+        wbtcVault.repay(nftId, position.wbtcDebtAmount);
+
+        uint256 wbtcLeft = wbtcReceived - position.wbtcDebtAmount;
+    
+        if (wbtcLeft > 0) {
+            uint256 liquidationFeeAmount =
+                getStrategyConfig(position.strategyAddress).liquidationFee * wbtcLeft / (10 ** WBTC_DECIMALS);
+            position.claimableAmount = wbtcLeft - liquidationFeeAmount;
+
+            IExpiredVault(expiredVault).deposit(position.claimableAmount);
+
+            // TODO: Send liquidation fee to fee collector
+        }
+
+        position.state = PositionLedgerLib.PositionState.LIQUIDATED;
+
+        ledger.setLedgerEntry(nftId, position);
     }
 
     function isPositionLiquidatable(uint256 nftId) external view returns (bool) {
@@ -473,13 +524,13 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
         // Emit event
         // No exit fee is charged for expired positions
-        emit PositionClosed(nftID, sender, position.strategyType, receivedAmount, position.wbtcDebtAmount, 0);
+        emit PositionClosed(nftID, sender, position.strategyAddress, receivedAmount, position.wbtcDebtAmount, 0);
     }
 
     /// @notice Get the configuration for a specific strategy.
     /// @param strategy The address of the strategy to retrieve configuration for.
     /// @return The strategy configuration.
-    function getStrategyConfig(address strategy) external view returns (StrategyConfig memory) {
+    function getStrategyConfig(address strategy) public view returns (StrategyConfig memory) {
         return strategies[strategy];
     }
 

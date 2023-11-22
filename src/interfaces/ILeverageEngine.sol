@@ -6,6 +6,7 @@ import "./IERC20Detailed.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import "../PositionLedgerLib.sol";
 import { IWBTCVault } from "./IWBTCVault.sol";
+import { IOracle } from "./IOracle.sol";
 import { ILeverageDepositor } from "./ILeverageDepositor.sol";
 import { PositionToken } from "../PositionToken.sol";
 import { SwapAdapter } from "../SwapAdapter.sol";
@@ -23,6 +24,7 @@ interface ILeverageEngine {
         uint256 positionLifetime;
         uint256 maximumMultiplier;
         uint256 liquidationBuffer;
+        uint256 liquidationFee;
     }
 
     enum StrategyConfigUpdate {
@@ -34,24 +36,15 @@ interface ILeverageEngine {
 
     ///////////// Admin functions /////////////
 
-    function setStrategyConfig(
-        address strategy,
-        uint256 _quota,
-        uint256 _positionLifetime,
-        uint256 _maximumMultiplier,
-        uint256 _liquidationBuffer
-    )
-        external;
+    function setStrategyConfig(address strategy, StrategyConfig calldata config) external;
 
     function removeStrategy(address strategy) external;
 
-    function updateStrategyConfig(address strategy, uint256 value, StrategyConfigUpdate configType) external;
-
-    function setOracle(address token, address oracle) external;
+    function setOracle(address token, IOracle oracle) external;
 
     function changeSwapAdapter(address _swapAdapter) external;
 
-    function setLiquidationFee(uint256 fee) external;
+    function setLiquidationFee(address strategy, uint256 fee) external;
 
     function setExitFee(uint256 fee) external;
 
@@ -68,7 +61,8 @@ interface ILeverageEngine {
         bytes calldata swapData,
         address exchange
     )
-        external;
+        external
+        returns (uint256 nftID);
 
     ///////////// View functions /////////////
 
