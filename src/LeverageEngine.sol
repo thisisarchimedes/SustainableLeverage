@@ -2,6 +2,7 @@
 pragma solidity >=0.8.21;
 
 import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "./interfaces/ILeverageEngine.sol";
 import "./interfaces/IERC20Detailed.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import "./PositionLedgerLib.sol";
@@ -17,14 +18,14 @@ import { AggregatorV3Interface } from "./interfaces/AggregatorV3Interface.sol";
 /// @notice This contract facilitates the management of strategy configurations and admin parameters for the Leverage
 /// Engine.
 /// @notice Leverage Engine is upgradable
-
-contract LeverageEngine is AccessControlUpgradeable {
+contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     using PositionLedgerLib for PositionLedgerLib.LedgerStorage;
     using SafeERC20 for IERC20;
 
     // Define roles
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant MONITOR_ROLE = keccak256("MONITOR_ROLE");
+    bytes32 public constant EXPIRED_VAULT_ROLE = keccak256("EXPIRED_VAULT_ROLE");
     uint256 constant BASE_DENOMINATOR = 10_000;
     uint8 public constant WBTC_DECIMALS = 8;
 
@@ -43,6 +44,9 @@ contract LeverageEngine is AccessControlUpgradeable {
     // Swap Adapter
     SwapAdapter public swapAdapter;
 
+
+    // Expired Vault
+    address public expiredVault;
     /// @notice Strategy configurations structure
     /// @param quota WBTC Quota for the strategy
     /// @param positionLifetime Lifetime of a position in blocks
@@ -83,6 +87,7 @@ contract LeverageEngine is AccessControlUpgradeable {
     error ExceedBorrowQuota();
     error NotOwner();
     error PositionNotLive();
+    error PositionNotExpired();
     error NotEnoughWBTC();
 
     // Events
@@ -97,6 +102,7 @@ contract LeverageEngine is AccessControlUpgradeable {
     event StrategyRemoved(address indexed strategy);
     event GlobalParameterUpdated(string parameter, uint256 value);
     event FeeCollectorUpdated(address newFeeCollector);
+    event ExpiredVaultUpdated(address newExpiredVault);
     event PositionOpened(
         uint256 indexed nftId,
         address indexed user,
@@ -211,6 +217,17 @@ contract LeverageEngine is AccessControlUpgradeable {
     function setFeeCollector(address collector) external onlyRole(ADMIN_ROLE) {
         feeCollector = collector;
         emit FeeCollectorUpdated(collector);
+    }
+
+    /// @notice Set the expired vault role.
+    /// @param _expiredVault The new expired vault address.
+    function setExpiredVault(address _expiredVault) external onlyRole(ADMIN_ROLE) {
+        if (expiredVault != address(0)) {
+            _revokeRole(EXPIRED_VAULT_ROLE, expiredVault);
+        }
+        expiredVault = _expiredVault;
+        _grantRole(EXPIRED_VAULT_ROLE, _expiredVault);
+        emit ExpiredVaultUpdated(_expiredVault);
     }
 
     ///////////// User functions /////////////
@@ -431,6 +448,32 @@ contract LeverageEngine is AccessControlUpgradeable {
         emit PositionClosed(
             nftId, msg.sender, position.strategyAddress, wbtcLeft, position.wbtcDebtAmount, exitFeeAmount
         );
+    }
+
+    /// @notice ExpiredVault will call this function to close an expired position.
+    /// @param nftID The ID of the NFT representing the position.
+    function closeExpiredPosition(uint256 nftID, address sender) external onlyRole(EXPIRED_VAULT_ROLE) {
+        // Check if the user owns the NFT
+        if (nft.ownerOf(nftID) != sender) revert NotOwner();
+
+        PositionLedgerLib.LedgerEntry storage position = ledger.entries[nftID];
+
+        // Check if the NFT state is LIVE
+        if (position.state != PositionLedgerLib.PositionState.EXPIRED) revert PositionNotExpired();
+
+        // Rememver the received amount for emitting the event
+        uint256 receivedAmount = position.claimableAmount;
+
+        // Update the ledger
+        position.state = PositionLedgerLib.PositionState.CLOSED;
+        position.claimableAmount = 0;
+
+        // Burn the NFT
+        nft.burn(nftID);
+
+        // Emit event
+        // No exit fee is charged for expired positions
+        emit PositionClosed(nftID, sender, position.strategyType, receivedAmount, position.wbtcDebtAmount, 0);
     }
 
     /// @notice Get the configuration for a specific strategy.
