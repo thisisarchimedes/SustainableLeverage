@@ -8,26 +8,18 @@
     [x] Call liquidation and revert if poistion state is not live V
     [x] Call liquidation and check if poistion state is liveV
     [x] Calc preview to how much WBTC we will get (so we can send a min to liquidation and avoid attacks) V
-    * liquidate position if it is eligible for liquidation (ETH value asset position) - enough WBTC in position to cover debt
-    * liquidate position if it is eligible for liquidation (USDC value asset position) - enough WBTC in position to cover debt
-    * liquidate position if it is eligible for liquidation (USDT value asset position) - enough WBTC in position to cover debt
-    * liquidate position if it is eligible for liquidation (ETH value asset position) - NOT enough WBTC in position to cover debt
-    * move whatever left after liquidation to Exprired Vault
-    * Even if there is nothing left move 0 to expire vault
-    * Collect liquidation fees
-    * Detect when the total value of the position is less than debt during liquidation
-    * Only Monitor can liquidate position
-    * Check that position state is LIQUIDATED after liquidation
-
-
-    * Check that position state is live when there is a position
-    * Check that when we don't have a position the position state is correct
-
----
-
-    0. testGetWBTCAmountForTokenXWithLessThan8Decimals
-    1. Getting the WBTC price for underlying token
-    3. liquidate position
+    [] liquidate position if it is eligible for liquidation (ETH value asset position) - enough WBTC in position to cover debt
+    [] liquidate position if it is eligible for liquidation (USDC value asset position) - enough WBTC in position to cover debt
+    [] liquidate position if it is eligible for liquidation (USDT value asset position) - enough WBTC in position to cover debt
+    [] liquidate position if it is eligible for liquidation (ETH value asset position) - NOT enough WBTC in position to cover debt
+    [] move whatever left after liquidation to Exprired Vault
+    [] Even if there is nothing left move 0 to expire vault
+    [] Collect liquidation fees
+    [] Detect when the total value of the position is less than debt during liquidation
+    [] Only Monitor can liquidate position
+    [] Check that position state is LIQUIDATED after liquidation
+    [] Check that position state is live when there is a position
+    [] Check that when we don't have a position the position state is correct
 
 # Refactor list:
 
