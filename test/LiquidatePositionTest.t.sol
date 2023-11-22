@@ -130,7 +130,7 @@ contract LiquidatePositionTest is BaseTest {
 
     function testIsPositionLiquidatableRevertsOnNonExistingNFT() external {
         vm.expectRevert(LeverageEngine.PositionNotLive.selector);
-        leverageEngine.isPositionLiquidatable(999);
+        leverageEngine.isPositionLiquidatable(999_999);
     }
 
     function testLiquditionRevertsIfPositionIsClosed() external {
