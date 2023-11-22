@@ -6,6 +6,7 @@ import "./interfaces/IERC20Detailed.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import "./PositionLedgerLib.sol";
 import { IWBTCVault } from "./interfaces/IWBTCVault.sol";
+import { IExpiredVault } from "./interfaces/IExpiredVault.sol";
 import { ILeverageDepositor } from "./interfaces/ILeverageDepositor.sol";
 import { IOracle } from "./interfaces/IOracle.sol";
 import { PositionToken } from "./PositionToken.sol";
@@ -42,6 +43,9 @@ contract LeverageEngine is AccessControlUpgradeable {
 
     // Swap Adapter
     SwapAdapter public swapAdapter;
+
+    // Expired Vault
+    address public expiredVault;
 
     /// @notice Strategy configurations structure
     /// @param quota WBTC Quota for the strategy
@@ -84,6 +88,7 @@ contract LeverageEngine is AccessControlUpgradeable {
     error NotOwner();
     error PositionNotLive();
     error NotEnoughWBTC();
+    error NotEligibleForLiquidation();
 
     // Events
     event StrategyConfigUpdated(
@@ -290,6 +295,60 @@ contract LeverageEngine is AccessControlUpgradeable {
         );
     }
 
+    function liquidatePosition(
+        uint256 nftId,
+        uint256 minWBTC,
+        SwapAdapter.SwapRoute swapRoute,
+        bytes calldata swapData,
+        address exchange
+    )
+        external
+    {
+        PositionLedgerLib.LedgerEntry memory position = getPosition(nftId);
+
+        if (position.state != PositionLedgerLib.PositionState.LIVE) revert PositionNotLive();
+
+        /**
+         *
+         * 1. Close position
+         * 1.2. Find how many shares belong to this nftID
+         * 1.3. call strategy redeem with the amount of shares
+         * 1.4. now we get the underlying token (e.g.: ETH) back
+         * 2. Swap underlying token to WBTC
+         * 3. Check that the amount of WBTC we have is < debt * liquidationBuffer - if not, revert V
+         * 4. pay back debt V
+         * 5. if something left
+         * 5.1. take liquidation fee
+         * 5.2. send whatever left to expiration vault
+         */
+
+        // Unwind the position
+        uint256 assetsReceived = leverageDepositor.redeem(position.strategyAddress, position.strategyShares);
+        address strategyAsset = IMultiPoolStrategy(position.strategyAddress).asset();
+        // Swap the assets to WBTC
+        IERC20(strategyAsset).transfer(address(swapAdapter), assetsReceived);
+        uint256 wbtcReceived =
+            swapAdapter.swap(IERC20(strategyAsset), wbtc, assetsReceived, exchange, swapData, swapRoute, address(this));
+        // Repay WBTC debt
+        if (wbtcReceived > position.wbtcDebtAmount * position.liquidationBuffer / (10 ** WBTC_DECIMALS)) {
+            revert NotEligibleForLiquidation();
+        }
+
+        // Return WBTC debt to WBTC vault
+        wbtcVault.repay(nftId, position.wbtcDebtAmount);
+
+        uint256 wbtcLeft = wbtcReceived - position.wbtcDebtAmount;
+        if (wbtcLeft > 0) {
+            position.claimableAmount =
+                getStrategyConfig(position.strategyAddress).liquidationFee * wbtcLeft / (10 ** WBTC_DECIMALS);
+            // expiredVault.deposit
+        }
+
+        position.state = PositionLedgerLib.PositionState.LIQUIDATED;
+
+        ledger.setLedgerEntry(nftId, position);
+    }
+
     function isPositionLiquidatable(uint256 nftId) external view returns (bool) {
         PositionLedgerLib.LedgerEntry memory position = getPosition(nftId);
 
@@ -436,7 +495,7 @@ contract LeverageEngine is AccessControlUpgradeable {
     /// @notice Get the configuration for a specific strategy.
     /// @param strategy The address of the strategy to retrieve configuration for.
     /// @return The strategy configuration.
-    function getStrategyConfig(address strategy) external view returns (StrategyConfig memory) {
+    function getStrategyConfig(address strategy) public view returns (StrategyConfig memory) {
         return strategies[strategy];
     }
 

@@ -5,6 +5,7 @@ import "./BaseTest.sol";
 import "./helpers/OracleTestHelper.sol";
 import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
 import { FakeOracle } from "../src/ports/FakeOracle.sol";
+import { FakeWBTCWETHSwapAdapter } from "../src/ports/FakeWBTCWETHSwapAdapter.sol";
 
 import { FakeOracle } from "src/ports/FakeOracle.sol";
 
@@ -165,5 +166,154 @@ contract LiquidatePositionTest is BaseTest {
         leverageEngine.setOracle(WETH, fakeETHUSDOracle);
 
         assertEq(leverageEngine.isPositionLiquidatable(nftId), true);
+    }
+
+    function testIsPositionLiquidatableRevertsOnClosedPosition() external {
+        uint256 collateralAmount = 10e8;
+        uint256 borrowAmount = 30e8;
+
+        // open position
+
+        bytes memory payload = abi.encode(
+            SwapAdapter.UniswapV3Data({
+                path: abi.encodePacked(WBTC, uint24(3000), WETH),
+                deadline: block.timestamp + 1000
+            })
+        );
+
+        deal(WBTC, address(this), 1000e8);
+        ERC20(WBTC).approve(address(leverageEngine), type(uint256).max);
+        uint256 nftId = leverageEngine.openPosition(
+            collateralAmount, borrowAmount, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
+        );
+
+        // close position
+
+        bytes memory payloadClose = abi.encode(
+            SwapAdapter.UniswapV3Data({
+                path: abi.encodePacked(WETH, uint24(3000), WBTC),
+                deadline: block.timestamp + 1000
+            })
+        );
+        leverageEngine.closePosition(nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, payloadClose, address(0));
+
+        vm.expectRevert(LeverageEngine.PositionNotLive.selector);
+        leverageEngine.isPositionLiquidatable(nftId);
+    }
+
+    function testIsPositionLiquidatableRevertsOnNonExistingNFT() external {
+        vm.expectRevert(LeverageEngine.PositionNotLive.selector);
+        leverageEngine.isPositionLiquidatable(999);
+    }
+
+    function testLiquditionRevertsIfPositionIsClosed() external {
+        uint256 collateralAmount = 10e8;
+        uint256 borrowAmount = 30e8;
+
+        // open position
+
+        bytes memory payload = abi.encode(
+            SwapAdapter.UniswapV3Data({
+                path: abi.encodePacked(WBTC, uint24(3000), WETH),
+                deadline: block.timestamp + 1000
+            })
+        );
+
+        deal(WBTC, address(this), 1000e8);
+        ERC20(WBTC).approve(address(leverageEngine), type(uint256).max);
+        uint256 nftId = leverageEngine.openPosition(
+            collateralAmount, borrowAmount, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
+        );
+
+        // close position
+
+        bytes memory payloadClose = abi.encode(
+            SwapAdapter.UniswapV3Data({
+                path: abi.encodePacked(WETH, uint24(3000), WBTC),
+                deadline: block.timestamp + 1000
+            })
+        );
+        leverageEngine.closePosition(nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, payloadClose, address(0));
+
+        vm.expectRevert(LeverageEngine.PositionNotLive.selector);
+        leverageEngine.liquidatePosition(nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, payloadClose, address(0));
+    }
+
+    function testLiquidationOfETHBasedPosition() external {
+        // Set liquidateion Buffer
+        uint256 liquidationFee = 0.02e8;
+        LeverageEngine.StrategyConfig memory strategyConfig = LeverageEngine.StrategyConfig({
+            quota: 100e8,
+            maximumMultiplier: 3e8,
+            positionLifetime: 1000,
+            liquidationBuffer: 1.1e8,
+            liquidationFee: liquidationFee
+        });
+        leverageEngine.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
+
+        // Deposit
+        uint256 nftId = openETHBasedPosition(10e8, 30e8);
+
+        uint256 fakeEthUsdPrice = 0;
+        uint256 fakeBtcEthPrice = 0;
+
+        {
+            // Get current eth price
+            (, int256 ethUsdPrice,,,) = ethUsdOracle.latestRoundData();
+            (, int256 btcEthPrice,,,) = btcEthOracle.latestRoundData();
+
+            // Drop the eth price by 20%
+            fakeEthUsdPrice = uint256(ethUsdPrice) * 0.8e8 / 1e8; // USD
+            fakeBtcEthPrice = uint256(btcEthPrice) * 0.8e8 / 1e8; // ETH
+        }
+        FakeWBTCWETHSwapAdapter fakeSwapAdapter = new FakeWBTCWETHSwapAdapter();
+        deal(WETH, address(fakeSwapAdapter), 1000e18);
+        deal(WBTC, address(fakeSwapAdapter), 1000e8);
+        fakeSwapAdapter.setWbtcToWethExchangeRate(fakeBtcEthPrice);
+        leverageEngine.changeSwapAdapter(address(fakeSwapAdapter));
+
+        FakeOracle fakeETHUSDOracle = new FakeOracle();
+        fakeETHUSDOracle.updateFakePrice(fakeEthUsdPrice);
+        fakeETHUSDOracle.updateDecimals(8);
+        leverageEngine.setOracle(WETH, fakeETHUSDOracle);
+
+        // Liquidate position
+        uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(wbtcVault));
+        leverageEngine.liquidatePosition(
+            nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, getWBTCWETHUniswapPayload(), address(0)
+        );
+        uint256 wbtcVaultBalanceAfter = IERC20(WBTC).balanceOf(address(wbtcVault));
+        uint256 debtPaidBack = wbtcVaultBalanceAfter - wbtcVaultBalanceBefore;
+
+        uint256 positionValueInWBTC = leverageEngine.previewPositionValueInWBTC(nftId);
+        PositionLedgerLib.LedgerEntry memory position = leverageEngine.getPosition(nftId);
+
+        assertEq(position.wbtcDebtAmount, debtPaidBack);
+        uint256 delta = (debtPaidBack + position.claimableAmount) * 200 / 10_000; // 2% delta
+
+        assertAlmostEq(
+            debtPaidBack + position.claimableAmount,
+            positionValueInWBTC - liquidationFee * position.claimableAmount / 1e8,
+            delta
+        );
+    }
+
+    function openETHBasedPosition(uint256 collateralAmount, uint256 borrowAmount) internal returns (uint256 nftId) {
+        bytes memory payload = getWBTCWETHUniswapPayload();
+
+        deal(WBTC, address(this), 1000e8);
+        ERC20(WBTC).approve(address(leverageEngine), type(uint256).max);
+        nftId = leverageEngine.openPosition(
+            collateralAmount, borrowAmount, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
+        );
+    }
+
+    function getWBTCWETHUniswapPayload() internal view returns (bytes memory payload) {
+        payload = abi.encode(
+            SwapAdapter.UniswapV3Data({
+                path: abi.encodePacked(WBTC, uint24(3000), WETH),
+                deadline: block.timestamp + 1000
+            })
+        );
     }
 }

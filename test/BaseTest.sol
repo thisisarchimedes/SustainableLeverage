@@ -33,7 +33,10 @@ contract BaseTest is PRBTest, StdCheats {
     address public constant WBTCUSDORACLE = 0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c;
     address public constant ETHUSDORACLE = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
     address public constant USDCUSDORACLE = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
+    address public constant BTCETHORACLE = 0xdeb288F737066589598e9214E782fa5A8eD689e8;
     address public constant FRAXBPALUSD_STRATEGY = 0xB888b8204Df31B54728e963ebA5465A95b695103;
+    ChainlinkOracle ethUsdOracle;
+    ChainlinkOracle btcEthOracle;
 
     function _prepareContracts() internal {
         proxyAdmin = new ProxyAdmin(address(this));
@@ -52,8 +55,10 @@ contract BaseTest is PRBTest, StdCheats {
         );
         proxy = new TransparentUpgradeableProxy(address(leverageEngine), address(proxyAdmin), initData);
         leverageEngine = LeverageEngine(address(proxy));
+        ethUsdOracle = new ChainlinkOracle(ETHUSDORACLE);
+        btcEthOracle = new ChainlinkOracle(BTCETHORACLE);
         leverageEngine.setOracle(WBTC, new ChainlinkOracle(WBTCUSDORACLE));
-        leverageEngine.setOracle(WETH, new ChainlinkOracle(ETHUSDORACLE));
+        leverageEngine.setOracle(WETH, ethUsdOracle);
         leverageEngine.setOracle(USDC, new ChainlinkOracle(USDCUSDORACLE));
         wbtc = IERC20(WBTC);
         LeverageEngine.StrategyConfig memory strategyConfig = LeverageEngine.StrategyConfig({

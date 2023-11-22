@@ -11,7 +11,7 @@ contract FakeOracle is IOracle {
         return fakeDecimals;
     }
 
-    function updateDecimals(uint8 _decimals) external returns (uint8) {
+    function updateDecimals(uint8 _decimals) external {
         fakeDecimals = _decimals;
     }
 
