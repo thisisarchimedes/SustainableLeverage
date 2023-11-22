@@ -45,11 +45,11 @@ contract FakeWBTCWETHSwapAdapter is ISwapAdapter {
         returns (uint256 toTokenAmount)
     {
         if (fromToken == wbtc) {
-            toTokenAmount = (fromAmount * wbtcToWethExchangeRate * 10 ** IERC20Detailed(address(toToken)).decimals())
-                / 10 ** IERC20Detailed(address(fromToken)).decimals();
+            toTokenAmount =
+                (fromAmount * wbtcToWethExchangeRate * 10 ** IERC20Detailed(address(toToken)).decimals()) / 10 ** 26;
         } else {
-            toTokenAmount = (fromAmount * wethToWbtcExchangeRate * 10 ** IERC20Detailed(address(toToken)).decimals())
-                / 10 ** IERC20Detailed(address(fromToken)).decimals();
+            toTokenAmount =
+                (fromAmount * wethToWbtcExchangeRate * 10 ** IERC20Detailed(address(toToken)).decimals()) / 10 ** 36;
         }
 
         toToken.transfer(recipient, toTokenAmount);

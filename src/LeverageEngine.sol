@@ -14,11 +14,12 @@ import { PositionToken } from "./PositionToken.sol";
 import { SwapAdapter } from "./SwapAdapter.sol";
 import { IMultiPoolStrategy } from "./interfaces/IMultiPoolStrategy.sol";
 import { AggregatorV3Interface } from "./interfaces/AggregatorV3Interface.sol";
-
+import { console2 } from "forge-std/console2.sol";
 /// @title LeverageEngine Contract
 /// @notice This contract facilitates the management of strategy configurations and admin parameters for the Leverage
 /// Engine.
 /// @notice Leverage Engine is upgradable
+
 contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     using PositionLedgerLib for PositionLedgerLib.LedgerStorage;
     using SafeERC20 for IERC20;
@@ -47,27 +48,6 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
     // Expired Vault
     address public expiredVault;
-
-
-    /// @notice Strategy configurations structure
-    /// @param quota WBTC Quota for the strategy
-    /// @param positionLifetime Lifetime of a position in blocks
-    /// @param maximumMultiplier Maximum borrowing power multiplier
-    /// @param liquidationBuffer Threshold for liquidation
-    struct StrategyConfig {
-        uint256 quota;
-        uint256 positionLifetime;
-        uint256 maximumMultiplier;
-        uint256 liquidationBuffer;
-        uint256 liquidationFee;
-    }
-
-    enum StrategyConfigUpdate {
-        QUOTA,
-        POSITION_LIFETIME,
-        MAXIMUM_MULTIPLIER,
-        LIQUIDATION_BUFFER
-    }
 
     // Mapping of strategies to their configurations
     mapping(address => StrategyConfig) internal strategies;
@@ -106,6 +86,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     event GlobalParameterUpdated(string parameter, uint256 value);
     event FeeCollectorUpdated(address newFeeCollector);
     event ExpiredVaultUpdated(address newExpiredVault);
+    event StrategyLiquidationFeeUpdated(address strategy, uint256 fee);
     event PositionOpened(
         uint256 indexed nftId,
         address indexed user,
@@ -230,7 +211,14 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         }
         expiredVault = _expiredVault;
         _grantRole(EXPIRED_VAULT_ROLE, _expiredVault);
+        wbtc.approve(_expiredVault, type(uint256).max);
         emit ExpiredVaultUpdated(_expiredVault);
+    }
+
+    function setLiquidationFee(address strategy, uint256 fee) external onlyRole(ADMIN_ROLE) {
+        strategies[strategy].liquidationFee = fee;
+
+        emit StrategyLiquidationFeeUpdated(strategy, fee);
     }
 
     ///////////// User functions /////////////
@@ -344,6 +332,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         IERC20(strategyAsset).transfer(address(swapAdapter), assetsReceived);
         uint256 wbtcReceived =
             swapAdapter.swap(IERC20(strategyAsset), wbtc, assetsReceived, exchange, swapData, swapRoute, address(this));
+
         // Repay WBTC debt
         if (wbtcReceived > position.wbtcDebtAmount * position.liquidationBuffer / (10 ** WBTC_DECIMALS)) {
             revert NotEligibleForLiquidation();
@@ -353,10 +342,15 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         wbtcVault.repay(nftId, position.wbtcDebtAmount);
 
         uint256 wbtcLeft = wbtcReceived - position.wbtcDebtAmount;
+    
         if (wbtcLeft > 0) {
-            position.claimableAmount =
+            uint256 liquidationFeeAmount =
                 getStrategyConfig(position.strategyAddress).liquidationFee * wbtcLeft / (10 ** WBTC_DECIMALS);
-            // expiredVault.deposit
+            position.claimableAmount = wbtcLeft - liquidationFeeAmount;
+
+            IExpiredVault(expiredVault).deposit(position.claimableAmount);
+
+            // TODO: Send liquidation fee to fee collector
         }
 
         position.state = PositionLedgerLib.PositionState.LIQUIDATED;
@@ -530,7 +524,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
         // Emit event
         // No exit fee is charged for expired positions
-        emit PositionClosed(nftID, sender, position.strategyType, receivedAmount, position.wbtcDebtAmount, 0);
+        emit PositionClosed(nftID, sender, position.strategyAddress, receivedAmount, position.wbtcDebtAmount, 0);
     }
 
     /// @notice Get the configuration for a specific strategy.

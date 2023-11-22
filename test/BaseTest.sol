@@ -14,6 +14,7 @@ import { ChainlinkOracle } from "../src/ports/ChainlinkOracle.sol";
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
+import { ExpiredVault } from "src/ExpiredVault.sol";
 
 contract BaseTest is PRBTest, StdCheats {
     address feeCollector = makeAddr("feeCollector");
@@ -25,6 +26,7 @@ contract BaseTest is PRBTest, StdCheats {
     IOracle internal oracle;
     TransparentUpgradeableProxy internal proxy;
     SwapAdapter internal swapAdapter;
+    ExpiredVault internal expiredVault;
     IERC20 internal wbtc;
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -37,6 +39,7 @@ contract BaseTest is PRBTest, StdCheats {
     address public constant FRAXBPALUSD_STRATEGY = 0xB888b8204Df31B54728e963ebA5465A95b695103;
     ChainlinkOracle ethUsdOracle;
     ChainlinkOracle btcEthOracle;
+    ChainlinkOracle wbtcUsdOracle;
 
     function _prepareContracts() internal {
         proxyAdmin = new ProxyAdmin(address(this));
@@ -44,7 +47,9 @@ contract BaseTest is PRBTest, StdCheats {
         leverageDepositor = new LeverageDepositor(WBTC,WETH);
         wbtcVault = new WBTCVault(WBTC);
         leverageEngine = new LeverageEngine();
+        wbtc = IERC20(WBTC);
         swapAdapter = new SwapAdapter(WBTC, address(leverageDepositor));
+        expiredVault = new ExpiredVault();
         bytes memory initData = abi.encodeWithSelector(
             LeverageEngine.initialize.selector,
             address(wbtcVault),
@@ -55,13 +60,20 @@ contract BaseTest is PRBTest, StdCheats {
         );
         proxy = new TransparentUpgradeableProxy(address(leverageEngine), address(proxyAdmin), initData);
         leverageEngine = LeverageEngine(address(proxy));
+        bytes memory initDataExpiredVault =
+            abi.encodeWithSelector(ExpiredVault.initialize.selector, address(leverageEngine), WBTC);
+        expiredVault = ExpiredVault(
+            address(new TransparentUpgradeableProxy(address(expiredVault),address(proxyAdmin),initDataExpiredVault))
+        );
+
         ethUsdOracle = new ChainlinkOracle(ETHUSDORACLE);
         btcEthOracle = new ChainlinkOracle(BTCETHORACLE);
-        leverageEngine.setOracle(WBTC, new ChainlinkOracle(WBTCUSDORACLE));
+        wbtcUsdOracle = new ChainlinkOracle(WBTCUSDORACLE);
+        leverageEngine.setOracle(WBTC, wbtcUsdOracle);
         leverageEngine.setOracle(WETH, ethUsdOracle);
         leverageEngine.setOracle(USDC, new ChainlinkOracle(USDCUSDORACLE));
-        wbtc = IERC20(WBTC);
-        LeverageEngine.StrategyConfig memory strategyConfig = LeverageEngine.StrategyConfig({
+
+        LeverageEngine.StrategyConfig memory strategyConfig = ILeverageEngine.StrategyConfig({
             quota: 100e8,
             maximumMultiplier: 3e8,
             positionLifetime: 1000,
@@ -70,6 +82,7 @@ contract BaseTest is PRBTest, StdCheats {
         });
         leverageEngine.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
         leverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
+        leverageEngine.setExpiredVault(address(expiredVault));
     }
     //erc721 receiver
 
