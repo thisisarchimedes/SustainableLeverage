@@ -32,4 +32,4 @@ $ forge test
 
 1. Open a PR request, Github Actionswill run Linter and Tests
 2. If test pass and PR reviewed, merge it to main
-3. While merging Github Actions will updated the contract addresses in `deployments/` director
+3. While merging Github Actions will updated the contract addresses in `deployments/` directory
