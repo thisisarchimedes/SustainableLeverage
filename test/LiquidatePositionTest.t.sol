@@ -162,19 +162,18 @@ contract LiquidatePositionTest is BaseTest {
         uint256 nftId = openETHBasedPosition(10e8, 30e8);
 
         uint256 fakeEthUsdPrice = 0;
-        uint256 fakeBtcEthPrice = 0;
         uint256 fakeBtcUsdPrice = 0;
+        uint256 fakeBtcEthPrice = 0;
 
         {
             // Get current eth price
             (, int256 ethUsdPrice,,,) = ethUsdOracle.latestRoundData();
-            (, int256 btcEthPrice,,,) = btcEthOracle.latestRoundData();
             (, int256 wtbcUsdPrice,,,) = wbtcUsdOracle.latestRoundData();
 
             // Drop the eth price by 20%
-            fakeEthUsdPrice = (uint256(ethUsdPrice) * 0.8e8) / 1e8; // USD
-            fakeBtcEthPrice = (uint256(btcEthPrice) * 1.2e8) / 1e8; // ETH
-            fakeBtcUsdPrice = (uint256(wtbcUsdPrice) * 1.2e8) / 1e8;
+            fakeEthUsdPrice = (uint256(ethUsdPrice) * 0.9e8) / 1e8;
+            fakeBtcUsdPrice = (uint256(wtbcUsdPrice) * 1.1e8) / 1e8;
+            fakeBtcEthPrice = fakeBtcUsdPrice * 1e18 / fakeEthUsdPrice;
 
             FakeWBTCWETHSwapAdapter fakeSwapAdapter = new FakeWBTCWETHSwapAdapter();
             deal(WETH, address(fakeSwapAdapter), 1000e18);
