@@ -10,6 +10,7 @@ import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { SwapAdapter } from "../src/SwapAdapter.sol";
+import { ExpiredVault } from "../src/ExpiredVault.sol";
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
@@ -22,7 +23,9 @@ contract BaseTest is PRBTest, StdCheats {
     WBTCVault internal wbtcVault;
     ProxyAdmin internal proxyAdmin;
     TransparentUpgradeableProxy internal proxy;
+    TransparentUpgradeableProxy internal expiredVaultProxy;
     SwapAdapter internal swapAdapter;
+    ExpiredVault internal expiredVault;
     IERC20 internal wbtc;
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -38,8 +41,11 @@ contract BaseTest is PRBTest, StdCheats {
         positionToken = new PositionToken();
         leverageDepositor = new LeverageDepositor(WBTC,WETH);
         wbtcVault = new WBTCVault(WBTC);
-        leverageEngine = new LeverageEngine();
         swapAdapter = new SwapAdapter(WBTC, address(leverageDepositor));
+        wbtc = IERC20(WBTC);
+
+        // Leverage Engine
+        leverageEngine = new LeverageEngine();
         bytes memory initData = abi.encodeWithSelector(
             LeverageEngine.initialize.selector,
             address(wbtcVault),
@@ -53,10 +59,19 @@ contract BaseTest is PRBTest, StdCheats {
         leverageEngine.setOracle(WBTC, WBTCUSDORACLE);
         leverageEngine.setOracle(WETH, ETHUSDORACLE);
         leverageEngine.setOracle(USDC, USDCUSDORACLE);
-        wbtc = IERC20(WBTC);
-    }
-    //erc721 receiver
 
+        // Expired Vault
+        expiredVault = new ExpiredVault();
+        bytes memory expiredVaultInitData = abi.encodeWithSelector(
+            ExpiredVault.initialize.selector,
+            address(leverageEngine)
+        );
+        expiredVaultProxy = new TransparentUpgradeableProxy(address(expiredVault), address(proxyAdmin), expiredVaultInitData);
+        expiredVault = ExpiredVault(address(expiredVaultProxy));
+        leverageEngine.setExpiredVault(address(expiredVault));
+    }
+
+    //erc721 receiver
     function onERC721Received(address, address, uint256, bytes memory) public returns (bytes4) {
         return this.onERC721Received.selector;
     }

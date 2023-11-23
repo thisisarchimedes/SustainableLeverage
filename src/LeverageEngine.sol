@@ -34,7 +34,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     IWBTCVault public wbtcVault;
 
     // Position NFT
-    PositionToken public nft;
+        PositionToken public nft;
 
     // Leverage Depositor
     ILeverageDepositor public leverageDepositor;
