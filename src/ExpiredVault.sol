@@ -37,11 +37,12 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
         _disableInitializers();
     }
 
-    function initialize(address _leverageEngine) external initializer {
+    function initialize(address _leverageEngine, address _wbtc) external initializer {
         __AccessControl_init();
         wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
         leverageEngine = ILeverageEngine(_leverageEngine);
         _grantRole(MONITOR_ROLE, _leverageEngine);
+        wbtc = IERC20(_wbtc);
     }
 
     ///////////// Monitor functions /////////////

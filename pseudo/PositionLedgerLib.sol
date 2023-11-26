@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 /// @notice This library manages the ledger entries for leveraged positions.
 library PositionLedgerLib {
     enum PositionState {
+        UNINSTANTIATED,
         LIVE,
         EXPIRED,
         LIQUIDATED,

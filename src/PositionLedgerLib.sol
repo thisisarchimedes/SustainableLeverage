@@ -5,6 +5,7 @@ pragma solidity >=0.8.21;
 /// @notice This library manages the ledger entries for leveraged positions.
 library PositionLedgerLib {
     enum PositionState {
+        UNINITIALIZED,
         LIVE,
         EXPIRED,
         LIQUIDATED,
@@ -13,7 +14,7 @@ library PositionLedgerLib {
 
     struct LedgerEntry {
         uint256 collateralAmount;
-        address strategyType;
+        address strategyAddress;
         uint256 strategyShares;
         uint256 wbtcDebtAmount;
         uint256 positionExpirationBlock;
