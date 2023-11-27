@@ -306,6 +306,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         address exchange
     )
         external
+        onlyRole(MONITOR_ROLE)
     {
         PositionLedgerLib.LedgerEntry memory position = getPosition(nftId);
 
