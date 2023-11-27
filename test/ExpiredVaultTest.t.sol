@@ -4,6 +4,8 @@ pragma solidity >=0.8.21 <0.9.0;
 import "./BaseTest.sol";
 import { ExpiredVault } from "../src/ExpiredVault.sol";
 import { IERC721A } from "ERC721A/IERC721A.sol";
+import { FakeWBTCWETHSwapAdapter } from "../src/ports/FakeWBTCWETHSwapAdapter.sol";
+import { FakeOracle } from "../src/ports/FakeOracle.sol";
 import { console2 } from "forge-std/console2.sol";
 /// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
 /// https://book.getfoundry.sh/forge/writing-tests
@@ -22,64 +24,55 @@ contract ExpiredVaultTest is BaseTest {
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
         _prepareContracts();
         deal(WBTC, address(wbtcVault), 100e8);
+        ERC20(WBTC).approve(address(leverageEngine), type(uint256).max);
     }
 
     function testDeposit() public {
         vm.startPrank(address(leverageEngine));
 
         // Arrange
-        uint256 depositAmount = 1e18; // 1 WBTC for simplicity
+        uint256 depositAmount = 1e8; // 1 WBTC for simplicity
 
         // Act
-        deal(address(expiredVault.wbtc()), address(leverageEngine), 100e8); // TODO: remove?
-        expiredVault.wbtc().safeTransfer(address(this), depositAmount);
-        // expiredVault.wbtc().approve(address(expiredVault), depositAmount);
-        // expiredVault.wbtc().safeTransferFrom(address(leverageEngine), address(expiredVault), depositAmount);
-        // expiredVault.deposit(depositAmount);
+        deal(address(expiredVault.wbtc()), address(leverageEngine), 100e8);
+        expiredVault.deposit(depositAmount);
 
         // Assert
-        // assertEq(expiredVault.balance(), depositAmount, "Vault balance should be updated");
+        assertEq(expiredVault.balance(), depositAmount, "Vault balance should be updated");
     }
 
 
-    function testFailDepositNotMonitor() public {
-        // This test will pass if it reverts (as indicated by the prefix 'testFail')
-        uint256 depositAmount = 1e18; // 1 WBTC for simplicity
+    function testDepositNotMonitor() public {
+        uint256 depositAmount = 1e8; // 1 WBTC for simplicity
 
         // Act
+        vm.expectRevert();
         expiredVault.deposit(depositAmount); // This should fail because 'user' is not in MONITOR_ROLE
-    }
-
-    function testClaimInsufficientFunds() public {
-        // Arrange
-        _openPosition();
-        uint256 nftID = 0; // Example NFT ID
-
-        // TODO: leverageEngine.expirePosition(nftID);
-
-        // Act & Assert
-        vm.expectRevert(ExpiredVault.InsufficientFunds.selector);
-        expiredVault.claim(nftID);
     }
 
     function testClaim() public {
         // Arrange
-        _openPosition();
-        uint256 nftID = 0; // Example NFT ID
-        uint256 claimableAmount = 1e8; // 1 WBTC for simplicity
+        uint256 nftId = openETHBasedPosition(10e8, 30e8);
 
-        // TODO: leverageEngine.expirePosition(nftID);
+        // Liquidate the position
+        liquidatePosition(nftId);
+        uint256 claimableAmount = leverageEngine.getPosition(nftId).claimableAmount;
 
         // Act
-        expiredVault.claim(nftID);
+        uint256 balanceBefore = wbtc.balanceOf(address(this));
+        expiredVault.claim(nftId);
+        uint256 balanceAfter = wbtc.balanceOf(address(this));
 
         // Assert
-        PositionLedgerLib.LedgerEntry memory position = leverageEngine.getPosition(nftID);
+        PositionLedgerLib.LedgerEntry memory position = leverageEngine.getPosition(nftId);
         assertEq(position.claimableAmount, 0, "Position claimableAmount should be 0");
         assertTrue(position.state == PositionLedgerLib.PositionState.CLOSED, "Position state should be CLOSED");
         assertEq(expiredVault.balance(), 0, "Expired vault balance should be 0");
-        assertEq(wbtc.balanceOf(address(this)), claimableAmount, "WBTC balance should be updated");
-        assertEq(leverageEngine.nft().ownerOf(nftID), address(0), "NFT should be burned");
+        assertEq(balanceAfter - balanceBefore, claimableAmount, "WBTC balance should be updated to the claimable position amount");
+        
+        PositionToken positionToken = PositionToken(leverageEngine.nft());
+        vm.expectRevert(IERC721A.OwnerQueryForNonexistentToken.selector); // NFT should be burned
+        positionToken.ownerOf(nftId);
     }
 
     function testClaimNonExistingNftId() public {
@@ -90,45 +83,53 @@ contract ExpiredVaultTest is BaseTest {
         expiredVault.claim(nonExistingNftID);
     }
 
-    function testClaimPositionNotExpired() public {
+    function testClaimPositionNotExpiredOrLiquidated() public {
         // Arrange
-        _openPosition();
-        uint256 nftID = 0; // Example NFT ID
+        uint256 nftId = openETHBasedPosition(10e8, 30e8);
 
+        deal(WBTC, address(leverageEngine), 100e8);
         vm.startPrank(address(leverageEngine));
         expiredVault.deposit(1e8);
         vm.stopPrank();
 
-        vm.expectRevert(LeverageEngine.PositionNotExpired.selector);
-        expiredVault.claim(nftID);
+        vm.expectRevert(LeverageEngine.PositionNotExpiredOrLiquidated.selector);
+        expiredVault.claim(nftId);
     }
 
     function testClaimPositionOwnedByAnotherUser() public {
         // Arrange
-        _openPosition();
-        uint256 nftID = 0; // Example NFT ID
+        uint256 nftId = openETHBasedPosition(10e8, 30e8);
 
-        vm.startPrank(address(leverageEngine));
-        expiredVault.deposit(1e8);
-        vm.stopPrank();
+        liquidatePosition(nftId);
 
         vm.startPrank(address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE));
 
         vm.expectRevert(LeverageEngine.NotOwner.selector);
-        expiredVault.claim(nftID);
+        expiredVault.claim(nftId);
     }
 
-    ///////////// Helper functions /////////////
 
-    function _openPosition() internal {
-        bytes memory payload = abi.encode(
-            SwapAdapter.UniswapV3Data({
-                path: abi.encodePacked(WBTC, uint24(3000), WETH),
-                deadline: block.timestamp + 1000
-            })
+    function testResetExpiredVault() external {
+        // Remember
+        address oldExpiredVault = address(expiredVault);
+
+        // Prepare new expired vault
+        ExpiredVault newExpiredVault = new ExpiredVault();
+        bytes memory initDataExpiredVault =
+            abi.encodeWithSelector(ExpiredVault.initialize.selector, address(leverageEngine), WBTC);
+        newExpiredVault = ExpiredVault(
+            address(new TransparentUpgradeableProxy(address(newExpiredVault),address(proxyAdmin),initDataExpiredVault))
         );
-        leverageEngine.openPosition(
-            5e8, 15e8, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
-        );
+
+        // Reset
+        leverageEngine.setExpiredVault(address(newExpiredVault));
+
+        // Assert
+        assertNotEq(leverageEngine.expiredVault(), address(oldExpiredVault), "Expired vault should be updated");
+        assertEq(leverageEngine.expiredVault(), address(newExpiredVault), "Expired vault should be updated");
+        assertEq(leverageEngine.wbtc().allowance(address(leverageEngine), address(oldExpiredVault)), 0, "Old expired vault should be disapproved");
+        assertEq(leverageEngine.wbtc().allowance(address(leverageEngine), address(newExpiredVault)), type(uint256).max, "Expired vault should be approved");
+        assertFalse(leverageEngine.hasRole(leverageEngine.EXPIRED_VAULT_ROLE(), address(oldExpiredVault)), "Old expired vault should be removed from MONITOR_ROLE");
+        assertTrue(leverageEngine.hasRole(leverageEngine.EXPIRED_VAULT_ROLE(), address(newExpiredVault)), "Expired vault should be added to MONITOR_ROLE");
     }
 }
