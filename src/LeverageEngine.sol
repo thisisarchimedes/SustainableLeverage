@@ -207,6 +207,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     /// @param _expiredVault The new expired vault address.
     function setExpiredVault(address _expiredVault) external onlyRole(ADMIN_ROLE) {
         if (expiredVault != address(0)) {
+            wbtc.approve(expiredVault, 0);
             _revokeRole(EXPIRED_VAULT_ROLE, expiredVault);
         }
         expiredVault = _expiredVault;
