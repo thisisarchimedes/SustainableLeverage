@@ -38,7 +38,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     IWBTCVault public wbtcVault;
 
     // Position NFT
-        PositionToken public nft;
+    PositionToken public nft;
 
     // Leverage Depositor
     ILeverageDepositor public leverageDepositor;
@@ -69,7 +69,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     error ExceedBorrowQuota();
     error NotOwner();
     error PositionNotLive();
-    error PositionNotExpired();
+    error PositionNotExpiredOrLiquidated();
     error NotEnoughWBTC();
     error NotEligibleForLiquidation();
 
@@ -344,7 +344,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         wbtcVault.repay(nftId, position.wbtcDebtAmount);
 
         uint256 wbtcLeft = wbtcReceived - position.wbtcDebtAmount;
-    
+
         if (wbtcLeft > 0) {
             uint256 liquidationFeeAmount =
                 getStrategyConfig(position.strategyAddress).liquidationFee * wbtcLeft / (10 ** WBTC_DECIMALS);
@@ -353,6 +353,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
             IExpiredVault(expiredVault).deposit(position.claimableAmount);
 
             // TODO: Send liquidation fee to fee collector
+            // TODO: MinWBTC parameter? [TBD]
         }
 
         position.state = PositionLedgerLib.PositionState.LIQUIDATED;
@@ -505,14 +506,17 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
     /// @notice ExpiredVault will call this function to close an expired position.
     /// @param nftID The ID of the NFT representing the position.
-    function closeExpiredPosition(uint256 nftID, address sender) external onlyRole(EXPIRED_VAULT_ROLE) {
+    function closeExpiredOrLiquidatedPosition(uint256 nftID, address sender) external onlyRole(EXPIRED_VAULT_ROLE) {
         // Check if the user owns the NFT
         if (nft.ownerOf(nftID) != sender) revert NotOwner();
 
         PositionLedgerLib.LedgerEntry storage position = ledger.entries[nftID];
 
-        // Check if the NFT state is LIVE
-        if (position.state != PositionLedgerLib.PositionState.EXPIRED) revert PositionNotExpired();
+        // Check if the NFT state is Expired or Liquidated
+        if (
+            position.state != PositionLedgerLib.PositionState.EXPIRED
+                && position.state != PositionLedgerLib.PositionState.LIQUIDATED
+        ) revert PositionNotExpiredOrLiquidated();
 
         // Rememver the received amount for emitting the event
         uint256 receivedAmount = position.claimableAmount;
