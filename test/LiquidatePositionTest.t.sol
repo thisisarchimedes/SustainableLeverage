@@ -161,49 +161,7 @@ contract LiquidatePositionTest is BaseTest {
         // Deposit
         uint256 nftId = openETHBasedPosition(10e8, 30e8);
 
-        uint256 fakeEthUsdPrice = 0;
-        uint256 fakeBtcUsdPrice = 0;
-        uint256 fakeBtcEthPrice = 0;
-
-        {
-            // Get current eth price
-            (, int256 ethUsdPrice,,,) = ethUsdOracle.latestRoundData();
-            (, int256 wtbcUsdPrice,,,) = wbtcUsdOracle.latestRoundData();
-
-            // Drop the eth price by 20%
-            fakeEthUsdPrice = (uint256(ethUsdPrice) * 0.9e8) / 1e8;
-            fakeBtcUsdPrice = (uint256(wtbcUsdPrice) * 1.1e8) / 1e8;
-            fakeBtcEthPrice = fakeBtcUsdPrice * 1e18 / fakeEthUsdPrice;
-
-            FakeWBTCWETHSwapAdapter fakeSwapAdapter = new FakeWBTCWETHSwapAdapter();
-            deal(WETH, address(fakeSwapAdapter), 1000e18);
-            deal(WBTC, address(fakeSwapAdapter), 1000e8);
-            fakeSwapAdapter.setWbtcToWethExchangeRate(fakeBtcEthPrice);
-            fakeSwapAdapter.setWethToWbtcExchangeRate(1e36 / fakeBtcEthPrice);
-            leverageEngine.changeSwapAdapter(address(fakeSwapAdapter));
-        }
-
-        {
-            FakeOracle fakeETHUSDOracle = new FakeOracle();
-            fakeETHUSDOracle.updateFakePrice(fakeEthUsdPrice);
-            fakeETHUSDOracle.updateDecimals(8);
-            leverageEngine.setOracle(WETH, fakeETHUSDOracle);
-            FakeOracle fakeWBTCUSDOracle = new FakeOracle();
-            fakeWBTCUSDOracle.updateFakePrice(fakeBtcUsdPrice);
-            fakeWBTCUSDOracle.updateDecimals(8);
-            leverageEngine.setOracle(WBTC, fakeWBTCUSDOracle);
-        }
-
-        uint256 debtPaidBack;
-        {
-            // Liquidate position
-            uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(wbtcVault));
-            leverageEngine.liquidatePosition(
-                nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, getWBTCWETHUniswapPayload(), address(0)
-            );
-            uint256 wbtcVaultBalanceAfter = IERC20(WBTC).balanceOf(address(wbtcVault));
-            debtPaidBack = wbtcVaultBalanceAfter - wbtcVaultBalanceBefore;
-        }
+        uint256 debtPaidBack = liquidatePosition(nftId);
 
         uint256 positionValueInWBTC = leverageEngine.previewPositionValueInWBTC(nftId);
         PositionLedgerLib.LedgerEntry memory position = leverageEngine.getPosition(nftId);

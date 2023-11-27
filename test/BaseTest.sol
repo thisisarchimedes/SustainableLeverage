@@ -11,6 +11,8 @@ import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { SwapAdapter } from "../src/SwapAdapter.sol";
 import { ExpiredVault } from "../src/ExpiredVault.sol";
+import { FakeOracle } from "../src/ports/FakeOracle.sol";
+import { FakeWBTCWETHSwapAdapter } from "../src/ports/FakeWBTCWETHSwapAdapter.sol";
 import { ChainlinkOracle } from "../src/ports/ChainlinkOracle.sol";
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
@@ -86,17 +88,6 @@ contract BaseTest is PRBTest, StdCheats {
         leverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
         leverageEngine.setExpiredVault(address(expiredVault));
     }
-    //erc721 receiver
-
-        // Expired Vault
-        bytes memory expiredVaultInitData = abi.encodeWithSelector(
-            ExpiredVault.initialize.selector,
-            address(leverageEngine)
-        );
-        expiredVaultProxy = new TransparentUpgradeableProxy(address(expiredVault), address(proxyAdmin), expiredVaultInitData);
-        expiredVault = ExpiredVault(address(expiredVaultProxy));
-        leverageEngine.setExpiredVault(address(expiredVault));
-    }
 
     //erc721 receiver
     function onERC721Received(address, address, uint256, bytes memory) public returns (bytes4) {
@@ -111,6 +102,51 @@ contract BaseTest is PRBTest, StdCheats {
         nftId = leverageEngine.openPosition(
             collateralAmount, borrowAmount, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
         );
+    }
+
+    function liquidatePosition(uint256 nftId) internal returns (uint256 debtPaidBack) {
+        uint256 fakeEthUsdPrice = 0;
+        uint256 fakeBtcUsdPrice = 0;
+        uint256 fakeBtcEthPrice = 0;
+
+        {
+            // Get current eth price
+            (, int256 ethUsdPrice,,,) = ethUsdOracle.latestRoundData();
+            (, int256 wtbcUsdPrice,,,) = wbtcUsdOracle.latestRoundData();
+
+            // Drop the eth price by 20%
+            fakeEthUsdPrice = (uint256(ethUsdPrice) * 0.9e8) / 1e8;
+            fakeBtcUsdPrice = (uint256(wtbcUsdPrice) * 1.1e8) / 1e8;
+            fakeBtcEthPrice = fakeBtcUsdPrice * 1e18 / fakeEthUsdPrice;
+
+            FakeWBTCWETHSwapAdapter fakeSwapAdapter = new FakeWBTCWETHSwapAdapter();
+            deal(WETH, address(fakeSwapAdapter), 1000e18);
+            deal(WBTC, address(fakeSwapAdapter), 1000e8);
+            fakeSwapAdapter.setWbtcToWethExchangeRate(fakeBtcEthPrice);
+            fakeSwapAdapter.setWethToWbtcExchangeRate(1e36 / fakeBtcEthPrice);
+            leverageEngine.changeSwapAdapter(address(fakeSwapAdapter));
+        }
+
+        {
+            FakeOracle fakeETHUSDOracle = new FakeOracle();
+            fakeETHUSDOracle.updateFakePrice(fakeEthUsdPrice);
+            fakeETHUSDOracle.updateDecimals(8);
+            leverageEngine.setOracle(WETH, fakeETHUSDOracle);
+            FakeOracle fakeWBTCUSDOracle = new FakeOracle();
+            fakeWBTCUSDOracle.updateFakePrice(fakeBtcUsdPrice);
+            fakeWBTCUSDOracle.updateDecimals(8);
+            leverageEngine.setOracle(WBTC, fakeWBTCUSDOracle);
+        }
+
+        {
+            // Liquidate position
+            uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(wbtcVault));
+            leverageEngine.liquidatePosition(
+                nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, getWBTCWETHUniswapPayload(), address(0)
+            );
+            uint256 wbtcVaultBalanceAfter = IERC20(WBTC).balanceOf(address(wbtcVault));
+            debtPaidBack = wbtcVaultBalanceAfter - wbtcVaultBalanceBefore;
+        }
     }
 
     function getWBTCWETHUniswapPayload() internal view returns (bytes memory payload) {
