@@ -85,7 +85,7 @@ interface ILeverageEngine {
     )
         external;
 
-    function closeExpiredPosition(uint256 nftID, address sender) external;
+    function closeExpiredOrLiquidatedPosition(uint256 nftID, address sender) external;
 
     function getStrategyConfig(address strategy) external view returns (StrategyConfig memory);
 
