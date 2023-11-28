@@ -55,7 +55,7 @@ contract ExpiredVaultTest is BaseTest {
         uint256 nftId = openETHBasedPosition(10e8, 30e8);
 
         // Liquidate the position
-        liquidatePosition(nftId);
+        liquidateETHPosition(nftId);
         uint256 claimableAmount = leverageEngine.getPosition(nftId).claimableAmount;
 
         // Act
@@ -100,7 +100,7 @@ contract ExpiredVaultTest is BaseTest {
         // Arrange
         uint256 nftId = openETHBasedPosition(10e8, 30e8);
 
-        liquidatePosition(nftId);
+        liquidateETHPosition(nftId);
 
         vm.startPrank(address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE));
 

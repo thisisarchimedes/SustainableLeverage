@@ -8,9 +8,8 @@
     [x] Call liquidation and revert if poistion state is not live V
     [x] Call liquidation and check if poistion state is liveV
     [x] Calc preview to how much WBTC we will get (so we can send a min to liquidation and avoid attacks) V
-    [] liquidate position if it is eligible for liquidation (ETH value asset position) - enough WBTC in position to cover debt
-    [] liquidate position if it is eligible for liquidation (USDC value asset position) - enough WBTC in position to cover debt
-    [] liquidate position if it is eligible for liquidation (USDT value asset position) - enough WBTC in position to cover debt
+    [x] liquidate position if it is eligible for liquidation (ETH value asset position) - enough WBTC in position to cover debt
+    [x] liquidate position if it is eligible for liquidation (USDC value asset position) - enough WBTC in position to cover debt
     [] liquidate position if it is eligible for liquidation (ETH value asset position) - NOT enough WBTC in position to cover debt
     [] move whatever left after liquidation to Exprired Vault
     [] Even if there is nothing left move 0 to expire vault

@@ -135,7 +135,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         leverageDepositor = ILeverageDepositor(_leverageDepositor);
         nft = PositionToken(_nft);
         swapAdapter = SwapAdapter(_swapAdapter);
-        openPositionSlippage = 100;
+        openPositionSlippage = 300;
         exitFee = 50;
         feeCollector = _feeCollector;
     }
@@ -370,6 +370,23 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
     ///////////// Monitor functions /////////////
 
+    /// @notice Allows the monitor to liquidate a position.
+    /// 1. Close position
+    ///     * 1.2. Find how many shares belong to this nftID
+    ///     * 1.3. call strategy redeem with the amount of shares
+    ///     * 1.4. now we get the underlying token (e.g.: ETH) back
+    /// * 2. Swap underlying token to WBTC
+    /// * 3. Check that the amount of WBTC we have is < debt * liquidationBuffer - if not, revert V
+    /// * 4. pay back debt V
+    /// * 5. if something left
+    ///     * 5.1. take liquidation fee
+    ///     * 5.2. send whatever left to expiration vault
+    ///
+    /// @param nftId The ID of the NFT representing the position.
+    /// @param minWBTC Minimum amount of WBTC expected after position closure.
+    /// @param swapRoute Route to be used for swapping
+    /// @param swapData Swap data for the swap adapter
+    /// @param exchange Exchange to be used for swapping
     function liquidatePosition(
         uint256 nftId,
         uint256 minWBTC,
@@ -384,20 +401,6 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
         if (position.state != PositionLedgerLib.PositionState.LIVE) revert PositionNotLive();
 
-        /**
-         *
-         * 1. Close position
-         * 1.2. Find how many shares belong to this nftID
-         * 1.3. call strategy redeem with the amount of shares
-         * 1.4. now we get the underlying token (e.g.: ETH) back
-         * 2. Swap underlying token to WBTC
-         * 3. Check that the amount of WBTC we have is < debt * liquidationBuffer - if not, revert V
-         * 4. pay back debt V
-         * 5. if something left
-         * 5.1. take liquidation fee
-         * 5.2. send whatever left to expiration vault
-         */
-
         uint256 wbtcReceived = _unwindPosition(position, swapRoute, swapData, exchange);
 
         // Repay WBTC debt
@@ -405,20 +408,20 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
             revert NotEligibleForLiquidation();
         }
 
+        if (wbtcReceived < minWBTC) revert NotEnoughTokensReceived();
+
         // Return WBTC debt to WBTC vault
         wbtcVault.repay(nftId, position.wbtcDebtAmount);
 
-        uint256 wbtcLeft = wbtcReceived - position.wbtcDebtAmount;
-
-        if (wbtcLeft > 0) {
+        if (wbtcReceived > position.wbtcDebtAmount) {
+            uint256 wbtcLeft = wbtcReceived - position.wbtcDebtAmount;
             uint256 liquidationFeeAmount =
                 getStrategyConfig(position.strategyAddress).liquidationFee * wbtcLeft / (10 ** WBTC_DECIMALS);
             position.claimableAmount = wbtcLeft - liquidationFeeAmount;
 
+            wbtc.transfer(feeCollector, liquidationFeeAmount);
+            
             IExpiredVault(expiredVault).deposit(position.claimableAmount);
-
-            // TODO: Send liquidation fee to fee collector
-            // TODO: MinWBTC parameter? [TBD]
         }
 
         position.state = PositionLedgerLib.PositionState.LIQUIDATED;

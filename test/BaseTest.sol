@@ -13,6 +13,7 @@ import { SwapAdapter } from "../src/SwapAdapter.sol";
 import { ExpiredVault } from "../src/ExpiredVault.sol";
 import { FakeOracle } from "../src/ports/FakeOracle.sol";
 import { FakeWBTCWETHSwapAdapter } from "../src/ports/FakeWBTCWETHSwapAdapter.sol";
+import { FakeWBTCUSDCSwapAdapter } from "../src/ports/FakeWBTCUSDCSwapAdapter.sol";
 import { ChainlinkOracle } from "../src/ports/ChainlinkOracle.sol";
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
@@ -104,7 +105,7 @@ contract BaseTest is PRBTest, StdCheats {
         );
     }
 
-    function liquidatePosition(uint256 nftId) internal returns (uint256 debtPaidBack) {
+    function liquidateETHPosition(uint256 nftId) internal returns (uint256 debtPaidBack) {
         uint256 fakeEthUsdPrice = 0;
         uint256 fakeBtcUsdPrice = 0;
         uint256 fakeBtcEthPrice = 0;
@@ -150,6 +151,44 @@ contract BaseTest is PRBTest, StdCheats {
         }
     }
 
+    function liquidateUSDCPosition(uint256 nftId) internal returns (uint256 debtPaidBack) {
+        uint256 fakeBtcUsdPrice = 0;
+
+        {
+            // Get current eth price
+            (, int256 wtbcUsdPrice,,,) = wbtcUsdOracle.latestRoundData();
+
+            // Drop the eth price by 20%
+            fakeBtcUsdPrice = (uint256(wtbcUsdPrice) * 1.3e8) / 1e8;
+
+            FakeWBTCUSDCSwapAdapter fakeSwapAdapter = new FakeWBTCUSDCSwapAdapter();
+            deal(USDC, address(fakeSwapAdapter), 100000e6);
+            deal(WBTC, address(fakeSwapAdapter), 1000e8);
+
+            fakeSwapAdapter.setWbtcToUsdcExchangeRate(fakeBtcUsdPrice);
+            fakeSwapAdapter.setUsdcToWbtcExchangeRate(1e16 / fakeBtcUsdPrice);
+            leverageEngine.changeSwapAdapter(address(fakeSwapAdapter));
+        }
+
+        {
+            FakeOracle fakeWBTCUSDOracle = new FakeOracle();
+            fakeWBTCUSDOracle.updateFakePrice(fakeBtcUsdPrice);
+            fakeWBTCUSDOracle.updateDecimals(8);
+            leverageEngine.setOracle(WBTC, fakeWBTCUSDOracle);
+        }
+
+        {
+            // Liquidate position
+            leverageEngine.setMonitor(address(this));
+            uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(wbtcVault));
+            leverageEngine.liquidatePosition(
+                nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, getUSDCWBTCUniswapPayload(), address(0)
+            );
+            uint256 wbtcVaultBalanceAfter = IERC20(WBTC).balanceOf(address(wbtcVault));
+            debtPaidBack = wbtcVaultBalanceAfter - wbtcVaultBalanceBefore;
+        }
+    }
+
     function getWBTCWETHUniswapPayload() internal view returns (bytes memory payload) {
         payload = abi.encode(
             SwapAdapter.UniswapV3Data({
@@ -175,7 +214,7 @@ contract BaseTest is PRBTest, StdCheats {
     }
 
     function openUSDCBasedPosition(uint256 collateralAmount, uint256 borrowAmount) internal returns (uint256 nftId) {
-        bytes memory payload = getWBTCWUSDCUniswapPayload();
+        bytes memory payload = getWBTCUSDCUniswapPayload();
 
         deal(WBTC, address(this), 1000e8);
 
@@ -190,10 +229,19 @@ contract BaseTest is PRBTest, StdCheats {
         );
     }
 
-    function getWBTCWUSDCUniswapPayload() internal view returns (bytes memory payload) {
+    function getWBTCUSDCUniswapPayload() internal view returns (bytes memory payload) {
         payload = abi.encode(
             SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WBTC, uint24(500), WETH, uint24(3000), USDC),
+                deadline: block.timestamp + 1000
+            })
+        );
+    }
+
+    function getUSDCWBTCUniswapPayload() internal view returns (bytes memory payload) {
+        payload = abi.encode(
+            SwapAdapter.UniswapV3Data({
+                path: abi.encodePacked(USDC, uint24(3000), WETH, uint24(500), WBTC),
                 deadline: block.timestamp + 1000
             })
         );

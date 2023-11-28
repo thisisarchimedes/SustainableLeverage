@@ -144,7 +144,7 @@ contract LiquidatePositionTest is BaseTest {
         bytes memory payloadClose = getWETHWBTCUniswapPayload();
 
         leverageEngine.setMonitor(address(this));
-        
+
         vm.expectRevert(LeverageEngine.PositionNotLive.selector);
         leverageEngine.liquidatePosition(nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, payloadClose, address(0));
     }
@@ -164,7 +164,9 @@ contract LiquidatePositionTest is BaseTest {
         // Deposit
         uint256 nftId = openETHBasedPosition(10e8, 30e8);
 
-        uint256 debtPaidBack = liquidatePosition(nftId);
+        uint256 feeCollectorBalanceBefore = ERC20(WBTC).balanceOf(address(feeCollector));
+        uint256 debtPaidBack = liquidateETHPosition(nftId);
+        uint256 feeCollectorBalanceAfter = ERC20(WBTC).balanceOf(address(feeCollector));
 
         uint256 positionValueInWBTC = leverageEngine.previewPositionValueInWBTC(nftId);
         PositionLedgerLib.LedgerEntry memory position = leverageEngine.getPosition(nftId);
@@ -175,6 +177,52 @@ contract LiquidatePositionTest is BaseTest {
         assertAlmostEq(
             debtPaidBack + position.claimableAmount,
             positionValueInWBTC - liquidationFee * position.claimableAmount / 1e8,
+            delta
+        );
+
+        delta = (feeCollectorBalanceAfter - feeCollectorBalanceBefore) * 1_000 / 10_000; // 10% delta
+        assertAlmostEq(
+            feeCollectorBalanceAfter - feeCollectorBalanceBefore,
+            liquidationFee * position.claimableAmount / 1e8,
+            delta
+        );
+    }
+
+    function testLiquidationOfUSDCBasedPosition() external {
+        // Set liquidateion Buffer
+        uint256 liquidationFee = 0.02e8;
+        ILeverageEngine.StrategyConfig memory strategyConfig = ILeverageEngine.StrategyConfig({
+            quota: 100e8,
+            maximumMultiplier: 3e8,
+            positionLifetime: 1000,
+            liquidationBuffer: 1.1e8,
+            liquidationFee: liquidationFee
+        });
+        leverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
+
+        // Deposit
+        uint256 nftId = openUSDCBasedPosition(1e8, 3e8);
+
+        uint256 feeCollectorBalanceBefore = ERC20(WBTC).balanceOf(address(feeCollector));
+        uint256 debtPaidBack = liquidateUSDCPosition(nftId);
+        uint256 feeCollectorBalanceAfter = ERC20(WBTC).balanceOf(address(feeCollector));
+
+        uint256 positionValueInWBTC = leverageEngine.previewPositionValueInWBTC(nftId);
+        PositionLedgerLib.LedgerEntry memory position = leverageEngine.getPosition(nftId);
+
+        assertEq(position.wbtcDebtAmount, debtPaidBack);
+
+        uint256 delta = (debtPaidBack + position.claimableAmount) * 200 / 10_000; // 2% delta
+        assertAlmostEq(
+            debtPaidBack + position.claimableAmount,
+            positionValueInWBTC - liquidationFee * position.claimableAmount / 1e8,
+            delta
+        );
+
+        delta = (feeCollectorBalanceAfter - feeCollectorBalanceBefore) * 1_000 / 10_000; // 10% delta
+        assertAlmostEq(
+            feeCollectorBalanceAfter - feeCollectorBalanceBefore,
+            liquidationFee * position.claimableAmount / 1e8,
             delta
         );
     }

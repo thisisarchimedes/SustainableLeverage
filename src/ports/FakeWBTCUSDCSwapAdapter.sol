@@ -9,12 +9,12 @@ import { console2 } from "forge-std/console2.sol";
 
 
 //TODO: Implement swap on different exchanges such as curvev2 pools and balancer
-contract FakeWBTCWETHSwapAdapter is ISwapAdapter {
+contract FakeWBTCUSDCSwapAdapter is ISwapAdapter {
     IERC20 public wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
     address public leverageDepositor;
 
-    uint256 public wbtcToWethExchangeRate;
-    uint256 public wethToWbtcExchangeRate;
+    uint256 public wbtcToUsdcExchangeRate;
+    uint256 public usdcToWbtcExchangeRate;
 
     constructor() { }
 
@@ -46,22 +46,25 @@ contract FakeWBTCWETHSwapAdapter is ISwapAdapter {
         internal
         returns (uint256 toTokenAmount)
     {
+        uint256 ORACLE_DECIMALS = 8;
+        uint256 total_decimals = IERC20Detailed(address(fromToken)).decimals() + IERC20Detailed(address(toToken)).decimals() + ORACLE_DECIMALS;
+        total_decimals = total_decimals - IERC20Detailed(address(toToken)).decimals();
         if (fromToken == wbtc) {
             toTokenAmount =
-                (fromAmount * wbtcToWethExchangeRate * 10 ** IERC20Detailed(address(toToken)).decimals()) / 10 ** 26;
+                (fromAmount * wbtcToUsdcExchangeRate * 10 ** IERC20Detailed(address(toToken)).decimals()) / 10 ** total_decimals;
         } else {
             toTokenAmount =
-                (fromAmount * wethToWbtcExchangeRate * 10 ** IERC20Detailed(address(toToken)).decimals()) / 10 ** 36;
+                (fromAmount * usdcToWbtcExchangeRate * 10 ** IERC20Detailed(address(toToken)).decimals()) / 10 ** total_decimals;
         }
 
         toToken.transfer(recipient, toTokenAmount);
     }
 
-    function setWbtcToWethExchangeRate(uint256 rate) external {
-        wbtcToWethExchangeRate = rate;
+    function setWbtcToUsdcExchangeRate(uint256 rate) external {
+        wbtcToUsdcExchangeRate = rate;
     }
 
-    function setWethToWbtcExchangeRate(uint256 rate) external {
-        wethToWbtcExchangeRate = rate;
+    function setUsdcToWbtcExchangeRate(uint256 rate) external {
+        usdcToWbtcExchangeRate = rate;
     }
 }
