@@ -61,8 +61,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     // Global admin parameters
     uint256 public exitFee; // Fee (taken from profits) taken after returning all debt during exit by user in 10000
     address public feeCollector; // Address that collects fees in 10000
-    uint256 public openPositionSlippage; // in 10000 so 10000 = 100%
-
+    
     //Errors
     error ExceedBorrowLimit();
     error LessThanMinimumShares();
@@ -135,7 +134,6 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         leverageDepositor = ILeverageDepositor(_leverageDepositor);
         nft = PositionToken(_nft);
         swapAdapter = SwapAdapter(_swapAdapter);
-        openPositionSlippage = 300;
         exitFee = 50;
         feeCollector = _feeCollector;
     }
@@ -243,12 +241,14 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     /// @param collateralAmount Amount of WBTC to be deposited as collateral.
     /// @param wbtcToBorrow Amount of WBTC to borrow.
     /// @param strategy Strategy to be used for leveraging.
+    /// @param openPositionSlippageVsOracle reading oracle price and revert if on-chain price is different. Value in 10000 - so 10000 = 100%
     /// @param minStrategyShares Minimum amount of strategy shares expected in return.
     /// @param swapRoute Route to be used for swapping
     function openPosition(
         uint256 collateralAmount,
         uint256 wbtcToBorrow,
         address strategy,
+        uint256 openPositionSlippageVsOracle,
         uint256 minStrategyShares,
         SwapAdapter.SwapRoute swapRoute,
         bytes calldata swapData,
@@ -283,12 +283,16 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
             swapRoute,
             address(leverageDepositor)
         );
-        uint256 expectedTargetTokenAmount = _checkOracles(strategyUnderlyingToken, totalAmount);
-        if (receivedAmount < expectedTargetTokenAmount) revert NotEnoughTokensReceived();
+        {
+            uint256 expectedTargetTokenAmount = _checkOracles(strategyUnderlyingToken, totalAmount, openPositionSlippageVsOracle);
+            if (receivedAmount < expectedTargetTokenAmount) revert NotEnoughTokensReceived();
+        }
+        
         // Deposit borrowed WBTC to LeverageDepositor->strategy and get back shares
         uint256 sharesReceived = leverageDepositor.deposit(strategy, strategyUnderlyingToken, receivedAmount);
         if (sharesReceived < minStrategyShares) revert LessThanMinimumShares();
         StrategyConfig memory strategyConfig = strategies[strategy];
+        
         // Update Ledger
         PositionLedgerLib.LedgerEntry memory newEntry;
         newEntry.collateralAmount = collateralAmount;
@@ -584,7 +588,8 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
      */
     function _checkOracles(
         address targetToken,
-        uint256 wbtcAmount
+        uint256 wbtcAmount,
+        uint256 openPositionSlippage
     )
         internal
         view

@@ -5,8 +5,6 @@ import "../interfaces/IERC20Detailed.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ISwapAdapter } from "../interfaces/ISwapAdapter.sol";
 import { ISwapRouterUniV3 } from "../interfaces/ISwapRouterUniV3.sol";
-import { console2 } from "forge-std/console2.sol";
-
 
 //TODO: Implement swap on different exchanges such as curvev2 pools and balancer
 contract FakeWBTCUSDCSwapAdapter is ISwapAdapter {

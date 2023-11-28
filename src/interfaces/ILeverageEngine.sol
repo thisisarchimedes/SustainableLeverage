@@ -56,6 +56,7 @@ interface ILeverageEngine {
         uint256 collateralAmount,
         uint256 wbtcToBorrow,
         address strategy,
+        uint256 openPositionSlippageVsOracle,
         uint256 minStrategyShares,
         SwapAdapter.SwapRoute swapRoute,
         bytes calldata swapData,

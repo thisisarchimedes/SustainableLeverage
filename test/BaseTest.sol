@@ -101,7 +101,14 @@ contract BaseTest is PRBTest, StdCheats {
         deal(WBTC, address(this), 1000e8);
 
         nftId = leverageEngine.openPosition(
-            collateralAmount, borrowAmount, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
+            collateralAmount,
+            borrowAmount,
+            ETHPLUSETH_STRATEGY,
+            100,
+            0,
+            SwapAdapter.SwapRoute.UNISWAPV3,
+            payload,
+            address(0)
         );
     }
 
@@ -162,7 +169,7 @@ contract BaseTest is PRBTest, StdCheats {
             fakeBtcUsdPrice = (uint256(wtbcUsdPrice) * 1.3e8) / 1e8;
 
             FakeWBTCUSDCSwapAdapter fakeSwapAdapter = new FakeWBTCUSDCSwapAdapter();
-            deal(USDC, address(fakeSwapAdapter), 100000e6);
+            deal(USDC, address(fakeSwapAdapter), 100_000e6);
             deal(WBTC, address(fakeSwapAdapter), 1000e8);
 
             fakeSwapAdapter.setWbtcToUsdcExchangeRate(fakeBtcUsdPrice);
@@ -222,6 +229,7 @@ contract BaseTest is PRBTest, StdCheats {
             collateralAmount,
             borrowAmount,
             FRAXBPALUSD_STRATEGY,
+            100,
             0,
             SwapAdapter.SwapRoute.UNISWAPV3,
             payload,

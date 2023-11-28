@@ -24,12 +24,12 @@ contract OpenPositionTest is BaseTest {
 
     function test_ShouldRevertWithArithmeticOverflow() external {
         vm.expectRevert();
-        leverageEngine.openPosition(5e18, 5e18, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
+        leverageEngine.openPosition(5e18, 5e18, ETHPLUSETH_STRATEGY, 100, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
     }
 
     function test_ShouldRevertWithExceedBorrowLimit() external {
         vm.expectRevert(LeverageEngine.ExceedBorrowLimit.selector);
-        leverageEngine.openPosition(5e8, 80e8, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
+        leverageEngine.openPosition(5e8, 80e8, ETHPLUSETH_STRATEGY, 100, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
     }
 
     function test_ShouldAbleToOpenPosForWETHStrat() external {
@@ -43,7 +43,7 @@ contract OpenPositionTest is BaseTest {
             })
         );
         leverageEngine.openPosition(
-            5e8, 15e8, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
+            5e8, 15e8, ETHPLUSETH_STRATEGY, 100, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
         );
         PositionLedgerLib.LedgerEntry memory position = leverageEngine.getPosition(0);
         assertEq(position.collateralAmount, 5e8);
@@ -61,7 +61,7 @@ contract OpenPositionTest is BaseTest {
             })
         );
         leverageEngine.openPosition(
-            5e8, 15e8, FRAXBPALUSD_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
+            5e8, 15e8, FRAXBPALUSD_STRATEGY, 100, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
         );
         PositionLedgerLib.LedgerEntry memory position = leverageEngine.getPosition(0);
         assertEq(position.collateralAmount, 5e8);
@@ -92,7 +92,7 @@ contract OpenPositionTest is BaseTest {
 
         uint256 expected = (wbtcAmount * uint256(wbtcPrice) * 1e10) / uint256(ethPrice);
         expected = expected * 9900 / 10_000;
-        assertEq(oracleTestHelper.checkOracles(WETH, wbtcAmount), expected);
+        assertEq(oracleTestHelper.checkOracles(WETH, wbtcAmount, 100), expected);
     }
 
     function test_oracleCalculationUSDC() external {
@@ -119,6 +119,6 @@ contract OpenPositionTest is BaseTest {
 
         uint256 expected = (wbtcAmount * uint256(wbtcPrice)) / (uint256(usdcPrice) * 1e2);
         expected = expected * 9900 / 10_000;
-        assertEq(oracleTestHelper.checkOracles(USDC, wbtcAmount), expected);
+        assertEq(oracleTestHelper.checkOracles(USDC, wbtcAmount, 100), expected);
     }
 }
