@@ -17,24 +17,10 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
     using Roles for *;
 
+    IERC20 internal wbtc;
+    LeverageEngine internal leverageEngine;
 
-    // Errors
-    error InsufficientFunds();
-    error NotOwner();
-    error PositionNotExpiredOrLiquidated();
-
-    // Events
-    event Deposit(address indexed depositor, uint256 amount);
-    event Claim(address indexed claimer, uint256 indexed nftId, uint256 amount);
-
-    // WBTC token
-    IERC20 public wbtc;
-
-    // Vault's balance
     uint256 public balance;
-
-    // Leverage Engine
-    LeverageEngine public leverageEngine;
 
     constructor() {
         _disableInitializers();
@@ -54,7 +40,7 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
     function deposit(uint256 amount) external onlyRole(Roles.MONITOR_ROLE) {
         // Pull funds from the depositor
         wbtc.safeTransferFrom(msg.sender, address(this), amount);
-        
+
         // Update the vault balance
         balance += amount;
 
@@ -78,7 +64,7 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
                 && position.state != PositionLedgerLib.PositionState.LIQUIDATED
         ) revert PositionNotExpiredOrLiquidated();
 
-        if(balance < position.claimableAmount) revert InsufficientFunds();
+        if (balance < position.claimableAmount) revert InsufficientFunds();
 
         // Update the vault balance
         balance -= position.claimableAmount;
@@ -96,4 +82,13 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
         // Emit event
         emit Claim(msg.sender, nftId, position.claimableAmount);
     }
+
+    // Errors
+    error InsufficientFunds();
+    error NotOwner();
+    error PositionNotExpiredOrLiquidated();
+
+    // Events
+    event Deposit(address indexed depositor, uint256 amount);
+    event Claim(address indexed claimer, uint256 indexed nftId, uint256 amount);
 }

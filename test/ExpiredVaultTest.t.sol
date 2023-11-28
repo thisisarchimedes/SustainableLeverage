@@ -34,7 +34,7 @@ contract ExpiredVaultTest is BaseTest {
         uint256 depositAmount = 1e8; // 1 WBTC for simplicity
 
         // Act
-        deal(address(expiredVault.wbtc()), address(leverageEngine), 100e8);
+        deal(address(wbtc), address(leverageEngine), 100e8);
         expiredVault.deposit(depositAmount);
 
         // Assert
