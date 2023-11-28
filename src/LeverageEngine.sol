@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.21;
 
+import { console2 } from "forge-std/console2.sol";
 import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
+
+import "./PositionLedgerLib.sol";
 import "./interfaces/ILeverageEngine.sol";
 import "./interfaces/IERC20Detailed.sol";
-import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
-import "./PositionLedgerLib.sol";
 import { IWBTCVault } from "./interfaces/IWBTCVault.sol";
 import { IExpiredVault } from "./interfaces/IExpiredVault.sol";
 import { ILeverageDepositor } from "./interfaces/ILeverageDepositor.sol";
@@ -14,7 +16,8 @@ import { PositionToken } from "./PositionToken.sol";
 import { SwapAdapter } from "./SwapAdapter.sol";
 import { IMultiPoolStrategy } from "./interfaces/IMultiPoolStrategy.sol";
 import { AggregatorV3Interface } from "./interfaces/AggregatorV3Interface.sol";
-import { console2 } from "forge-std/console2.sol";
+import { Roles } from "./libs/roles.sol";
+
 /// @title LeverageEngine Contract
 /// @notice This contract facilitates the management of strategy configurations and admin parameters for the Leverage
 /// Engine.
@@ -23,36 +26,22 @@ import { console2 } from "forge-std/console2.sol";
 contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     using PositionLedgerLib for PositionLedgerLib.LedgerStorage;
     using SafeERC20 for IERC20;
+    using Roles for *;
 
-    // Define roles
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    bytes32 public constant MONITOR_ROLE = keccak256("MONITOR_ROLE");
-    bytes32 public constant EXPIRED_VAULT_ROLE = keccak256("EXPIRED_VAULT_ROLE");
-    uint256 constant BASE_DENOMINATOR = 10_000;
-    uint8 public constant WBTC_DECIMALS = 8;
+    uint256 internal constant BASE_DENOMINATOR = 10_000;
+    uint8 internal constant WBTC_DECIMALS = 8;
 
-    // WBTC token
-    IERC20 public wbtc;
-
-    // WBTC Vault
-    IWBTCVault public wbtcVault;
-
-    // Position NFT
-    PositionToken public nft;
-
-    // Leverage Depositor
-    ILeverageDepositor public leverageDepositor;
-
-    // Swap Adapter
-    SwapAdapter public swapAdapter;
-
-    // Monitor
     address public monitor;
 
-    // Expired Vault
+    IERC20 public wbtc;
+    IWBTCVault internal wbtcVault;
+
+    PositionToken public nft;
+    ILeverageDepositor internal leverageDepositor;
+    SwapAdapter internal swapAdapter;
+
     address public expiredVault;
 
-    // Mapping of strategies to their configurations
     mapping(address => StrategyConfig) internal strategies;
 
     /// Mapping of oracles token => oracle
@@ -61,54 +50,6 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     // Global admin parameters
     uint256 public exitFee; // Fee (taken from profits) taken after returning all debt during exit by user in 10000
     address public feeCollector; // Address that collects fees in 10000
-    
-    //Errors
-    error ExceedBorrowLimit();
-    error LessThanMinimumShares();
-    error OracleNotSet();
-    error NotEnoughTokensReceived();
-    error OraclePriceError();
-    error ExceedBorrowQuota();
-    error NotOwner();
-    error PositionNotLive();
-    error PositionNotExpiredOrLiquidated();
-    error NotEnoughWBTC();
-    error NotEligibleForLiquidation();
-
-    // Events
-    event StrategyConfigUpdated(
-        address indexed strategy,
-        uint256 quota,
-        uint256 positionLifetime,
-        uint256 maximumMultiplier,
-        uint256 liquidationBuffer,
-        uint256 liquidationFee
-    );
-    event StrategyRemoved(address indexed strategy);
-    event GlobalParameterUpdated(string parameter, uint256 value);
-    event FeeCollectorUpdated(address newFeeCollector);
-    event MonitorUpdated(address newMonitor);
-    event ExpiredVaultUpdated(address newExpiredVault);
-    event StrategyLiquidationFeeUpdated(address strategy, uint256 fee);
-    event PositionOpened(
-        uint256 indexed nftId,
-        address indexed user,
-        address indexed strategy,
-        uint256 collateralAmount,
-        uint256 wbtcToBorrow,
-        uint256 positionExpireBlock,
-        uint256 sharesReceived,
-        uint256 liquidationBuffer
-    );
-    event PositionClosed(
-        uint256 indexed nftId,
-        address indexed user,
-        address indexed strategy,
-        uint256 receivedAmount,
-        uint256 wbtcDebtAmount,
-        uint256 exitFee
-    );
-    event OracleSet(address token, IOracle oracle);
 
     PositionLedgerLib.LedgerStorage internal ledger;
 
@@ -127,7 +68,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         initializer
     {
         __AccessControl_init();
-        _grantRole(ADMIN_ROLE, msg.sender);
+        _grantRole(Roles.ADMIN_ROLE, msg.sender);
         wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
         wbtcVault = IWBTCVault(_wbtcVault);
         wbtc.approve(_wbtcVault, type(uint256).max);
@@ -143,7 +84,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     /// @notice Set the configuration for a specific strategy.
     /// @dev Validates the relationship between MM and LB before setting the config.
     /// @param config StrategyConfig structs that holds the config variables
-    function setStrategyConfig(address strategy, StrategyConfig calldata config) external onlyRole(ADMIN_ROLE) {
+    function setStrategyConfig(address strategy, StrategyConfig calldata config) external onlyRole(Roles.ADMIN_ROLE) {
         // Validate MM and LB relationship
         require(
             config.maximumMultiplier < (1e16 / (config.liquidationBuffer - 10 ** WBTC_DECIMALS)),
@@ -165,7 +106,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     /// @notice Removes a strategy from the LeverageEngine.
     /// @dev This function sets the strategy's quota to 0 and resets its parameters.
     /// @param strategy The address of the strategy to remove.
-    function removeStrategy(address strategy) external onlyRole(ADMIN_ROLE) {
+    function removeStrategy(address strategy) external onlyRole(Roles.ADMIN_ROLE) {
         require(strategies[strategy].quota > 0, "Strategy not active");
 
         delete strategies[strategy];
@@ -178,7 +119,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
      * @param token address of the token
      * @param oracle address of the oracle
      */
-    function setOracle(address token, IOracle oracle) external onlyRole(ADMIN_ROLE) {
+    function setOracle(address token, IOracle oracle) external onlyRole(Roles.ADMIN_ROLE) {
         oracles[token] = oracle;
         emit OracleSet(token, oracle);
     }
@@ -187,49 +128,49 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
      * @notice Change the swap adapter address
      * @param _swapAdapter The address of the new swap adapter.
      */
-    function changeSwapAdapter(address _swapAdapter) external onlyRole(ADMIN_ROLE) {
+    function changeSwapAdapter(address _swapAdapter) external onlyRole(Roles.ADMIN_ROLE) {
         swapAdapter = SwapAdapter(_swapAdapter);
     }
 
     /// @notice Set the global exit fee.
     /// @param fee The new exit fee percentage.
-    function setExitFee(uint256 fee) external onlyRole(ADMIN_ROLE) {
+    function setExitFee(uint256 fee) external onlyRole(Roles.ADMIN_ROLE) {
         exitFee = fee;
         emit GlobalParameterUpdated("ExitFee", fee);
     }
 
     /// @notice Set the global fee collector address.
     /// @param collector The new fee collector address.
-    function setFeeCollector(address collector) external onlyRole(ADMIN_ROLE) {
+    function setFeeCollector(address collector) external onlyRole(Roles.ADMIN_ROLE) {
         feeCollector = collector;
         emit FeeCollectorUpdated(collector);
     }
 
     /// @notice Set the monitor role.
     /// @param _monitor The new monitor address.
-    function setMonitor(address _monitor) external onlyRole(ADMIN_ROLE) {
+    function setMonitor(address _monitor) external onlyRole(Roles.ADMIN_ROLE) {
         if (monitor != address(0)) {
-            _revokeRole(MONITOR_ROLE, monitor);
+            _revokeRole(Roles.MONITOR_ROLE, monitor);
         }
         monitor = _monitor;
-        _grantRole(MONITOR_ROLE, _monitor);
+        _grantRole(Roles.MONITOR_ROLE, _monitor);
         emit MonitorUpdated(_monitor);
     }
 
     /// @notice Set the expired vault role.
     /// @param _expiredVault The new expired vault address.
-    function setExpiredVault(address _expiredVault) external onlyRole(ADMIN_ROLE) {
+    function setExpiredVault(address _expiredVault) external onlyRole(Roles.ADMIN_ROLE) {
         if (expiredVault != address(0)) {
             wbtc.approve(expiredVault, 0);
-            _revokeRole(EXPIRED_VAULT_ROLE, expiredVault);
+            _revokeRole(Roles.EXPIRED_VAULT_ROLE, expiredVault);
         }
         expiredVault = _expiredVault;
-        _grantRole(EXPIRED_VAULT_ROLE, _expiredVault);
+        _grantRole(Roles.EXPIRED_VAULT_ROLE, _expiredVault);
         wbtc.approve(_expiredVault, type(uint256).max);
         emit ExpiredVaultUpdated(_expiredVault);
     }
 
-    function setLiquidationFee(address strategy, uint256 fee) external onlyRole(ADMIN_ROLE) {
+    function setLiquidationFee(address strategy, uint256 fee) external onlyRole(Roles.ADMIN_ROLE) {
         strategies[strategy].liquidationFee = fee;
 
         emit StrategyLiquidationFeeUpdated(strategy, fee);
@@ -283,14 +224,16 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         );
         {
             uint256 receivedTokensInWbtc = _getWBTCValueFromTokenAmount(strategyUnderlyingToken, receivedAmount);
-            if (wbtcToBorrow >= receivedTokensInWbtc * strategies[strategy].liquidationBuffer / 10**WBTC_DECIMALS) revert NotEnoughTokensReceived();
+            if (wbtcToBorrow >= receivedTokensInWbtc * strategies[strategy].liquidationBuffer / 10 ** WBTC_DECIMALS) {
+                revert NotEnoughTokensReceived();
+            }
         }
-        
+
         // Deposit borrowed WBTC to LeverageDepositor->strategy and get back shares
         uint256 sharesReceived = leverageDepositor.deposit(strategy, strategyUnderlyingToken, receivedAmount);
         if (sharesReceived < minStrategyShares) revert LessThanMinimumShares();
         StrategyConfig memory strategyConfig = strategies[strategy];
-        
+
         // Update Ledger
         PositionLedgerLib.LedgerEntry memory newEntry;
         newEntry.collateralAmount = collateralAmount;
@@ -397,7 +340,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         address exchange
     )
         external
-        onlyRole(MONITOR_ROLE)
+        onlyRole(Roles.MONITOR_ROLE)
     {
         PositionLedgerLib.LedgerEntry memory position = getPosition(nftId);
 
@@ -422,7 +365,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
             position.claimableAmount = wbtcLeft - liquidationFeeAmount;
 
             wbtc.transfer(feeCollector, liquidationFeeAmount);
-            
+
             IExpiredVault(expiredVault).deposit(position.claimableAmount);
         }
 
@@ -435,7 +378,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
     /// @notice ExpiredVault will call this function to close an expired position.
     /// @param nftID The ID of the NFT representing the position.
-    function closeExpiredOrLiquidatedPosition(uint256 nftID, address sender) external onlyRole(EXPIRED_VAULT_ROLE) {
+    function closeExpiredOrLiquidatedPosition(uint256 nftID, address sender) external onlyRole(Roles.EXPIRED_VAULT_ROLE) {
         // Check if the user owns the NFT
         if (nft.ownerOf(nftID) != sender) revert NotOwner();
 
@@ -602,7 +545,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
                 (wbtcAmount * wbtcPrice / 10 ** WBTC_DECIMALS)
                     * (10 ** (targetTokenDecimals + targetTokenOracleDecimals)) / 10 ** WBTC_DECIMALS
             ) / targetTokenPrice
-        ) ;
+        );
     }
 
     /**
@@ -619,4 +562,50 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
         uPrice = uint256(price);
     }
+
+    error ExceedBorrowLimit();
+    error LessThanMinimumShares();
+    error OracleNotSet();
+    error NotEnoughTokensReceived();
+    error OraclePriceError();
+    error ExceedBorrowQuota();
+    error NotOwner();
+    error PositionNotLive();
+    error PositionNotExpiredOrLiquidated();
+    error NotEnoughWBTC();
+    error NotEligibleForLiquidation();
+
+    event StrategyConfigUpdated(
+        address indexed strategy,
+        uint256 quota,
+        uint256 positionLifetime,
+        uint256 maximumMultiplier,
+        uint256 liquidationBuffer,
+        uint256 liquidationFee
+    );
+    event StrategyRemoved(address indexed strategy);
+    event GlobalParameterUpdated(string parameter, uint256 value);
+    event FeeCollectorUpdated(address newFeeCollector);
+    event MonitorUpdated(address newMonitor);
+    event ExpiredVaultUpdated(address newExpiredVault);
+    event StrategyLiquidationFeeUpdated(address strategy, uint256 fee);
+    event PositionOpened(
+        uint256 indexed nftId,
+        address indexed user,
+        address indexed strategy,
+        uint256 collateralAmount,
+        uint256 wbtcToBorrow,
+        uint256 positionExpireBlock,
+        uint256 sharesReceived,
+        uint256 liquidationBuffer
+    );
+    event PositionClosed(
+        uint256 indexed nftId,
+        address indexed user,
+        address indexed strategy,
+        uint256 receivedAmount,
+        uint256 wbtcDebtAmount,
+        uint256 exitFee
+    );
+    event OracleSet(address token, IOracle oracle);
 }

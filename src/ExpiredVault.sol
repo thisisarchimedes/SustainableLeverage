@@ -3,9 +3,11 @@ pragma solidity >=0.8.21;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
+
 import "./LeverageEngine.sol";
 import "./interfaces/IExpiredVault.sol";
 import "./PositionLedgerLib.sol";
+import { Roles } from "./libs/roles.sol";
 
 /// @title ExpiredVault Contract
 /// @notice This contract holds the expired positions' funds and enables withdrawal of funds by users
@@ -13,6 +15,8 @@ import "./PositionLedgerLib.sol";
 /// @dev This contract is upgradeable
 contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
+    using Roles for *;
+
 
     // Errors
     error InsufficientFunds();
@@ -22,9 +26,6 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
     // Events
     event Deposit(address indexed depositor, uint256 amount);
     event Claim(address indexed claimer, uint256 indexed nftId, uint256 amount);
-
-    // Define roles
-    bytes32 public constant MONITOR_ROLE = keccak256("MONITOR_ROLE");
 
     // WBTC token
     IERC20 public wbtc;
@@ -42,7 +43,7 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
     function initialize(address _leverageEngine, address _wbtc) external initializer {
         __AccessControl_init();
         leverageEngine = LeverageEngine(_leverageEngine);
-        _grantRole(MONITOR_ROLE, _leverageEngine);
+        _grantRole(Roles.MONITOR_ROLE, _leverageEngine);
         wbtc = IERC20(_wbtc);
     }
 
@@ -50,7 +51,7 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
 
     /// @notice Deposits WBTC into the vault from expired or liquidated positions.
     /// @param amount Amount of WBTC to deposit into the vault.
-    function deposit(uint256 amount) external onlyRole(MONITOR_ROLE) {
+    function deposit(uint256 amount) external onlyRole(Roles.MONITOR_ROLE) {
         // Pull funds from the depositor
         wbtc.safeTransferFrom(msg.sender, address(this), amount);
         
