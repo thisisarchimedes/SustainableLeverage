@@ -33,7 +33,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
     address public monitor;
 
-    IERC20 public wbtc;
+    IERC20 internal wbtc;
     IWBTCVault internal wbtcVault;
 
     PositionToken public nft;

@@ -41,7 +41,6 @@ contract ExpiredVaultTest is BaseTest {
         assertEq(expiredVault.balance(), depositAmount, "Vault balance should be updated");
     }
 
-
     function testDepositNotMonitor() public {
         uint256 depositAmount = 1e8; // 1 WBTC for simplicity
 
@@ -68,8 +67,12 @@ contract ExpiredVaultTest is BaseTest {
         assertEq(position.claimableAmount, 0, "Position claimableAmount should be 0");
         assertTrue(position.state == PositionLedgerLib.PositionState.CLOSED, "Position state should be CLOSED");
         assertEq(expiredVault.balance(), 0, "Expired vault balance should be 0");
-        assertEq(balanceAfter - balanceBefore, claimableAmount, "WBTC balance should be updated to the claimable position amount");
-        
+        assertEq(
+            balanceAfter - balanceBefore,
+            claimableAmount,
+            "WBTC balance should be updated to the claimable position amount"
+        );
+
         PositionToken positionToken = PositionToken(leverageEngine.nft());
         vm.expectRevert(IERC721A.OwnerQueryForNonexistentToken.selector); // NFT should be burned
         positionToken.ownerOf(nftId);
@@ -108,10 +111,10 @@ contract ExpiredVaultTest is BaseTest {
         expiredVault.claim(nftId);
     }
 
-
     function testResetExpiredVault() external {
         // Remember
         address oldExpiredVault = address(expiredVault);
+        IERC20 wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
 
         // Prepare new expired vault
         ExpiredVault newExpiredVault = new ExpiredVault();
@@ -127,9 +130,23 @@ contract ExpiredVaultTest is BaseTest {
         // Assert
         assertNotEq(leverageEngine.expiredVault(), address(oldExpiredVault), "Expired vault should be updated");
         assertEq(leverageEngine.expiredVault(), address(newExpiredVault), "Expired vault should be updated");
-        assertEq(leverageEngine.wbtc().allowance(address(leverageEngine), address(oldExpiredVault)), 0, "Old expired vault should be disapproved");
-        assertEq(leverageEngine.wbtc().allowance(address(leverageEngine), address(newExpiredVault)), type(uint256).max, "Expired vault should be approved");
-        assertFalse(leverageEngine.hasRole(Roles.EXPIRED_VAULT_ROLE, address(oldExpiredVault)), "Old expired vault should be removed from MONITOR_ROLE");
-        assertTrue(leverageEngine.hasRole(Roles.EXPIRED_VAULT_ROLE, address(newExpiredVault)), "Expired vault should be added to MONITOR_ROLE");
+        assertEq(
+            wbtc.allowance(address(leverageEngine), address(oldExpiredVault)),
+            0,
+            "Old expired vault should be disapproved"
+        );
+        assertEq(
+            wbtc.allowance(address(leverageEngine), address(newExpiredVault)),
+            type(uint256).max,
+            "Expired vault should be approved"
+        );
+        assertFalse(
+            leverageEngine.hasRole(Roles.EXPIRED_VAULT_ROLE, address(oldExpiredVault)),
+            "Old expired vault should be removed from MONITOR_ROLE"
+        );
+        assertTrue(
+            leverageEngine.hasRole(Roles.EXPIRED_VAULT_ROLE, address(newExpiredVault)),
+            "Expired vault should be added to MONITOR_ROLE"
+        );
     }
 }
