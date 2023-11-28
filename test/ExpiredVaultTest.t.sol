@@ -128,8 +128,8 @@ contract ExpiredVaultTest is BaseTest {
         leverageEngine.setExpiredVault(address(newExpiredVault));
 
         // Assert
-        assertNotEq(leverageEngine.expiredVault(), address(oldExpiredVault), "Expired vault should be updated");
-        assertEq(leverageEngine.expiredVault(), address(newExpiredVault), "Expired vault should be updated");
+        assertNotEq(leverageEngine.getCurrentExpiredVault(), address(oldExpiredVault), "Expired vault should be updated");
+        assertEq(leverageEngine.getCurrentExpiredVault(), address(newExpiredVault), "Expired vault should be updated");
         assertEq(
             wbtc.allowance(address(leverageEngine), address(oldExpiredVault)),
             0,

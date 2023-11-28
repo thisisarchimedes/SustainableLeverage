@@ -40,7 +40,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     ILeverageDepositor internal leverageDepositor;
     SwapAdapter internal swapAdapter;
 
-    address public expiredVault;
+    address internal expiredVault;
 
     mapping(address => StrategyConfig) internal strategies;
 
@@ -378,7 +378,13 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
     /// @notice ExpiredVault will call this function to close an expired position.
     /// @param nftID The ID of the NFT representing the position.
-    function closeExpiredOrLiquidatedPosition(uint256 nftID, address sender) external onlyRole(Roles.EXPIRED_VAULT_ROLE) {
+    function closeExpiredOrLiquidatedPosition(
+        uint256 nftID,
+        address sender
+    )
+        external
+        onlyRole(Roles.EXPIRED_VAULT_ROLE)
+    {
         // Check if the user owns the NFT
         if (nft.ownerOf(nftID) != sender) revert NotOwner();
 
@@ -461,6 +467,10 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
     function getPosition(uint256 nftId) public view returns (PositionLedgerLib.LedgerEntry memory) {
         return ledger.getLedgerEntry(nftId);
+    }
+
+    function getCurrentExpiredVault() public view returns (address) {
+        return expiredVault;
     }
 
     ///////////// Internal functions /////////////
