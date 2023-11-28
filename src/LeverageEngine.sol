@@ -46,6 +46,9 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     // Swap Adapter
     SwapAdapter public swapAdapter;
 
+    // Monitor
+    address public monitor;
+
     // Expired Vault
     address public expiredVault;
 
@@ -85,6 +88,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     event StrategyRemoved(address indexed strategy);
     event GlobalParameterUpdated(string parameter, uint256 value);
     event FeeCollectorUpdated(address newFeeCollector);
+    event MonitorUpdated(address newMonitor);
     event ExpiredVaultUpdated(address newExpiredVault);
     event StrategyLiquidationFeeUpdated(address strategy, uint256 fee);
     event PositionOpened(
@@ -201,6 +205,17 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     function setFeeCollector(address collector) external onlyRole(ADMIN_ROLE) {
         feeCollector = collector;
         emit FeeCollectorUpdated(collector);
+    }
+
+    /// @notice Set the monitor role.
+    /// @param _monitor The new monitor address.
+    function setMonitor(address _monitor) external onlyRole(ADMIN_ROLE) {
+        if (monitor != address(0)) {
+            _revokeRole(MONITOR_ROLE, monitor);
+        }
+        monitor = _monitor;
+        _grantRole(MONITOR_ROLE, _monitor);
+        emit MonitorUpdated(_monitor);
     }
 
     /// @notice Set the expired vault role.

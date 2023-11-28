@@ -141,8 +141,11 @@ contract LiquidatePositionTest is BaseTest {
 
         closeETHBasedPosition(nftId);
 
-        vm.expectRevert(LeverageEngine.PositionNotLive.selector);
         bytes memory payloadClose = getWETHWBTCUniswapPayload();
+
+        leverageEngine.setMonitor(address(this));
+        
+        vm.expectRevert(LeverageEngine.PositionNotLive.selector);
         leverageEngine.liquidatePosition(nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, payloadClose, address(0));
     }
 

@@ -140,6 +140,7 @@ contract BaseTest is PRBTest, StdCheats {
 
         {
             // Liquidate position
+            leverageEngine.setMonitor(address(this));
             uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(wbtcVault));
             leverageEngine.liquidatePosition(
                 nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, getWBTCWETHUniswapPayload(), address(0)
