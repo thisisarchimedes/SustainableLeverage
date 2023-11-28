@@ -299,6 +299,62 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         );
     }
 
+    /// @notice Allows a user to close their leverage position.
+    /// @param nftId The ID of the NFT representing the position.
+    /// @param minWBTC Minimum amount of WBTC expected after position closure.
+    /// @param swapRoute Route to be used for swapping
+    /// @param swapData Swap data for the swap adapter
+    /// @param exchange Exchange to be used for swapping
+    function closePosition(
+        uint256 nftId,
+        uint256 minWBTC,
+        SwapAdapter.SwapRoute swapRoute,
+        bytes calldata swapData,
+        address exchange
+    )
+        external
+    {
+        // Check if the user owns the NFT
+        if (nft.ownerOf(nftId) != msg.sender) revert NotOwner();
+
+        PositionLedgerLib.LedgerEntry memory position = ledger.entries[nftId];
+
+        // Check if the NFT state is LIVE
+        if (position.state != PositionLedgerLib.PositionState.LIVE) revert PositionNotLive();
+
+        // Unwind the position
+        uint256 wbtcReceived = _unwindPosition(position, swapRoute, swapData, exchange);
+
+        // Repay WBTC debt
+        if (wbtcReceived < position.wbtcDebtAmount) revert NotEnoughWBTC();
+
+        // Return WBTC debt to WBTC vault
+        wbtcVault.repay(nftId, position.wbtcDebtAmount);
+
+        // Deduct the exit fee
+        uint256 exitFeeAmount = (wbtcReceived - position.wbtcDebtAmount) * exitFee / BASE_DENOMINATOR;
+        wbtc.transfer(feeCollector, exitFeeAmount);
+
+        // Send the rest of WBTC to the user
+        uint256 wbtcLeft = wbtcReceived - position.wbtcDebtAmount - exitFeeAmount;
+        if (wbtcLeft < minWBTC) revert NotEnoughTokensReceived();
+        wbtc.transfer(msg.sender, wbtcLeft);
+
+        // Update the ledger
+        position.state = PositionLedgerLib.PositionState.CLOSED;
+        ledger.setLedgerEntry(nftId, position);
+
+        // Burn the NFT
+        nft.burn(nftId);
+
+        // emit event
+        emit PositionClosed(
+            nftId, msg.sender, position.strategyAddress, wbtcLeft, position.wbtcDebtAmount, exitFeeAmount
+        );
+    }
+
+    ///////////// Monitor functions /////////////
+
     function liquidatePosition(
         uint256 nftId,
         uint256 minWBTC,
@@ -327,13 +383,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
          * 5.2. send whatever left to expiration vault
          */
 
-        // Unwind the position
-        uint256 assetsReceived = leverageDepositor.redeem(position.strategyAddress, position.strategyShares);
-        address strategyAsset = IMultiPoolStrategy(position.strategyAddress).asset();
-        // Swap the assets to WBTC
-        IERC20(strategyAsset).transfer(address(swapAdapter), assetsReceived);
-        uint256 wbtcReceived =
-            swapAdapter.swap(IERC20(strategyAsset), wbtc, assetsReceived, exchange, swapData, swapRoute, address(this));
+        uint256 wbtcReceived = _unwindPosition(position, swapRoute, swapData, exchange);
 
         // Repay WBTC debt
         if (wbtcReceived > position.wbtcDebtAmount * position.liquidationBuffer / (10 ** WBTC_DECIMALS)) {
@@ -361,6 +411,65 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         ledger.setLedgerEntry(nftId, position);
     }
 
+    ///////////// Expired Vault functions /////////////
+
+    /// @notice ExpiredVault will call this function to close an expired position.
+    /// @param nftID The ID of the NFT representing the position.
+    function closeExpiredOrLiquidatedPosition(uint256 nftID, address sender) external onlyRole(EXPIRED_VAULT_ROLE) {
+        // Check if the user owns the NFT
+        if (nft.ownerOf(nftID) != sender) revert NotOwner();
+
+        PositionLedgerLib.LedgerEntry storage position = ledger.entries[nftID];
+
+        // Check if the NFT state is Expired or Liquidated
+        if (
+            position.state != PositionLedgerLib.PositionState.EXPIRED
+                && position.state != PositionLedgerLib.PositionState.LIQUIDATED
+        ) revert PositionNotExpiredOrLiquidated();
+
+        // Rememver the received amount for emitting the event
+        uint256 receivedAmount = position.claimableAmount;
+
+        // Update the ledger
+        position.state = PositionLedgerLib.PositionState.CLOSED;
+        position.claimableAmount = 0;
+
+        // Burn the NFT
+        nft.burn(nftID);
+
+        // Emit event
+        // No exit fee is charged for expired positions
+        emit PositionClosed(nftID, sender, position.strategyAddress, receivedAmount, position.wbtcDebtAmount, 0);
+    }
+
+    ///////////// View functions /////////////
+
+    /// @notice Preview the number of AMM LP tokensexpected from opening a position.
+    /// @param collateralAmount Amount of WBTC the user is planning to deposit as collateral.
+    /// @param wbtcToBorrow Amount of WBTC the user is planning to borrow.
+    /// @param strategy The strategy user is considering.
+    /// @param minimumExpected Minimum amount of tokens expected after swap from WBTC to strategy token.
+    /// @return estimatedShares The estimated number of AMM LP tokens s the user will receive.
+    function previewOpenPosition(
+        uint256 collateralAmount,
+        uint256 wbtcToBorrow,
+        address strategy,
+        uint256 minimumExpected
+    )
+        external
+        view
+        returns (uint256 estimatedShares)
+    {
+        if (strategies[strategy].quota < wbtcToBorrow) revert ExceedBorrowQuota();
+        // Check Maximum Multiplier condition
+        if (collateralAmount * strategies[strategy].maximumMultiplier / 10 ** WBTC_DECIMALS < wbtcToBorrow) {
+            revert ExceedBorrowLimit();
+        }
+
+        // Here, we make an assumption that the strategy has a function to give us an estimate of the shares
+        estimatedShares = IMultiPoolStrategy(strategy).previewDeposit(minimumExpected);
+    }
+
     function isPositionLiquidatable(uint256 nftId) external view returns (bool) {
         PositionLedgerLib.LedgerEntry memory position = getPosition(nftId);
 
@@ -378,6 +487,37 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         address strategyValueTokenAddress = IMultiPoolStrategy(position.strategyAddress).asset();
 
         positionValueInWBTC = _getWBTCValueFromTokenAmount(strategyValueTokenAddress, strategyValueTokenEstimatedAmount);
+    }
+
+    /// @notice Get the configuration for a specific strategy.
+    /// @param strategy The address of the strategy to retrieve configuration for.
+    /// @return The strategy configuration.
+    function getStrategyConfig(address strategy) public view returns (StrategyConfig memory) {
+        return strategies[strategy];
+    }
+
+    function getPosition(uint256 nftId) public view returns (PositionLedgerLib.LedgerEntry memory) {
+        return ledger.getLedgerEntry(nftId);
+    }
+
+    ///////////// Internal functions /////////////
+
+    function _unwindPosition(
+        PositionLedgerLib.LedgerEntry memory position,
+        SwapAdapter.SwapRoute swapRoute,
+        bytes calldata swapData,
+        address exchange
+    )
+        internal
+        returns (uint256 wbtcReceived)
+    {
+        // Unwind the position
+        uint256 assetsReceived = leverageDepositor.redeem(position.strategyAddress, position.strategyShares);
+        address strategyAsset = IMultiPoolStrategy(position.strategyAddress).asset();
+        // Swap the assets to WBTC
+        IERC20(strategyAsset).transfer(address(swapAdapter), assetsReceived);
+        wbtcReceived =
+            swapAdapter.swap(IERC20(strategyAsset), wbtc, assetsReceived, exchange, swapData, swapRoute, address(this));
     }
 
     function _getWBTCValueFromTokenAmount(
@@ -416,132 +556,6 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         } else {
             return amountUnadjustedDecimals * 10 ** (toDec - fromDec);
         }
-    }
-
-    ///////////// View functions /////////////
-
-    /// @notice Preview the number of AMM LP tokensexpected from opening a position.
-    /// @param collateralAmount Amount of WBTC the user is planning to deposit as collateral.
-    /// @param wbtcToBorrow Amount of WBTC the user is planning to borrow.
-    /// @param strategy The strategy user is considering.
-    /// @param minimumExpected Minimum amount of tokens expected after swap from WBTC to strategy token.
-    /// @return estimatedShares The estimated number of AMM LP tokens s the user will receive.
-    function previewOpenPosition(
-        uint256 collateralAmount,
-        uint256 wbtcToBorrow,
-        address strategy,
-        uint256 minimumExpected
-    )
-        external
-        view
-        returns (uint256 estimatedShares)
-    {
-        if (strategies[strategy].quota < wbtcToBorrow) revert ExceedBorrowQuota();
-        // Check Maximum Multiplier condition
-        if (collateralAmount * strategies[strategy].maximumMultiplier / 10 ** WBTC_DECIMALS < wbtcToBorrow) {
-            revert ExceedBorrowLimit();
-        }
-
-        // Here, we make an assumption that the strategy has a function to give us an estimate of the shares
-        estimatedShares = IMultiPoolStrategy(strategy).previewDeposit(minimumExpected);
-    }
-
-    /// @notice Allows a user to close their leverage position.
-    /// @param nftId The ID of the NFT representing the position.
-    /// @param minWBTC Minimum amount of WBTC expected after position closure.
-    /// @param swapRoute Route to be used for swapping
-    /// @param swapData Swap data for the swap adapter
-    /// @param exchange Exchange to be used for swapping
-    function closePosition(
-        uint256 nftId,
-        uint256 minWBTC,
-        SwapAdapter.SwapRoute swapRoute,
-        bytes calldata swapData,
-        address exchange
-    )
-        external
-    {
-        // Check if the user owns the NFT
-        if (nft.ownerOf(nftId) != msg.sender) revert NotOwner();
-
-        PositionLedgerLib.LedgerEntry memory position = ledger.entries[nftId];
-
-        // Check if the NFT state is LIVE
-        if (position.state != PositionLedgerLib.PositionState.LIVE) revert PositionNotLive();
-
-        // Unwind the position
-        uint256 assetsReceived = leverageDepositor.redeem(position.strategyAddress, position.strategyShares);
-        address strategyAsset = IMultiPoolStrategy(position.strategyAddress).asset();
-        // Swap the assets to WBTC
-        IERC20(strategyAsset).transfer(address(swapAdapter), assetsReceived);
-        uint256 wbtcReceived =
-            swapAdapter.swap(IERC20(strategyAsset), wbtc, assetsReceived, exchange, swapData, swapRoute, address(this));
-        // Repay WBTC debt
-        if (wbtcReceived < position.wbtcDebtAmount) revert NotEnoughWBTC();
-
-        // Return WBTC debt to WBTC vault
-        wbtcVault.repay(nftId, position.wbtcDebtAmount);
-
-        // Deduct the exit fee
-        uint256 exitFeeAmount = (wbtcReceived - position.wbtcDebtAmount) * exitFee / BASE_DENOMINATOR;
-        wbtc.transfer(feeCollector, exitFeeAmount);
-
-        // Send the rest of WBTC to the user
-        uint256 wbtcLeft = wbtcReceived - position.wbtcDebtAmount - exitFeeAmount;
-        if (wbtcLeft < minWBTC) revert NotEnoughTokensReceived();
-        wbtc.transfer(msg.sender, wbtcLeft);
-
-        // Update the ledger
-        position.state = PositionLedgerLib.PositionState.CLOSED;
-        ledger.setLedgerEntry(nftId, position);
-
-        // Burn the NFT
-        nft.burn(nftId);
-
-        // emit event
-        emit PositionClosed(
-            nftId, msg.sender, position.strategyAddress, wbtcLeft, position.wbtcDebtAmount, exitFeeAmount
-        );
-    }
-
-    /// @notice ExpiredVault will call this function to close an expired position.
-    /// @param nftID The ID of the NFT representing the position.
-    function closeExpiredOrLiquidatedPosition(uint256 nftID, address sender) external onlyRole(EXPIRED_VAULT_ROLE) {
-        // Check if the user owns the NFT
-        if (nft.ownerOf(nftID) != sender) revert NotOwner();
-
-        PositionLedgerLib.LedgerEntry storage position = ledger.entries[nftID];
-
-        // Check if the NFT state is Expired or Liquidated
-        if (
-            position.state != PositionLedgerLib.PositionState.EXPIRED
-                && position.state != PositionLedgerLib.PositionState.LIQUIDATED
-        ) revert PositionNotExpiredOrLiquidated();
-
-        // Rememver the received amount for emitting the event
-        uint256 receivedAmount = position.claimableAmount;
-
-        // Update the ledger
-        position.state = PositionLedgerLib.PositionState.CLOSED;
-        position.claimableAmount = 0;
-
-        // Burn the NFT
-        nft.burn(nftID);
-
-        // Emit event
-        // No exit fee is charged for expired positions
-        emit PositionClosed(nftID, sender, position.strategyAddress, receivedAmount, position.wbtcDebtAmount, 0);
-    }
-
-    /// @notice Get the configuration for a specific strategy.
-    /// @param strategy The address of the strategy to retrieve configuration for.
-    /// @return The strategy configuration.
-    function getStrategyConfig(address strategy) public view returns (StrategyConfig memory) {
-        return strategies[strategy];
-    }
-
-    function getPosition(uint256 nftId) public view returns (PositionLedgerLib.LedgerEntry memory) {
-        return ledger.getLedgerEntry(nftId);
     }
 
     /**
