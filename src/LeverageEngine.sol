@@ -241,14 +241,12 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     /// @param collateralAmount Amount of WBTC to be deposited as collateral.
     /// @param wbtcToBorrow Amount of WBTC to borrow.
     /// @param strategy Strategy to be used for leveraging.
-    /// @param openPositionSlippageVsOracle reading oracle price and revert if on-chain price is different. Value in 10000 - so 10000 = 100%
     /// @param minStrategyShares Minimum amount of strategy shares expected in return.
     /// @param swapRoute Route to be used for swapping
     function openPosition(
         uint256 collateralAmount,
         uint256 wbtcToBorrow,
         address strategy,
-        uint256 openPositionSlippageVsOracle,
         uint256 minStrategyShares,
         SwapAdapter.SwapRoute swapRoute,
         bytes calldata swapData,
@@ -284,8 +282,8 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
             address(leverageDepositor)
         );
         {
-            uint256 expectedTargetTokenAmount = _checkOracles(strategyUnderlyingToken, totalAmount, openPositionSlippageVsOracle);
-            if (receivedAmount < expectedTargetTokenAmount) revert NotEnoughTokensReceived();
+            uint256 receivedTokensInWbtc = _getWBTCValueFromTokenAmount(strategyUnderlyingToken, receivedAmount);
+            if (wbtcToBorrow >= receivedTokensInWbtc * strategies[strategy].liquidationBuffer / 10**WBTC_DECIMALS) revert NotEnoughTokensReceived();
         }
         
         // Deposit borrowed WBTC to LeverageDepositor->strategy and get back shares
@@ -588,8 +586,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
      */
     function _checkOracles(
         address targetToken,
-        uint256 wbtcAmount,
-        uint256 openPositionSlippage
+        uint256 wbtcAmount
     )
         internal
         view
@@ -605,7 +602,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
                 (wbtcAmount * wbtcPrice / 10 ** WBTC_DECIMALS)
                     * (10 ** (targetTokenDecimals + targetTokenOracleDecimals)) / 10 ** WBTC_DECIMALS
             ) / targetTokenPrice
-        ) * (BASE_DENOMINATOR - openPositionSlippage) / BASE_DENOMINATOR;
+        ) ;
     }
 
     /**

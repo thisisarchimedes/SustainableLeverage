@@ -36,7 +36,7 @@ contract ClosePositionTest is BaseTest {
             })
         );
         leverageEngine.openPosition(
-            5e8, 15e8, ETHPLUSETH_STRATEGY, 100, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
+            5e8, 15e8, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
         );
     }
 
