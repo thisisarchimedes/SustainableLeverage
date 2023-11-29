@@ -7,7 +7,7 @@ import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/acc
 import "./LeverageEngine.sol";
 import "./interfaces/IExpiredVault.sol";
 import "./PositionLedgerLib.sol";
-import { Roles } from "./libs/Roles.sol";
+import { Roles } from "src/libs/Roles.sol";
 import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
 
 
