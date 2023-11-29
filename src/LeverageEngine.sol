@@ -16,10 +16,10 @@ import { PositionToken } from "./PositionToken.sol";
 import { SwapAdapter } from "./SwapAdapter.sol";
 import { IMultiPoolStrategy } from "./interfaces/IMultiPoolStrategy.sol";
 import { AggregatorV3Interface } from "./interfaces/AggregatorV3Interface.sol";
-import { Roles } from "src/libs/Roles.sol";
-import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
-import { ErrorsLeverageEngine } from "./libs/ErrorsLeverageEngine.sol";
-import { EventsLeverageEngine } from "./libs/EventsLeverageEngine.sol";
+import { Roles } from "@contracts/libs/Roles.sol";
+import { DependencyAddresses } from "@contracts/libs/DependencyAddresses.sol";
+import { ErrorsLeverageEngine } from "@contracts/libs/ErrorsLeverageEngine.sol";
+import { EventsLeverageEngine } from "@contracts/libs/EventsLeverageEngine.sol";
 
 /// @title LeverageEngine Contract
 /// @notice This contract facilitates the management of strategy configurations and admin parameters for the Leverage
