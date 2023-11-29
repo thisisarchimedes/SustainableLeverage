@@ -147,11 +147,11 @@ contract ExpiredVaultTest is BaseTest {
             "Expired vault should be approved"
         );
         assertFalse(
-            leverageEngine.hasRole(Roles.EXPIRED_VAULT_ROLE, address(oldExpiredVault)),
+            leverageEngine.hasRole(LocalRoles.EXPIRED_VAULT_ROLE, address(oldExpiredVault)),
             "Old expired vault should be removed from MONITOR_ROLE"
         );
         assertTrue(
-            leverageEngine.hasRole(Roles.EXPIRED_VAULT_ROLE, address(newExpiredVault)),
+            leverageEngine.hasRole(LocalRoles.EXPIRED_VAULT_ROLE, address(newExpiredVault)),
             "Expired vault should be added to MONITOR_ROLE"
         );
     }

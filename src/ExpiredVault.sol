@@ -7,7 +7,7 @@ import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/acc
 import "./LeverageEngine.sol";
 import "./interfaces/IExpiredVault.sol";
 import "./PositionLedgerLib.sol";
-import { Roles } from "@contracts/libs/Roles.sol";
+import { LocalRoles } from "./libs/LocalRoles.sol";
 import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
 
 
@@ -18,7 +18,7 @@ import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
 /// @dev This contract is upgradeable
 contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
-    using Roles for *;
+    using LocalRoles for *;
 
     IERC20 internal wbtc;
     LeverageEngine internal leverageEngine;
@@ -33,23 +33,23 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
     function initialize() external initializer {
         __AccessControl_init();
 
-        _grantRole(Roles.ADMIN_ROLE, msg.sender);
+        _grantRole(LocalRoles.ADMIN_ROLE, msg.sender);
 
         wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599); 
     }
 
-    function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(Roles.ADMIN_ROLE) {
+    function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(LocalRoles.ADMIN_ROLE) {
         leverageEngine = LeverageEngine(dependencies.leverageEngine);
         positionToken = PositionToken(dependencies.positionToken);
 
-        _grantRole(Roles.MONITOR_ROLE, dependencies.leverageEngine);
+        _grantRole(LocalRoles.MONITOR_ROLE, dependencies.leverageEngine);
     }
 
     ///////////// Monitor functions /////////////
 
     /// @notice Deposits WBTC into the vault from expired or liquidated positions.
     /// @param amount Amount of WBTC to deposit into the vault.
-    function deposit(uint256 amount) external onlyRole(Roles.MONITOR_ROLE) {
+    function deposit(uint256 amount) external onlyRole(LocalRoles.MONITOR_ROLE) {
         // Pull funds from the depositor
         wbtc.safeTransferFrom(msg.sender, address(this), amount);
 

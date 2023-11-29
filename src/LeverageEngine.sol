@@ -16,10 +16,10 @@ import { PositionToken } from "./PositionToken.sol";
 import { SwapAdapter } from "./SwapAdapter.sol";
 import { IMultiPoolStrategy } from "./interfaces/IMultiPoolStrategy.sol";
 import { AggregatorV3Interface } from "./interfaces/AggregatorV3Interface.sol";
-import { Roles } from "@contracts/libs/Roles.sol";
-import { DependencyAddresses } from "@contracts/libs/DependencyAddresses.sol";
-import { ErrorsLeverageEngine } from "@contracts/libs/ErrorsLeverageEngine.sol";
-import { EventsLeverageEngine } from "@contracts/libs/EventsLeverageEngine.sol";
+import { LocalRoles } from "./libs/LocalRoles.sol";
+import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
+import { ErrorsLeverageEngine } from "./libs/ErrorsLeverageEngine.sol";
+import { EventsLeverageEngine } from "./libs/EventsLeverageEngine.sol";
 
 /// @title LeverageEngine Contract
 /// @notice This contract facilitates the management of strategy configurations and admin parameters for the Leverage
@@ -29,7 +29,7 @@ import { EventsLeverageEngine } from "@contracts/libs/EventsLeverageEngine.sol";
 contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     using PositionLedgerLib for PositionLedgerLib.LedgerStorage;
     using SafeERC20 for IERC20;
-    using Roles for *;
+    using LocalRoles for *;
     using ErrorsLeverageEngine for *;
     using EventsLeverageEngine for *;
 
@@ -64,12 +64,12 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
     function initialize() external initializer {
         __AccessControl_init();
-        _grantRole(Roles.ADMIN_ROLE, msg.sender);
+        _grantRole(LocalRoles.ADMIN_ROLE, msg.sender);
 
         exitFee = 50;
     }
 
-    function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(Roles.ADMIN_ROLE) {
+    function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(LocalRoles.ADMIN_ROLE) {
         leverageDepositor = ILeverageDepositor(dependencies.leverageDepositor);
         positionToken = PositionToken(dependencies.positionToken);
         swapAdapter = SwapAdapter(dependencies.swapAdapter);
@@ -82,7 +82,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
     ///////////// Admin functions /////////////
 
-    function setStrategyConfig(address strategy, StrategyConfig calldata config) external onlyRole(Roles.ADMIN_ROLE) {
+    function setStrategyConfig(address strategy, StrategyConfig calldata config) external onlyRole(LocalRoles.ADMIN_ROLE) {
         require(
             config.maximumMultiplier < (1e16 / (config.liquidationBuffer - 10 ** WBTC_DECIMALS)),
             "Invalid MM or LB ratio"
@@ -100,7 +100,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         );
     }
 
-    function removeStrategy(address strategy) external onlyRole(Roles.ADMIN_ROLE) {
+    function removeStrategy(address strategy) external onlyRole(LocalRoles.ADMIN_ROLE) {
         require(strategies[strategy].quota > 0, "Strategy not active");
 
         delete strategies[strategy];
@@ -108,12 +108,12 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         emit EventsLeverageEngine.StrategyRemoved(strategy);
     }
 
-    function setOracle(address token, IOracle oracle) external onlyRole(Roles.ADMIN_ROLE) {
+    function setOracle(address token, IOracle oracle) external onlyRole(LocalRoles.ADMIN_ROLE) {
         oracles[token] = oracle;
         emit EventsLeverageEngine.OracleSet(token, oracle);
     }
 
-    function changeSwapAdapter(address _swapAdapter) external onlyRole(Roles.ADMIN_ROLE) {
+    function changeSwapAdapter(address _swapAdapter) external onlyRole(LocalRoles.ADMIN_ROLE) {
         swapAdapter = SwapAdapter(_swapAdapter);
     }
 
@@ -121,39 +121,39 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     /// @notice Charge when user closes a position (not on liquidation or expiration)
     /// @notice meant to prevent economic attacks
     /// @param fee The new exit fee percentage.
-    function setExitFee(uint256 fee) external onlyRole(Roles.ADMIN_ROLE) {
+    function setExitFee(uint256 fee) external onlyRole(LocalRoles.ADMIN_ROLE) {
         exitFee = fee;
         emit EventsLeverageEngine.GlobalParameterUpdated("ExitFee", fee);
     }
 
-    function setFeeCollector(address collector) external onlyRole(Roles.ADMIN_ROLE) {
+    function setFeeCollector(address collector) external onlyRole(LocalRoles.ADMIN_ROLE) {
         feeCollector = collector;
         emit EventsLeverageEngine.FeeCollectorUpdated(collector);
     }
 
-    function setMonitor(address _monitor) external onlyRole(Roles.ADMIN_ROLE) {
+    function setMonitor(address _monitor) external onlyRole(LocalRoles.ADMIN_ROLE) {
         if (monitor != address(0)) {
-            _revokeRole(Roles.MONITOR_ROLE, monitor);
+            _revokeRole(LocalRoles.MONITOR_ROLE, monitor);
         }
         monitor = _monitor;
-        _grantRole(Roles.MONITOR_ROLE, _monitor);
+        _grantRole(LocalRoles.MONITOR_ROLE, _monitor);
         emit EventsLeverageEngine.MonitorUpdated(_monitor);
     }
 
-    function setExpiredVault(address _expiredVault) public onlyRole(Roles.ADMIN_ROLE) {
+    function setExpiredVault(address _expiredVault) public onlyRole(LocalRoles.ADMIN_ROLE) {
         if (expiredVault != address(0)) {
             wbtc.approve(expiredVault, 0);
-            _revokeRole(Roles.EXPIRED_VAULT_ROLE, expiredVault);
+            _revokeRole(LocalRoles.EXPIRED_VAULT_ROLE, expiredVault);
         }
 
         expiredVault = _expiredVault;
-        _grantRole(Roles.EXPIRED_VAULT_ROLE, _expiredVault);
+        _grantRole(LocalRoles.EXPIRED_VAULT_ROLE, _expiredVault);
         wbtc.approve(_expiredVault, type(uint256).max);
 
         emit EventsLeverageEngine.ExpiredVaultUpdated(_expiredVault);
     }
 
-    function setLiquidationFee(address strategy, uint256 fee) external onlyRole(Roles.ADMIN_ROLE) {
+    function setLiquidationFee(address strategy, uint256 fee) external onlyRole(LocalRoles.ADMIN_ROLE) {
         strategies[strategy].liquidationFee = fee;
 
         emit EventsLeverageEngine.StrategyLiquidationFeeUpdated(strategy, fee);
@@ -328,7 +328,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         address exchange
     )
         external
-        onlyRole(Roles.MONITOR_ROLE)
+        onlyRole(LocalRoles.MONITOR_ROLE)
     {
         PositionLedgerLib.LedgerEntry memory position = getPosition(nftId);
 
@@ -371,7 +371,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         address sender
     )
         external
-        onlyRole(Roles.EXPIRED_VAULT_ROLE)
+        onlyRole(LocalRoles.EXPIRED_VAULT_ROLE)
     {
         // Check if the user owns the NFT
         if (positionToken.ownerOf(nftID) != sender) revert ErrorsLeverageEngine.NotOwner();
