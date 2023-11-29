@@ -10,6 +10,8 @@ import "./PositionLedgerLib.sol";
 import { Roles } from "./libs/roles.sol";
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 
+
+
 /// @title ExpiredVault Contract
 /// @notice This contract holds the expired positions' funds and enables withdrawal of funds by users
 /// against the NFT representing their position.
@@ -30,6 +32,7 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
 
     function initialize() external initializer {
         __AccessControl_init();
+
         _grantRole(Roles.ADMIN_ROLE, msg.sender);
 
         wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599); 
