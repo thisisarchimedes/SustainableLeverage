@@ -8,6 +8,7 @@ import "./LeverageEngine.sol";
 import "./interfaces/IExpiredVault.sol";
 import "./PositionLedgerLib.sol";
 import { Roles } from "./libs/roles.sol";
+import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 
 /// @title ExpiredVault Contract
 /// @notice This contract holds the expired positions' funds and enables withdrawal of funds by users
@@ -19,6 +20,7 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
 
     IERC20 internal wbtc;
     LeverageEngine internal leverageEngine;
+    PositionToken internal positionToken;
 
     uint256 public balance;
 
@@ -26,11 +28,18 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
         _disableInitializers();
     }
 
-    function initialize(address _leverageEngine, address _wbtc) external initializer {
+    function initialize() external initializer {
         __AccessControl_init();
-        leverageEngine = LeverageEngine(_leverageEngine);
-        _grantRole(Roles.MONITOR_ROLE, _leverageEngine);
-        wbtc = IERC20(_wbtc);
+        _grantRole(Roles.ADMIN_ROLE, msg.sender);
+
+        wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599); 
+    }
+
+    function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(Roles.ADMIN_ROLE) {
+        leverageEngine = LeverageEngine(dependencies.leverageEngine);
+        positionToken = PositionToken(dependencies.positionToken);
+
+        _grantRole(Roles.MONITOR_ROLE, dependencies.leverageEngine);
     }
 
     ///////////// Monitor functions /////////////
@@ -56,7 +65,7 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
         PositionLedgerLib.LedgerEntry memory position = leverageEngine.getPosition(nftId);
 
         // Check if the user owns the NFT
-        if (leverageEngine.nft().ownerOf(nftId) != msg.sender) revert NotOwner();
+        if (positionToken.ownerOf(nftId) != msg.sender) revert NotOwner();
 
         // Check if the NFT state is Expired or Liquidated
         if (

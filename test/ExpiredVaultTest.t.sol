@@ -22,7 +22,7 @@ contract ExpiredVaultTest is BaseTest {
 
         // Otherwise, run the test against the mainnet fork.
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
-        _prepareContracts();
+        initTestFramework();
         deal(WBTC, address(wbtcVault), 100e8);
         ERC20(WBTC).approve(address(leverageEngine), type(uint256).max);
     }
@@ -73,7 +73,7 @@ contract ExpiredVaultTest is BaseTest {
             "WBTC balance should be updated to the claimable position amount"
         );
 
-        PositionToken positionToken = PositionToken(leverageEngine.nft());
+        // PositionToken positionToken = PositionToken(leverageEngine.positionToken());
         vm.expectRevert(IERC721A.OwnerQueryForNonexistentToken.selector); // NFT should be burned
         positionToken.ownerOf(nftId);
     }
@@ -128,7 +128,9 @@ contract ExpiredVaultTest is BaseTest {
         leverageEngine.setExpiredVault(address(newExpiredVault));
 
         // Assert
-        assertNotEq(leverageEngine.getCurrentExpiredVault(), address(oldExpiredVault), "Expired vault should be updated");
+        assertNotEq(
+            leverageEngine.getCurrentExpiredVault(), address(oldExpiredVault), "Expired vault should be updated"
+        );
         assertEq(leverageEngine.getCurrentExpiredVault(), address(newExpiredVault), "Expired vault should be updated");
         assertEq(
             wbtc.allowance(address(leverageEngine), address(oldExpiredVault)),

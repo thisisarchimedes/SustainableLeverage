@@ -19,8 +19,11 @@ import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { ExpiredVault } from "src/ExpiredVault.sol";
+import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 
 contract BaseTest is PRBTest, StdCheats {
+    DependencyAddresses internal dependencyAddresses;
+
     address feeCollector = makeAddr("feeCollector");
     LeverageEngine internal leverageEngine;
     PositionToken internal positionToken;
@@ -46,37 +49,50 @@ contract BaseTest is PRBTest, StdCheats {
     ChainlinkOracle btcEthOracle;
     ChainlinkOracle wbtcUsdOracle;
 
-    function _prepareContracts() internal {
-        proxyAdmin = new ProxyAdmin(address(this));
-        positionToken = new PositionToken();
-        leverageDepositor = new LeverageDepositor(WBTC,WETH);
-        wbtcVault = new WBTCVault(WBTC);
-        leverageEngine = new LeverageEngine();
+    function initTestFramework() internal {
         wbtc = IERC20(WBTC);
+
+        deployProxyAndContracts();
+
+        leverageEngine.setDependencies(dependencyAddresses);
+        expiredVault.setDependencies(dependencyAddresses);
+    }
+
+    function deployProxyAndContracts() internal {
+        proxyAdmin = new ProxyAdmin(address(this));
+        dependencyAddresses.proxyAdmin = address(proxyAdmin);
+
+        positionToken = new PositionToken();
+        dependencyAddresses.positionToken = address(positionToken);
+
+        wbtcVault = new WBTCVault(WBTC);
+        dependencyAddresses.wbtcVault = address(new WBTCVault(WBTC));
+
+        leverageDepositor = new LeverageDepositor(WBTC, WETH);
+        dependencyAddresses.leverageDepositor = address(leverageDepositor);
+
         swapAdapter = new SwapAdapter(WBTC, address(leverageDepositor));
-        expiredVault = new ExpiredVault();
-        bytes memory initData = abi.encodeWithSelector(
-            LeverageEngine.initialize.selector,
-            address(wbtcVault),
-            address(leverageDepositor),
-            address(positionToken),
-            address(swapAdapter),
-            address(feeCollector)
+        dependencyAddresses.swapAdapter = address(swapAdapter);
+
+        dependencyAddresses.leverageEngine = createProxiedLeverageEngine();
+        leverageEngine = LeverageEngine(dependencyAddresses.leverageEngine);
+
+        dependencyAddresses.expiredVault = createProxiedExpiredVault();
+        expiredVault = ExpiredVault(dependencyAddresses.expiredVault);
+    }
+
+    function createProxiedLeverageEngine() internal returns (address) {
+        address addrLeverageEngine = createUpgradableContract(
+            LeverageEngine.initialize.selector, address(new LeverageEngine()), address(proxyAdmin)
         );
-        proxy = new TransparentUpgradeableProxy(address(leverageEngine), address(proxyAdmin), initData);
-        leverageEngine = LeverageEngine(address(proxy));
-        bytes memory initDataExpiredVault =
-            abi.encodeWithSelector(ExpiredVault.initialize.selector, address(leverageEngine), WBTC);
-        expiredVault = ExpiredVault(
-            address(new TransparentUpgradeableProxy(address(expiredVault),address(proxyAdmin),initDataExpiredVault))
-        );
+        LeverageEngine proxyLeverageEngine = LeverageEngine(addrLeverageEngine);
 
         ethUsdOracle = new ChainlinkOracle(ETHUSDORACLE);
         btcEthOracle = new ChainlinkOracle(BTCETHORACLE);
         wbtcUsdOracle = new ChainlinkOracle(WBTCUSDORACLE);
-        leverageEngine.setOracle(WBTC, wbtcUsdOracle);
-        leverageEngine.setOracle(WETH, ethUsdOracle);
-        leverageEngine.setOracle(USDC, new ChainlinkOracle(USDCUSDORACLE));
+        proxyLeverageEngine.setOracle(WBTC, wbtcUsdOracle);
+        proxyLeverageEngine.setOracle(WETH, ethUsdOracle);
+        proxyLeverageEngine.setOracle(USDC, new ChainlinkOracle(USDCUSDORACLE));
 
         LeverageEngine.StrategyConfig memory strategyConfig = ILeverageEngine.StrategyConfig({
             quota: 100e8,
@@ -85,9 +101,36 @@ contract BaseTest is PRBTest, StdCheats {
             liquidationBuffer: 1.25e8,
             liquidationFee: 0.02e8
         });
-        leverageEngine.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
-        leverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
-        leverageEngine.setExpiredVault(address(expiredVault));
+        proxyLeverageEngine.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
+        proxyLeverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
+
+        return addrLeverageEngine;
+    }
+
+    function createProxiedExpiredVault() internal returns (address) {
+
+         address addrExpiredVault = createUpgradableContract(
+            ExpiredVault.initialize.selector, address(new ExpiredVault()), address(proxyAdmin)
+        );
+        
+        return addrExpiredVault;
+    }
+
+
+    function createUpgradableContract(
+        bytes4 selector,
+        address implementationAddress,
+        address proxyAddress
+    )
+        internal
+        returns (address)
+    {
+        bytes memory initData = abi.encodeWithSelector(selector);
+
+        TransparentUpgradeableProxy proxied =
+            new TransparentUpgradeableProxy(implementationAddress, proxyAddress, initData);
+
+        return address(proxied);
     }
 
     //erc721 receiver
@@ -101,13 +144,7 @@ contract BaseTest is PRBTest, StdCheats {
         deal(WBTC, address(this), 1000e8);
 
         nftId = leverageEngine.openPosition(
-            collateralAmount,
-            borrowAmount,
-            ETHPLUSETH_STRATEGY,
-            0,
-            SwapAdapter.SwapRoute.UNISWAPV3,
-            payload,
-            address(0)
+            collateralAmount, borrowAmount, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
         );
     }
 

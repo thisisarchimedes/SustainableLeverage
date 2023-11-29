@@ -18,7 +18,7 @@ contract OpenPositionTest is BaseTest {
 
         // Otherwise, run the test against the mainnet fork.
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
-        _prepareContracts();
+        initTestFramework();
         deal(WBTC, address(wbtcVault), 100e8);
     }
 
@@ -91,7 +91,7 @@ contract OpenPositionTest is BaseTest {
         (, int256 ethPrice,,,) = ethOracle.latestRoundData();
 
         uint256 expected = (wbtcAmount * uint256(wbtcPrice) * 1e10) / uint256(ethPrice);
-       
+
         assertEq(oracleTestHelper.checkOracles(WETH, wbtcAmount), expected);
     }
 
@@ -118,7 +118,7 @@ contract OpenPositionTest is BaseTest {
         (, int256 usdcPrice,,,) = usdcOracle.latestRoundData();
 
         uint256 expected = (wbtcAmount * uint256(wbtcPrice)) / (uint256(usdcPrice) * 1e2);
-      
+
         assertEq(oracleTestHelper.checkOracles(USDC, wbtcAmount), expected);
     }
 }

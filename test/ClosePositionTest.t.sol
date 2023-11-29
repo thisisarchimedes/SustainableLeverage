@@ -21,14 +21,14 @@ contract ClosePositionTest is BaseTest {
 
         // Otherwise, run the test against the mainnet fork.
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
-        _prepareContracts();
+        initTestFramework();
         deal(WBTC, address(wbtcVault), 100e8);
     }
 
     function _openPosition() internal {
         deal(WBTC, address(this), 10e8);
         ERC20(WBTC).approve(address(leverageEngine), 10e8);
-       
+
         bytes memory payload = abi.encode(
             SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WBTC, uint24(3000), WETH),

@@ -18,7 +18,7 @@ contract LiquidatePositionTest is BaseTest {
         }
 
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
-        _prepareContracts();
+        initTestFramework();
 
         deal(WBTC, address(wbtcVault), 10_000_000e8);
         deal(WBTC, address(this), 10_000_000e8);
@@ -180,11 +180,9 @@ contract LiquidatePositionTest is BaseTest {
             delta
         );
 
-        delta = (feeCollectorBalanceAfter - feeCollectorBalanceBefore) * 1_000 / 10_000; // 10% delta
+        delta = (feeCollectorBalanceAfter - feeCollectorBalanceBefore) * 1000 / 10_000; // 10% delta
         assertAlmostEq(
-            feeCollectorBalanceAfter - feeCollectorBalanceBefore,
-            liquidationFee * position.claimableAmount / 1e8,
-            delta
+            feeCollectorBalanceAfter - feeCollectorBalanceBefore, liquidationFee * position.claimableAmount / 1e8, delta
         );
     }
 
@@ -219,11 +217,9 @@ contract LiquidatePositionTest is BaseTest {
             delta
         );
 
-        delta = (feeCollectorBalanceAfter - feeCollectorBalanceBefore) * 1_000 / 10_000; // 10% delta
+        delta = (feeCollectorBalanceAfter - feeCollectorBalanceBefore) * 1000 / 10_000; // 10% delta
         assertAlmostEq(
-            feeCollectorBalanceAfter - feeCollectorBalanceBefore,
-            liquidationFee * position.claimableAmount / 1e8,
-            delta
+            feeCollectorBalanceAfter - feeCollectorBalanceBefore, liquidationFee * position.claimableAmount / 1e8, delta
         );
     }
 }
