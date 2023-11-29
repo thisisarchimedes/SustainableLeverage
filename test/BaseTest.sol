@@ -49,6 +49,16 @@ contract BaseTest is PRBTest, StdCheats {
     ChainlinkOracle btcEthOracle;
     ChainlinkOracle wbtcUsdOracle;
 
+    function initFork() internal {
+        string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
+        if (bytes(alchemyApiKey).length == 0) {
+            return;
+        }
+
+        // Otherwise, run the test against the mainnet fork.
+        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
+    }
+
     function initTestFramework() internal {
         wbtc = IERC20(WBTC);
 
@@ -66,7 +76,7 @@ contract BaseTest is PRBTest, StdCheats {
         dependencyAddresses.positionToken = address(positionToken);
 
         wbtcVault = new WBTCVault(WBTC);
-        dependencyAddresses.wbtcVault = address(new WBTCVault(WBTC));
+        dependencyAddresses.wbtcVault = address(wbtcVault);
 
         leverageDepositor = new LeverageDepositor(WBTC, WETH);
         dependencyAddresses.leverageDepositor = address(leverageDepositor);
@@ -82,8 +92,9 @@ contract BaseTest is PRBTest, StdCheats {
     }
 
     function createProxiedLeverageEngine() internal returns (address) {
+        LeverageEngine implLeverageEngine = new LeverageEngine();
         address addrLeverageEngine = createUpgradableContract(
-            LeverageEngine.initialize.selector, address(new LeverageEngine()), address(proxyAdmin)
+            implLeverageEngine.initialize.selector, address(implLeverageEngine), address(proxyAdmin)
         );
         LeverageEngine proxyLeverageEngine = LeverageEngine(addrLeverageEngine);
 
@@ -104,18 +115,20 @@ contract BaseTest is PRBTest, StdCheats {
         proxyLeverageEngine.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
         proxyLeverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
 
+        proxyLeverageEngine.setFeeCollector(feeCollector);
+
         return addrLeverageEngine;
     }
 
     function createProxiedExpiredVault() internal returns (address) {
+        ExpiredVault implExpiredVault = new ExpiredVault();
 
-         address addrExpiredVault = createUpgradableContract(
-            ExpiredVault.initialize.selector, address(new ExpiredVault()), address(proxyAdmin)
+        address addrExpiredVault = createUpgradableContract(
+            implExpiredVault.initialize.selector, address(implExpiredVault), address(proxyAdmin)
         );
-        
+
         return addrExpiredVault;
     }
-
 
     function createUpgradableContract(
         bytes4 selector,

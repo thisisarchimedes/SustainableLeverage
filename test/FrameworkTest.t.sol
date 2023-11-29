@@ -5,6 +5,7 @@ import "./BaseTest.sol";
 
 contract FrameworkTest is BaseTest {
     function setUp() public virtual {
+        initFork();
         initTestFramework();
     }
 

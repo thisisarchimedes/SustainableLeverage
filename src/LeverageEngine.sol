@@ -69,12 +69,11 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
     function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(Roles.ADMIN_ROLE) {
 
-        return;
-        
-        wbtcVault = IWBTCVault(dependencies.wbtcVault);
         leverageDepositor = ILeverageDepositor(dependencies.leverageDepositor);
         positionToken = PositionToken(dependencies.positionToken);
         swapAdapter = SwapAdapter(dependencies.swapAdapter);
+        wbtcVault = IWBTCVault(dependencies.wbtcVault);
+
         setExpiredVault(dependencies.expiredVault);
 
         wbtc.approve(dependencies.wbtcVault, type(uint256).max);
@@ -161,6 +160,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     /// @notice Set the expired vault role.
     /// @param _expiredVault The new expired vault address.
     function setExpiredVault(address _expiredVault) public onlyRole(Roles.ADMIN_ROLE) {
+        
         if (expiredVault != address(0)) {
             wbtc.approve(expiredVault, 0);
             _revokeRole(Roles.EXPIRED_VAULT_ROLE, expiredVault);
@@ -204,14 +204,20 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         if (collateralAmount * strategies[strategy].maximumMultiplier / 10 ** WBTC_DECIMALS < wbtcToBorrow) {
             revert ExceedBorrowLimit();
         }
+
         // Transfer collateral and borrowed WBTC to LeverageEngine
         wbtc.safeTransferFrom(msg.sender, address(this), collateralAmount);
+
+
         // Assuming WBTC Vault has a function borrow that lets you borrow WBTC.
         // This function might be different based on actual implementation.
         uint256 totalAmount = collateralAmount + wbtcToBorrow;
+        
         wbtcVault.borrow(wbtcToBorrow); //TODO: directly transfer from vault to swapadapter
+
         wbtc.transfer(address(swapAdapter), totalAmount); // TODO remove that when we implement wbtcvault and transfer
-            // directly
+
+        // directly
         address strategyUnderlyingToken = IMultiPoolStrategy(strategy).asset();
         // Swap borrowed WBTC to strategy token
         uint256 receivedAmount = swapAdapter.swap(

@@ -161,7 +161,6 @@ contract LiquidatePositionTest is BaseTest {
         });
         leverageEngine.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
 
-        // Deposit
         uint256 nftId = openETHBasedPosition(10e8, 30e8);
 
         uint256 feeCollectorBalanceBefore = ERC20(WBTC).balanceOf(address(feeCollector));
@@ -198,7 +197,6 @@ contract LiquidatePositionTest is BaseTest {
         });
         leverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
 
-        // Deposit
         uint256 nftId = openUSDCBasedPosition(1e8, 3e8);
 
         uint256 feeCollectorBalanceBefore = ERC20(WBTC).balanceOf(address(feeCollector));
