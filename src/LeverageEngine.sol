@@ -36,7 +36,6 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     address public monitor;
 
     IWBTCVault internal wbtcVault;
-
     PositionToken internal positionToken;
     ILeverageDepositor internal leverageDepositor;
     SwapAdapter internal swapAdapter;
