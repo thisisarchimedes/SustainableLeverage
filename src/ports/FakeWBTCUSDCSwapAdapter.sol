@@ -45,14 +45,15 @@ contract FakeWBTCUSDCSwapAdapter is ISwapAdapter {
         returns (uint256 toTokenAmount)
     {
         uint256 ORACLE_DECIMALS = 8;
-        uint256 total_decimals = IERC20Detailed(address(fromToken)).decimals() + IERC20Detailed(address(toToken)).decimals() + ORACLE_DECIMALS;
+        uint256 total_decimals = IERC20Detailed(address(fromToken)).decimals()
+            + IERC20Detailed(address(toToken)).decimals() + ORACLE_DECIMALS;
         total_decimals = total_decimals - IERC20Detailed(address(toToken)).decimals();
         if (fromToken == wbtc) {
-            toTokenAmount =
-                (fromAmount * wbtcToUsdcExchangeRate * 10 ** IERC20Detailed(address(toToken)).decimals()) / 10 ** total_decimals;
+            toTokenAmount = (fromAmount * wbtcToUsdcExchangeRate * 10 ** IERC20Detailed(address(toToken)).decimals())
+                / 10 ** total_decimals;
         } else {
-            toTokenAmount =
-                (fromAmount * usdcToWbtcExchangeRate * 10 ** IERC20Detailed(address(toToken)).decimals()) / 10 ** total_decimals;
+            toTokenAmount = (fromAmount * usdcToWbtcExchangeRate * 10 ** IERC20Detailed(address(toToken)).decimals())
+                / 10 ** total_decimals;
         }
 
         toToken.transfer(recipient, toTokenAmount);

@@ -5,10 +5,14 @@ import "./BaseTest.sol";
 import "./helpers/OracleTestHelper.sol";
 import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
 import { IERC721A } from "ERC721A/IERC721A.sol";
+import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+
 /// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
 /// https://book.getfoundry.sh/forge/writing-tests
 
 contract ClosePositionTest is BaseTest {
+    using ErrorsLeverageEngine for *;
+
     /* solhint-disable  */
     address positionReceiver = makeAddr("receiver");
 
@@ -45,7 +49,7 @@ contract ClosePositionTest is BaseTest {
         address ownerOfNft = positionToken.ownerOf(0);
         assertEq(ownerOfNft, address(this), "Should be owner");
         positionToken.transferFrom(address(this), positionReceiver, 0);
-        vm.expectRevert(LeverageEngine.NotOwner.selector);
+        vm.expectRevert(ErrorsLeverageEngine.NotOwner.selector);
         leverageEngine.closePosition(0, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
     }
 
@@ -57,7 +61,7 @@ contract ClosePositionTest is BaseTest {
                 deadline: block.timestamp + 1000
             })
         );
-        vm.expectRevert(LeverageEngine.NotEnoughTokensReceived.selector);
+        vm.expectRevert(ErrorsLeverageEngine.NotEnoughTokensReceived.selector);
         leverageEngine.closePosition(0, 5e8, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
     }
 

@@ -8,9 +8,13 @@ import { FakeWBTCWETHSwapAdapter } from "../src/ports/FakeWBTCWETHSwapAdapter.so
 import { FakeOracle } from "src/ports/FakeOracle.sol";
 import "./BaseTest.sol";
 import "./helpers/OracleTestHelper.sol";
+import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 
 contract LiquidatePositionTest is BaseTest {
     /* solhint-disable  */
+
+    using ErrorsLeverageEngine for *;
+
     function setUp() public virtual {
         string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
         if (bytes(alchemyApiKey).length == 0) {
@@ -124,12 +128,12 @@ contract LiquidatePositionTest is BaseTest {
 
         closeETHBasedPosition(nftId);
 
-        vm.expectRevert(LeverageEngine.PositionNotLive.selector);
+        vm.expectRevert(ErrorsLeverageEngine.PositionNotLive.selector);
         leverageEngine.isPositionLiquidatable(nftId);
     }
 
     function testIsPositionLiquidatableRevertsOnNonExistingNFT() external {
-        vm.expectRevert(LeverageEngine.PositionNotLive.selector);
+        vm.expectRevert(ErrorsLeverageEngine.PositionNotLive.selector);
         leverageEngine.isPositionLiquidatable(999_999);
     }
 
@@ -145,7 +149,7 @@ contract LiquidatePositionTest is BaseTest {
 
         leverageEngine.setMonitor(address(this));
 
-        vm.expectRevert(LeverageEngine.PositionNotLive.selector);
+        vm.expectRevert(ErrorsLeverageEngine.PositionNotLive.selector);
         leverageEngine.liquidatePosition(nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, payloadClose, address(0));
     }
 
