@@ -2,16 +2,20 @@
 pragma solidity >=0.8.21 <0.9.0;
 
 import "./BaseTest.sol";
+import { console2 } from "forge-std/console2.sol";
+
 import { ExpiredVault } from "../src/ExpiredVault.sol";
 import { IERC721A } from "ERC721A/IERC721A.sol";
 import { FakeWBTCWETHSwapAdapter } from "../src/ports/FakeWBTCWETHSwapAdapter.sol";
 import { FakeOracle } from "../src/ports/FakeOracle.sol";
-import { console2 } from "forge-std/console2.sol";
+import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+
 /// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
 /// https://book.getfoundry.sh/forge/writing-tests
 
 contract ExpiredVaultTest is BaseTest {
     using SafeERC20 for IERC20;
+    using ErrorsLeverageEngine for *;
 
     /// @dev A function invoked before each test case is run.
     function setUp() public {
@@ -95,7 +99,7 @@ contract ExpiredVaultTest is BaseTest {
         expiredVault.deposit(1e8);
         vm.stopPrank();
 
-        vm.expectRevert(LeverageEngine.PositionNotExpiredOrLiquidated.selector);
+        vm.expectRevert(ErrorsLeverageEngine.PositionNotExpiredOrLiquidated.selector);
         expiredVault.claim(nftId);
     }
 
@@ -107,7 +111,7 @@ contract ExpiredVaultTest is BaseTest {
 
         vm.startPrank(address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE));
 
-        vm.expectRevert(LeverageEngine.NotOwner.selector);
+        vm.expectRevert(ErrorsLeverageEngine.NotOwner.selector);
         expiredVault.claim(nftId);
     }
 
@@ -143,11 +147,11 @@ contract ExpiredVaultTest is BaseTest {
             "Expired vault should be approved"
         );
         assertFalse(
-            leverageEngine.hasRole(Roles.EXPIRED_VAULT_ROLE, address(oldExpiredVault)),
+            leverageEngine.hasRole(LocalRoles.EXPIRED_VAULT_ROLE, address(oldExpiredVault)),
             "Old expired vault should be removed from MONITOR_ROLE"
         );
         assertTrue(
-            leverageEngine.hasRole(Roles.EXPIRED_VAULT_ROLE, address(newExpiredVault)),
+            leverageEngine.hasRole(LocalRoles.EXPIRED_VAULT_ROLE, address(newExpiredVault)),
             "Expired vault should be added to MONITOR_ROLE"
         );
     }

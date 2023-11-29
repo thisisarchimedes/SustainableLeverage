@@ -4,11 +4,16 @@ pragma solidity >=0.8.21 <0.9.0;
 import "./BaseTest.sol";
 import "./helpers/OracleTestHelper.sol";
 import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
+import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+
 /// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
 /// https://book.getfoundry.sh/forge/writing-tests
 
 contract OpenPositionTest is BaseTest {
     /* solhint-disable  */
+
+    using ErrorsLeverageEngine for *;
+
     /// @dev A function invoked before each test case is run.
     function setUp() public virtual {
         initFork();
@@ -22,7 +27,7 @@ contract OpenPositionTest is BaseTest {
     }
 
     function test_ShouldRevertWithExceedBorrowLimit() external {
-        vm.expectRevert(LeverageEngine.ExceedBorrowLimit.selector);
+        vm.expectRevert(ErrorsLeverageEngine.ExceedBorrowLimit.selector);
         leverageEngine.openPosition(5e8, 80e8, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
     }
 
