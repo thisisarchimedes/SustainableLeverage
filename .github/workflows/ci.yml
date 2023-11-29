@@ -3,8 +3,10 @@ name: "CI"
 env:
   API_KEY_ALCHEMY: ${{ secrets.API_KEY_ALCHEMY }}
   DEPLOYER_PKEY: ${{ secrets.DEPLOYER_PKEY }}
-  AWS_FORK_URL: ${{ secrets.AWS_FORK_URL }}
+  AWS_FORK_URL: ${{ vars.AWS_FORK_URL }}
   DEPLOYER_ADDRESS: ${{ secrets.DEPLOYER_ADDRESS }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   FOUNDRY_PROFILE: "ci"
 
 on:
@@ -104,7 +106,7 @@ jobs:
         run: |
           curl -X POST -H "Content-Type:application/json" --data \
           '{"jsonrpc":"2.0","method":"hardhat_setBalance","params":["'"${{ secrets.DEPLOYER_ADDRESS }}"'","0x75557863725914323419136"],"id":67}' \
-          "${{ secrets.AWS_FORK_URL }}"
+          "${{ vars.AWS_FORK_URL }}"
 
       - name: "Prepare Python environment"
         uses: actions/setup-python@v4
@@ -121,7 +123,7 @@ jobs:
 
       - name: "Deploy the contracts"
         run:
-          "forge script script/DeployContracts.s.sol --fork-url ${{ secrets.AWS_FORK_URL }} --broadcast -vvvvv --slow
+          "forge script script/DeployContracts.s.sol --fork-url ${{ vars.AWS_FORK_URL }} --broadcast -vvvvv --slow
           --skip-simulation"
 
       - name: "Commit the deployment changes"
@@ -129,6 +131,16 @@ jobs:
         with:
           commit_message: Updating deployment.json address file
           push_options: --force
+
+      - name: "Prep access to S3 bucket"
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      - name: "Updating AWS S3 bucket with the contract addresses"
+        run: aws s3 cp deployments/31337-deployments.json s3://smart-contract-backend-config/staging_leverage_addresses.json
 
       - name: "Add deploy summary"
         run: |
