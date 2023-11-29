@@ -3,7 +3,7 @@ name: "CI"
 env:
   API_KEY_ALCHEMY: ${{ secrets.API_KEY_ALCHEMY }}
   DEPLOYER_PKEY: ${{ secrets.DEPLOYER_PKEY }}
-  AWS_FORK_URL: ${{ secrets.AWS_FORK_URL }}
+  AWS_FORK_URL: ${{ vars.AWS_FORK_URL }}
   DEPLOYER_ADDRESS: ${{ secrets.DEPLOYER_ADDRESS }}
   FOUNDRY_PROFILE: "ci"
 
@@ -104,7 +104,7 @@ jobs:
         run: |
           curl -X POST -H "Content-Type:application/json" --data \
           '{"jsonrpc":"2.0","method":"hardhat_setBalance","params":["'"${{ secrets.DEPLOYER_ADDRESS }}"'","0x75557863725914323419136"],"id":67}' \
-          "${{ secrets.AWS_FORK_URL }}"
+          "${{ vars.AWS_FORK_URL }}"
 
       - name: "Prepare Python environment"
         uses: actions/setup-python@v4
@@ -121,7 +121,7 @@ jobs:
 
       - name: "Deploy the contracts"
         run:
-          "forge script script/DeployContracts.s.sol --fork-url ${{ secrets.AWS_FORK_URL }} --broadcast -vvvvv --slow
+          "forge script script/DeployContracts.s.sol --fork-url ${{ vars.AWS_FORK_URL }} --broadcast -vvvvv --slow
           --skip-simulation"
 
       - name: "Commit the deployment changes"

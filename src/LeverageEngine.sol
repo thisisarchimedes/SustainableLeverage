@@ -59,7 +59,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     mapping(address => IOracle) public oracles;
 
     // Global admin parameters
-    uint256 public exitFee; // Fee (taken from profits) taken after returning all debt during exit by user in 10000
+    uint256 public exitFee; // Fee (taken from profits) taken after returning all debt during exit by user in 10000 (e.g. 50 is 0.5%)
     address public feeCollector; // Address that collects fees in 10000
     
     //Errors
@@ -134,7 +134,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         leverageDepositor = ILeverageDepositor(_leverageDepositor);
         nft = PositionToken(_nft);
         swapAdapter = SwapAdapter(_swapAdapter);
-        exitFee = 50;
+        exitFee = 50; // 0.5%
         feeCollector = _feeCollector;
     }
 
