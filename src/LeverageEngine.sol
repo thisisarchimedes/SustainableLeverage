@@ -76,7 +76,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
         setExpiredVault(dependencies.expiredVault);
 
-        wbtc
+         wbtc.approve(dependencies.wbtcVault, type(uint256).max);
     }
 
     ///////////// Admin functions /////////////
