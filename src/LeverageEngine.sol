@@ -31,10 +31,10 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
     uint256 internal constant BASE_DENOMINATOR = 10_000;
     uint8 internal constant WBTC_DECIMALS = 8;
+    IERC20 internal constant wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
 
     address public monitor;
 
-    IERC20 internal wbtc;
     IWBTCVault internal wbtcVault;
 
     PositionToken internal positionToken;
@@ -62,8 +62,6 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         __AccessControl_init();
         _grantRole(Roles.ADMIN_ROLE, msg.sender);
 
-        wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
-
         exitFee = 50;
     }
 
@@ -76,7 +74,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
         setExpiredVault(dependencies.expiredVault);
 
-         wbtc.approve(dependencies.wbtcVault, type(uint256).max);
+        wbtc.approve(dependencies.wbtcVault, type(uint256).max);
     }
 
     ///////////// Admin functions /////////////
