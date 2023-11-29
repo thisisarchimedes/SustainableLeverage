@@ -15,7 +15,7 @@ contract SwapAdapterTest is BaseTest {
 
         // Otherwise, run the test against the mainnet fork.
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
-        _prepareContracts();
+        initTestFramework();
         deal(WBTC, address(this), 100e8);
     }
 

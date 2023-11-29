@@ -17,6 +17,9 @@ import { SwapAdapter } from "./SwapAdapter.sol";
 import { IMultiPoolStrategy } from "./interfaces/IMultiPoolStrategy.sol";
 import { AggregatorV3Interface } from "./interfaces/AggregatorV3Interface.sol";
 import { Roles } from "./libs/roles.sol";
+import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
+
+
 
 /// @title LeverageEngine Contract
 /// @notice This contract facilitates the management of strategy configurations and admin parameters for the Leverage
@@ -33,14 +36,14 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
     address public monitor;
 
-    IERC20 public wbtc;
+    IERC20 internal wbtc;
     IWBTCVault internal wbtcVault;
 
-    PositionToken public nft;
+    PositionToken internal positionToken;
     ILeverageDepositor internal leverageDepositor;
     SwapAdapter internal swapAdapter;
 
-    address public expiredVault;
+    address internal expiredVault;
 
     mapping(address => StrategyConfig) internal strategies;
 
@@ -57,26 +60,25 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         _disableInitializers();
     }
 
-    function initialize(
-        address _wbtcVault,
-        address _leverageDepositor,
-        address _nft,
-        address _swapAdapter,
-        address _feeCollector
-    )
-        external
-        initializer
-    {
+    function initialize() external initializer {
         __AccessControl_init();
         _grantRole(Roles.ADMIN_ROLE, msg.sender);
+
         wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
-        wbtcVault = IWBTCVault(_wbtcVault);
-        wbtc.approve(_wbtcVault, type(uint256).max);
-        leverageDepositor = ILeverageDepositor(_leverageDepositor);
-        nft = PositionToken(_nft);
-        swapAdapter = SwapAdapter(_swapAdapter);
-        exitFee = 50; // 0.5%
-        feeCollector = _feeCollector;
+
+        exitFee = 50;
+    }
+
+    function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(Roles.ADMIN_ROLE) {
+
+        leverageDepositor = ILeverageDepositor(dependencies.leverageDepositor);
+        positionToken = PositionToken(dependencies.positionToken);
+        swapAdapter = SwapAdapter(dependencies.swapAdapter);
+        wbtcVault = IWBTCVault(dependencies.wbtcVault);
+
+        setExpiredVault(dependencies.expiredVault);
+
+        wbtc
     }
 
     ///////////// Admin functions /////////////
@@ -159,7 +161,8 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
     /// @notice Set the expired vault role.
     /// @param _expiredVault The new expired vault address.
-    function setExpiredVault(address _expiredVault) external onlyRole(Roles.ADMIN_ROLE) {
+    function setExpiredVault(address _expiredVault) public onlyRole(Roles.ADMIN_ROLE) {
+        
         if (expiredVault != address(0)) {
             wbtc.approve(expiredVault, 0);
             _revokeRole(Roles.EXPIRED_VAULT_ROLE, expiredVault);
@@ -203,14 +206,20 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         if (collateralAmount * strategies[strategy].maximumMultiplier / 10 ** WBTC_DECIMALS < wbtcToBorrow) {
             revert ExceedBorrowLimit();
         }
+
         // Transfer collateral and borrowed WBTC to LeverageEngine
         wbtc.safeTransferFrom(msg.sender, address(this), collateralAmount);
+
+
         // Assuming WBTC Vault has a function borrow that lets you borrow WBTC.
         // This function might be different based on actual implementation.
         uint256 totalAmount = collateralAmount + wbtcToBorrow;
+        
         wbtcVault.borrow(wbtcToBorrow); //TODO: directly transfer from vault to swapadapter
+
         wbtc.transfer(address(swapAdapter), totalAmount); // TODO remove that when we implement wbtcvault and transfer
-            // directly
+
+        // directly
         address strategyUnderlyingToken = IMultiPoolStrategy(strategy).asset();
         // Swap borrowed WBTC to strategy token
         uint256 receivedAmount = swapAdapter.swap(
@@ -243,7 +252,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         newEntry.positionExpirationBlock = block.number + strategyConfig.positionLifetime;
         newEntry.liquidationBuffer = strategyConfig.liquidationBuffer;
         newEntry.state = PositionLedgerLib.PositionState.LIVE;
-        nftId = nft.mint(msg.sender); // Mint NFT and send to user
+        nftId = positionToken.mint(msg.sender); // Mint NFT and send to user
         ledger.setLedgerEntry(nftId, newEntry);
 
         // emit event
@@ -275,7 +284,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         external
     {
         // Check if the user owns the NFT
-        if (nft.ownerOf(nftId) != msg.sender) revert NotOwner();
+        if (positionToken.ownerOf(nftId) != msg.sender) revert NotOwner();
 
         PositionLedgerLib.LedgerEntry memory position = ledger.entries[nftId];
 
@@ -305,7 +314,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         ledger.setLedgerEntry(nftId, position);
 
         // Burn the NFT
-        nft.burn(nftId);
+        positionToken.burn(nftId);
 
         // emit event
         emit PositionClosed(
@@ -378,9 +387,15 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
     /// @notice ExpiredVault will call this function to close an expired position.
     /// @param nftID The ID of the NFT representing the position.
-    function closeExpiredOrLiquidatedPosition(uint256 nftID, address sender) external onlyRole(Roles.EXPIRED_VAULT_ROLE) {
+    function closeExpiredOrLiquidatedPosition(
+        uint256 nftID,
+        address sender
+    )
+        external
+        onlyRole(Roles.EXPIRED_VAULT_ROLE)
+    {
         // Check if the user owns the NFT
-        if (nft.ownerOf(nftID) != sender) revert NotOwner();
+        if (positionToken.ownerOf(nftID) != sender) revert NotOwner();
 
         PositionLedgerLib.LedgerEntry storage position = ledger.entries[nftID];
 
@@ -398,7 +413,7 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
         position.claimableAmount = 0;
 
         // Burn the NFT
-        nft.burn(nftID);
+        positionToken.burn(nftID);
 
         // Emit event
         // No exit fee is charged for expired positions
@@ -461,6 +476,10 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
 
     function getPosition(uint256 nftId) public view returns (PositionLedgerLib.LedgerEntry memory) {
         return ledger.getLedgerEntry(nftId);
+    }
+
+    function getCurrentExpiredVault() public view returns (address) {
+        return expiredVault;
     }
 
     ///////////// Internal functions /////////////

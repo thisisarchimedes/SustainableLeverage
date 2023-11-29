@@ -8,6 +8,9 @@ import "./LeverageEngine.sol";
 import "./interfaces/IExpiredVault.sol";
 import "./PositionLedgerLib.sol";
 import { Roles } from "./libs/roles.sol";
+import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
+
+
 
 /// @title ExpiredVault Contract
 /// @notice This contract holds the expired positions' funds and enables withdrawal of funds by users
@@ -17,34 +20,29 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
     using Roles for *;
 
+    IERC20 internal wbtc;
+    LeverageEngine internal leverageEngine;
+    PositionToken internal positionToken;
 
-    // Errors
-    error InsufficientFunds();
-    error NotOwner();
-    error PositionNotExpiredOrLiquidated();
-
-    // Events
-    event Deposit(address indexed depositor, uint256 amount);
-    event Claim(address indexed claimer, uint256 indexed nftId, uint256 amount);
-
-    // WBTC token
-    IERC20 public wbtc;
-
-    // Vault's balance
     uint256 public balance;
-
-    // Leverage Engine
-    LeverageEngine public leverageEngine;
 
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(address _leverageEngine, address _wbtc) external initializer {
+    function initialize() external initializer {
         __AccessControl_init();
-        leverageEngine = LeverageEngine(_leverageEngine);
-        _grantRole(Roles.MONITOR_ROLE, _leverageEngine);
-        wbtc = IERC20(_wbtc);
+
+        _grantRole(Roles.ADMIN_ROLE, msg.sender);
+
+        wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599); 
+    }
+
+    function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(Roles.ADMIN_ROLE) {
+        leverageEngine = LeverageEngine(dependencies.leverageEngine);
+        positionToken = PositionToken(dependencies.positionToken);
+
+        _grantRole(Roles.MONITOR_ROLE, dependencies.leverageEngine);
     }
 
     ///////////// Monitor functions /////////////
@@ -54,7 +52,7 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
     function deposit(uint256 amount) external onlyRole(Roles.MONITOR_ROLE) {
         // Pull funds from the depositor
         wbtc.safeTransferFrom(msg.sender, address(this), amount);
-        
+
         // Update the vault balance
         balance += amount;
 
@@ -70,7 +68,7 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
         PositionLedgerLib.LedgerEntry memory position = leverageEngine.getPosition(nftId);
 
         // Check if the user owns the NFT
-        if (leverageEngine.nft().ownerOf(nftId) != msg.sender) revert NotOwner();
+        if (positionToken.ownerOf(nftId) != msg.sender) revert NotOwner();
 
         // Check if the NFT state is Expired or Liquidated
         if (
@@ -78,7 +76,7 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
                 && position.state != PositionLedgerLib.PositionState.LIQUIDATED
         ) revert PositionNotExpiredOrLiquidated();
 
-        if(balance < position.claimableAmount) revert InsufficientFunds();
+        if (balance < position.claimableAmount) revert InsufficientFunds();
 
         // Update the vault balance
         balance -= position.claimableAmount;
@@ -96,4 +94,13 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
         // Emit event
         emit Claim(msg.sender, nftId, position.claimableAmount);
     }
+
+    // Errors
+    error InsufficientFunds();
+    error NotOwner();
+    error PositionNotExpiredOrLiquidated();
+
+    // Events
+    event Deposit(address indexed depositor, uint256 amount);
+    event Claim(address indexed claimer, uint256 indexed nftId, uint256 amount);
 }

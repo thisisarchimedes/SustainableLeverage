@@ -11,14 +11,8 @@ contract OpenPositionTest is BaseTest {
     /* solhint-disable  */
     /// @dev A function invoked before each test case is run.
     function setUp() public virtual {
-        string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
-        if (bytes(alchemyApiKey).length == 0) {
-            return;
-        }
-
-        // Otherwise, run the test against the mainnet fork.
-        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
-        _prepareContracts();
+        initFork();
+        initTestFramework();
         deal(WBTC, address(wbtcVault), 100e8);
     }
 
@@ -32,7 +26,7 @@ contract OpenPositionTest is BaseTest {
         leverageEngine.openPosition(5e8, 80e8, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
     }
 
-    function test_ShouldAbleToOpenPosForWETHStrat() external {
+    function test_ShouldAbleToOpenPosForWETHStrategy() external {
         deal(WBTC, address(this), 10e8);
         ERC20(WBTC).approve(address(leverageEngine), 10e8);
 
@@ -91,7 +85,7 @@ contract OpenPositionTest is BaseTest {
         (, int256 ethPrice,,,) = ethOracle.latestRoundData();
 
         uint256 expected = (wbtcAmount * uint256(wbtcPrice) * 1e10) / uint256(ethPrice);
-       
+
         assertEq(oracleTestHelper.checkOracles(WETH, wbtcAmount), expected);
     }
 
@@ -118,7 +112,7 @@ contract OpenPositionTest is BaseTest {
         (, int256 usdcPrice,,,) = usdcOracle.latestRoundData();
 
         uint256 expected = (wbtcAmount * uint256(wbtcPrice)) / (uint256(usdcPrice) * 1e2);
-      
+
         assertEq(oracleTestHelper.checkOracles(USDC, wbtcAmount), expected);
     }
 }
