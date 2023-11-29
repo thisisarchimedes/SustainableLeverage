@@ -129,7 +129,7 @@ contract ExpiredVaultTest is BaseTest {
         assertEq(leverageEngine.expiredVault(), address(newExpiredVault), "Expired vault should be updated");
         assertEq(leverageEngine.wbtc().allowance(address(leverageEngine), address(oldExpiredVault)), 0, "Old expired vault should be disapproved");
         assertEq(leverageEngine.wbtc().allowance(address(leverageEngine), address(newExpiredVault)), type(uint256).max, "Expired vault should be approved");
-        assertFalse(leverageEngine.hasRole(leverageEngine.EXPIRED_VAULT_ROLE(), address(oldExpiredVault)), "Old expired vault should be removed from MONITOR_ROLE");
-        assertTrue(leverageEngine.hasRole(leverageEngine.EXPIRED_VAULT_ROLE(), address(newExpiredVault)), "Expired vault should be added to MONITOR_ROLE");
+        assertFalse(leverageEngine.hasRole(Roles.EXPIRED_VAULT_ROLE, address(oldExpiredVault)), "Old expired vault should be removed from MONITOR_ROLE");
+        assertTrue(leverageEngine.hasRole(Roles.EXPIRED_VAULT_ROLE, address(newExpiredVault)), "Expired vault should be added to MONITOR_ROLE");
     }
 }
