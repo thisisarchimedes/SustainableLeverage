@@ -140,7 +140,7 @@ jobs:
           aws-region: us-east-1
       
       - name: "Updating AWS S3 bucket with the contract addresses"
-        run: aws s3 cp deployments/31337-deployments.json s3://smart-contract-backend-config/leverage_addresses.json
+        run: aws s3 cp deployments/31337-deployments.json s3://smart-contract-backend-config/staging_leverage_addresses.json
 
       - name: "Add deploy summary"
         run: |
