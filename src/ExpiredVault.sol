@@ -8,7 +8,7 @@ import "./LeverageEngine.sol";
 import "./interfaces/IExpiredVault.sol";
 import "./PositionLedgerLib.sol";
 import { Roles } from "./libs/Roles.sol";
-import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
+import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
 
 
 
