@@ -130,14 +130,12 @@ jobs:
 
       - name: "Deploy the contracts to staging"
         run: |
-          "forge script script/DeployContracts.s.sol --fork-url ${{ vars.AWS_FORK_URL }} --broadcast -vvvvv --slow
-          --skip-simulation"
+          forge script script/DeployContracts.s.sol --fork-url ${{ vars.AWS_FORK_URL }} --broadcast -vvvvv --slow --skip-simulation
           aws s3 cp deployments/31337-deployments.json s3://smart-contract-backend-config/staging_leverage_addresses.json
   
       - name: "Deploy the contracts to demo environment"
           run: |
-            "forge script script/DeployContracts.s.sol --fork-url  ${{ vars.DEMO_RPC }} --broadcast -vvvvv --slow
-            --skip-simulation"
+            forge script script/DeployContracts.s.sol --fork-url  ${{ vars.DEMO_RPC }} --broadcast -vvvvv --slow --skip-simulation
       
       - name: Create JSON file
         run: |
