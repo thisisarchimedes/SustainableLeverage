@@ -346,9 +346,10 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     // Return WBTC debt to WBTC vault
     wbtcVault.repay(nftId, position.wbtcDebtAmount);
 
+    uint256 liquidationFeeAmount;
     if (wbtcReceived > position.wbtcDebtAmount) {
       uint256 wbtcLeft = wbtcReceived - position.wbtcDebtAmount;
-      uint256 liquidationFeeAmount = (getStrategyConfig(position.strategyAddress).liquidationFee * wbtcLeft) /
+      liquidationFeeAmount = (getStrategyConfig(position.strategyAddress).liquidationFee * wbtcLeft) /
         (10 ** WBTC_DECIMALS);
       position.claimableAmount = wbtcLeft - liquidationFeeAmount;
 
@@ -360,6 +361,14 @@ contract LeverageEngine is ILeverageEngine, AccessControlUpgradeable {
     position.state = PositionLedgerLib.PositionState.LIQUIDATED;
 
     ledger.setLedgerEntry(nftId, position);
+
+    emit EventsLeverageEngine.PositionLiquidated(
+      nftId,
+      position.strategyAddress,
+      position.wbtcDebtAmount,
+      position.claimableAmount,
+      liquidationFeeAmount
+    );
   }
 
   ///////////// Expired Vault functions /////////////
