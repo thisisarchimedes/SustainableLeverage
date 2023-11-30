@@ -139,7 +139,9 @@ jobs:
       
       - name: Create JSON file
         run: |
-          echo '{"rpc": ${{ vars.DEMO_RPC }}}' > deployments/demo_rpc.json
+          echo '{
+            "rpc": "${{ vars.DEMO_RPC }}"
+            }' > deployments/demo_rpc.json
       
       - name: "Updating AWS S3 bucket with the contract addresses"
         run: | 
