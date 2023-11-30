@@ -121,26 +121,41 @@ jobs:
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
 
-      - name: "Deploy the contracts"
-        run:
-          "forge script script/DeployContracts.s.sol --fork-url ${{ vars.AWS_FORK_URL }} --broadcast -vvvvv --slow
-          --skip-simulation"
-
-      - name: "Commit the deployment changes"
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: Updating deployment.json address file
-          push_options: --force
-
       - name: "Prep access to S3 bucket"
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
+
+      - name: "Deploy the contracts to staging"
+        run: |
+          "forge script script/DeployContracts.s.sol --fork-url ${{ vars.AWS_FORK_URL }} --broadcast -vvvvv --slow
+          --skip-simulation"
+          aws s3 cp deployments/31337-deployments.json s3://smart-contract-backend-config/staging_leverage_addresses.json
+
+        
+      - name: "Deploy the contracts to demo environment"
+          run: |
+            "forge script script/DeployContracts.s.sol --fork-url  ${{ vars.DEMO_RPC }} --broadcast -vvvvv --slow
+            --skip-simulation"
+      
+      - name: Create JSON file
+        run: |
+            echo '{"rpc": "$DEMO_RPC"}' > deployments/demo_rpc.json
+          env:
+            DEMO_RPC: ${{ vars.DEMO_RPC }}
       
       - name: "Updating AWS S3 bucket with the contract addresses"
-        run: aws s3 cp deployments/31337-deployments.json s3://smart-contract-backend-config/staging_leverage_addresses.json
+        run: | 
+          aws s3 cp deployments/31337-deployments.json s3://smart-contract-backend-config/demo_leverage_addresses.json
+          aws s3 cp deployments/demo_rpc.json s3://smart-contract-backend-config/demo_rpc.json
+
+      - name: "Commit the deployment changes"
+          uses: stefanzweifel/git-auto-commit-action@v5
+          with:
+            commit_message: Updating deployment.json address file
+            push_options: --force
 
       - name: "Add deploy summary"
         run: |
