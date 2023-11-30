@@ -62,7 +62,7 @@ interface ILeverageEngine {
         address exchange
     )
         external
-        returns (uint256 nftID);
+        returns (uint256 nftId);
 
     ///////////// View functions /////////////
 
