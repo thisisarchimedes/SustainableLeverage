@@ -7,7 +7,6 @@ import { FakeOracle } from "../src/ports/FakeOracle.sol";
 import { FakeWBTCWETHSwapAdapter } from "../src/ports/FakeWBTCWETHSwapAdapter.sol";
 import { FakeOracle } from "src/ports/FakeOracle.sol";
 import "./BaseTest.sol";
-import "./helpers/OracleTestHelper.sol";
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 
 contract LiquidatePositionTest is BaseTest {
@@ -26,12 +25,14 @@ contract LiquidatePositionTest is BaseTest {
 
         deal(WBTC, address(wbtcVault), 10_000_000e8);
         deal(WBTC, address(this), 10_000_000e8);
-        ERC20(WBTC).approve(address(leverageEngine), type(uint256).max);
+        ERC20(WBTC).approve(address(positionOpener), type(uint256).max);
+        ERC20(WBTC).approve(address(positionCloser), type(uint256).max);
+
     }
 
     function testSetLiquidationBufferPerStrategyTo10And15PercentAbove() external {
         uint256 newLiquidationBuffer;
-        ILeverageEngine.StrategyConfig memory strategyConfig;
+        LeveragedStrategy.StrategyConfig memory strategyConfig;
 
         strategyConfig.quota = 100e8;
         strategyConfig.positionLifetime = 1000;
@@ -40,20 +41,18 @@ contract LiquidatePositionTest is BaseTest {
 
         newLiquidationBuffer = 1.1 * 10 ** 8; // 10%
         strategyConfig.liquidationBuffer = newLiquidationBuffer;
-        leverageEngine.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
-        strategyConfig = leverageEngine.getStrategyConfig(ETHPLUSETH_STRATEGY);
-        assertEq(newLiquidationBuffer, strategyConfig.liquidationBuffer);
+        leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
+        assertEq(newLiquidationBuffer, leveragedStrategy.getLiquidationBuffer(ETHPLUSETH_STRATEGY));
 
         newLiquidationBuffer = 1.15 * 10 ** 8; // 15%
         strategyConfig.liquidationBuffer = newLiquidationBuffer;
-        leverageEngine.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
-        strategyConfig = leverageEngine.getStrategyConfig(ETHPLUSETH_STRATEGY);
-        assertEq(newLiquidationBuffer, strategyConfig.liquidationBuffer);
+        leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
+        assertEq(newLiquidationBuffer, leveragedStrategy.getLiquidationBuffer(ETHPLUSETH_STRATEGY));
     }
 
     function testSetLiquidationFees() external {
         uint256 newLiquidationFee;
-        ILeverageEngine.StrategyConfig memory strategyConfig;
+        LeveragedStrategy.StrategyConfig memory strategyConfig;
 
         strategyConfig.quota = 100e8;
         strategyConfig.positionLifetime = 1000;
@@ -62,15 +61,13 @@ contract LiquidatePositionTest is BaseTest {
 
         newLiquidationFee = 0.02e8; // 2%
         strategyConfig.liquidationFee = newLiquidationFee;
-        leverageEngine.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
-        strategyConfig = leverageEngine.getStrategyConfig(ETHPLUSETH_STRATEGY);
-        assertEq(newLiquidationFee, strategyConfig.liquidationFee);
+        leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
+        assertEq(newLiquidationFee, leveragedStrategy.getLiquidationFee(ETHPLUSETH_STRATEGY));
 
         newLiquidationFee = 0.05e8; // 5%
         strategyConfig.liquidationFee = newLiquidationFee;
-        leverageEngine.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
-        strategyConfig = leverageEngine.getStrategyConfig(ETHPLUSETH_STRATEGY);
-        assertEq(newLiquidationFee, strategyConfig.liquidationFee);
+        leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
+        assertEq(newLiquidationFee, leveragedStrategy.getLiquidationFee(ETHPLUSETH_STRATEGY));
     }
 
     function testWBTCPositionValueForUSDCPosition() external {
@@ -79,7 +76,7 @@ contract LiquidatePositionTest is BaseTest {
 
         uint256 nftId = openUSDCBasedPosition(collateralAmount, borrowAmount);
 
-        uint256 positionValueInWBTC = leverageEngine.previewPositionValueInWBTC(nftId);
+        uint256 positionValueInWBTC = leveragedStrategy.previewPositionValueInWBTC(nftId);
         uint256 delta = (collateralAmount + borrowAmount) * 200 / 10_000; // 2% delta
         assertAlmostEq(collateralAmount + borrowAmount, positionValueInWBTC, delta);
     }
@@ -90,7 +87,7 @@ contract LiquidatePositionTest is BaseTest {
 
         uint256 nftId = openETHBasedPosition(collateralAmount, borrowAmount);
 
-        uint256 positionValueInWBTC = leverageEngine.previewPositionValueInWBTC(nftId);
+        uint256 positionValueInWBTC = leveragedStrategy.previewPositionValueInWBTC(nftId);
         uint256 delta = (collateralAmount + borrowAmount) * 200 / 10_000; // 2% delta
         assertAlmostEq(collateralAmount + borrowAmount, positionValueInWBTC, delta);
     }
@@ -101,7 +98,7 @@ contract LiquidatePositionTest is BaseTest {
 
         uint256 nftId = openETHBasedPosition(collateralAmount, borrowAmount);
 
-        assertEq(leverageEngine.isPositionLiquidatable(nftId), false);
+        assertEq(leveragedStrategy.isPositionLiquidatable(nftId), false);
     }
 
     function testIsPositionLiquidatable() external {
@@ -110,14 +107,14 @@ contract LiquidatePositionTest is BaseTest {
 
         uint256 nftId = openETHBasedPosition(collateralAmount, borrowAmount);
 
-        assertEq(leverageEngine.isPositionLiquidatable(nftId), false);
+        assertEq(leveragedStrategy.isPositionLiquidatable(nftId), false);
 
         FakeOracle fakeETHUSDOracle = new FakeOracle();
         fakeETHUSDOracle.updateFakePrice(100e8);
         fakeETHUSDOracle.updateDecimals(8);
-        leverageEngine.setOracle(WETH, fakeETHUSDOracle);
+        oracleManager.setOracle(WETH, fakeETHUSDOracle);
 
-        assertEq(leverageEngine.isPositionLiquidatable(nftId), true);
+        assertEq(leveragedStrategy.isPositionLiquidatable(nftId), true);
     }
 
     function testIsPositionLiquidatableRevertsOnClosedPosition() external {
@@ -129,12 +126,12 @@ contract LiquidatePositionTest is BaseTest {
         closeETHBasedPosition(nftId);
 
         vm.expectRevert(ErrorsLeverageEngine.PositionNotLive.selector);
-        leverageEngine.isPositionLiquidatable(nftId);
+        leveragedStrategy.isPositionLiquidatable(nftId);
     }
 
     function testIsPositionLiquidatableRevertsOnNonExistingNFT() external {
         vm.expectRevert(ErrorsLeverageEngine.PositionNotLive.selector);
-        leverageEngine.isPositionLiquidatable(999_999);
+        leveragedStrategy.isPositionLiquidatable(999_999);
     }
 
     function testLiquditionRevertsIfPositionIsClosed() external {
@@ -147,23 +144,23 @@ contract LiquidatePositionTest is BaseTest {
 
         bytes memory payloadClose = getWETHWBTCUniswapPayload();
 
-        leverageEngine.setMonitor(address(this));
+        positionCloser.setMonitor(address(this));
 
         vm.expectRevert(ErrorsLeverageEngine.PositionNotLive.selector);
-        leverageEngine.liquidatePosition(nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, payloadClose, address(0));
+        positionCloser.liquidatePosition(nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, payloadClose, address(0));
     }
 
     function testLiquidationOfETHBasedPosition() external {
-        // Set liquidateion Buffer
+        // Set liquidateion BufferLeveragedStrategy
         uint256 liquidationFee = 0.02e8;
-        ILeverageEngine.StrategyConfig memory strategyConfig = ILeverageEngine.StrategyConfig({
+        LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
             quota: 100e8,
             maximumMultiplier: 3e8,
             positionLifetime: 1000,
             liquidationBuffer: 1.1e8,
             liquidationFee: liquidationFee
         });
-        leverageEngine.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
+        leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
 
         uint256 nftId = openETHBasedPosition(10e8, 30e8);
 
@@ -171,8 +168,8 @@ contract LiquidatePositionTest is BaseTest {
         uint256 debtPaidBack = liquidateETHPosition(nftId);
         uint256 feeCollectorBalanceAfter = ERC20(WBTC).balanceOf(address(feeCollector));
 
-        uint256 positionValueInWBTC = leverageEngine.previewPositionValueInWBTC(nftId);
-        PositionLedgerLib.LedgerEntry memory position = leverageEngine.getPosition(nftId);
+        uint256 positionValueInWBTC = leveragedStrategy.previewPositionValueInWBTC(nftId);
+        LedgerEntry memory position = positionLedger.getPosition(nftId);
 
         assertEq(position.wbtcDebtAmount, debtPaidBack);
 
@@ -190,16 +187,16 @@ contract LiquidatePositionTest is BaseTest {
     }
 
     function testLiquidationOfUSDCBasedPosition() external {
-        // Set liquidateion Buffer
+        // Set liquidateion BufferLeveragedStrategy
         uint256 liquidationFee = 0.02e8;
-        ILeverageEngine.StrategyConfig memory strategyConfig = ILeverageEngine.StrategyConfig({
+        LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
             quota: 100e8,
             maximumMultiplier: 3e8,
             positionLifetime: 1000,
             liquidationBuffer: 1.1e8,
             liquidationFee: liquidationFee
         });
-        leverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
+        leveragedStrategy.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
 
         uint256 nftId = openUSDCBasedPosition(1e8, 3e8);
 
@@ -207,8 +204,8 @@ contract LiquidatePositionTest is BaseTest {
         uint256 debtPaidBack = liquidateUSDCPosition(nftId);
         uint256 feeCollectorBalanceAfter = ERC20(WBTC).balanceOf(address(feeCollector));
 
-        uint256 positionValueInWBTC = leverageEngine.previewPositionValueInWBTC(nftId);
-        PositionLedgerLib.LedgerEntry memory position = leverageEngine.getPosition(nftId);
+        uint256 positionValueInWBTC = leveragedStrategy.previewPositionValueInWBTC(nftId);
+        LedgerEntry memory position = positionLedger.getPosition(nftId);
 
         assertEq(position.wbtcDebtAmount, debtPaidBack);
 

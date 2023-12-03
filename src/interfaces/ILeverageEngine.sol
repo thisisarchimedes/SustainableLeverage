@@ -4,7 +4,6 @@ pragma solidity >=0.8.21;
 import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "./IERC20Detailed.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
-import "../PositionLedgerLib.sol";
 import { IWBTCVault } from "./IWBTCVault.sol";
 import { IOracle } from "./IOracle.sol";
 import { ILeverageDepositor } from "./ILeverageDepositor.sol";
@@ -14,67 +13,12 @@ import { IMultiPoolStrategy } from "./IMultiPoolStrategy.sol";
 import { AggregatorV3Interface } from "./AggregatorV3Interface.sol";
 
 interface ILeverageEngine {
-    /// @notice Strategy configurations structure
-    /// @param quota WBTC Quota for the strategy
-    /// @param positionLifetime Lifetime of a position in blocks
-    /// @param maximumMultiplier Maximum borrowing power multiplier
-    /// @param liquidationBuffer Threshold for liquidation
-    struct StrategyConfig {
-        uint256 quota;
-        uint256 positionLifetime;
-        uint256 maximumMultiplier;
-        uint256 liquidationBuffer;
-        uint256 liquidationFee;
-    }
-
-    enum StrategyConfigUpdate {
-        QUOTA,
-        POSITION_LIFETIME,
-        MAXIMUM_MULTIPLIER,
-        LIQUIDATION_BUFFER
-    }
 
     ///////////// Admin functions /////////////
 
-    function setStrategyConfig(address strategy, StrategyConfig calldata config) external;
-
-    function removeStrategy(address strategy) external;
-
-    function setOracle(address token, IOracle oracle) external;
-
     function changeSwapAdapter(address _swapAdapter) external;
 
-    function setLiquidationFee(address strategy, uint256 fee) external;
-
-    function setExitFee(uint256 fee) external;
-
-    function setFeeCollector(address collector) external;
-
-    ///////////// User functions /////////////
-
-    function openPosition(
-        uint256 collateralAmount,
-        uint256 wbtcToBorrow,
-        address strategy,
-        uint256 minStrategyShares,
-        SwapAdapter.SwapRoute swapRoute,
-        bytes calldata swapData,
-        address exchange
-    )
-        external
-        returns (uint256 nftID);
-
     ///////////// View functions /////////////
-
-    function previewOpenPosition(
-        uint256 collateralAmount,
-        uint256 wbtcToBorrow,
-        address strategy,
-        uint256 minimumExpected
-    )
-        external
-        view
-        returns (uint256 estimatedShares);
 
     function closePosition(
         uint256 nftID,
@@ -87,7 +31,4 @@ interface ILeverageEngine {
 
     function closeExpiredOrLiquidatedPosition(uint256 nftID, address sender) external;
 
-    function getStrategyConfig(address strategy) external view returns (StrategyConfig memory);
-
-    function getPosition(uint256 nftID) external view returns (PositionLedgerLib.LedgerEntry memory);
 }

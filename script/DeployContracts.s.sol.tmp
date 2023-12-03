@@ -3,7 +3,7 @@ pragma solidity >=0.8.21;
 
 import { BaseScript } from "./Base.s.sol";
 import { PositionLedgerLib } from "../src/PositionLedgerLib.sol";
-import  "../src/LeverageEngine.sol";
+import "../src/LeverageEngine.sol";
 import { PositionToken } from "../src/PositionToken.sol";
 import "../src/LeverageDepositor.sol";
 import { WBTCVault } from "src/WBTCVault.sol";
@@ -23,6 +23,8 @@ contract DeployContracts is BaseScript {
     ProxyAdmin internal proxyAdmin;
     TransparentUpgradeableProxy internal proxy;
     SwapAdapter internal swapAdapter;
+    LeveragedStrategy internal strategyManager;
+
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -32,25 +34,36 @@ contract DeployContracts is BaseScript {
     address public constant USDCUSDORACLE = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
     address public constant FRAXBPALUSD_STRATEGY = 0xB888b8204Df31B54728e963ebA5465A95b695103;
 
+    // TODO: Use BaseTest initalization here (setDependecies)
     function run() public broadcast {
         proxyAdmin = new ProxyAdmin(address(this));
         deployedContracts.push(address(proxyAdmin));
         deployedContractsNames.push("ProxyAdmin");
+
         positionToken = new PositionToken();
         deployedContracts.push(address(positionToken));
         deployedContractsNames.push("PositionToken");
+
         leverageDepositor = new LeverageDepositor(WBTC,WETH);
         deployedContracts.push(address(leverageDepositor));
         deployedContractsNames.push("LeverageDepositor");
+
         wbtcVault = new WBTCVault(WBTC);
         deployedContracts.push(address(wbtcVault));
         deployedContractsNames.push("WBTCVault");
+
         leverageEngine = new LeverageEngine();
         deployedContracts.push(address(leverageEngine));
         deployedContractsNames.push("LeverageEngineImplementation");
+
+        strategyManager = new LeveragedStrategy();
+        deployedContracts.push(address(strategyManager));
+        deployedContractsNames.push("StrategyManagerImplementation");
+
         swapAdapter = new SwapAdapter(WBTC, address(leverageDepositor));
         deployedContracts.push(address(swapAdapter));
         deployedContractsNames.push("SwapAdapter");
+
         bytes memory initData = abi.encodeWithSelector(
             LeverageEngine.initialize.selector,
             address(wbtcVault),
@@ -68,7 +81,7 @@ contract DeployContracts is BaseScript {
         leverageEngine.setOracle(USDC, new ChainlinkOracle(USDCUSDORACLE));
         _writeDeploymentsToJson();
         if (block.chainid == 1337) {
-            LeverageEngine.StrategyConfig memory strategyConfig = ILeverageEngine.StrategyConfig({
+            LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
                 quota: 10_000e8,
                 maximumMultiplier: 3e8,
                 positionLifetime: 1000,
@@ -76,7 +89,7 @@ contract DeployContracts is BaseScript {
                 liquidationFee: 0.02e8
             });
 
-            leverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
+            leveragedStrategysetStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
             bytes32 storageSlot = keccak256(abi.encode(address(wbtcVault), 0));
             uint256 amount = 1_000_000e8;
             string[] memory inputs = new string[](5);

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.21 <0.9.0;
 
-import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
-
-import { PositionToken } from "src/PositionToken.sol";
+import { PositionLedgerLib } from "../src/PositionLedgerLib.sol";
+import "../src/LeverageEngine.sol";
+import { PositionToken } from "../src/PositionToken.sol";
 import "../src/LeverageDepositor.sol";
 import { WBTCVault } from "src/WBTCVault.sol";
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
@@ -21,32 +21,26 @@ import { StdCheats } from "forge-std/StdCheats.sol";
 import { ExpiredVault } from "src/ExpiredVault.sol";
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { ProtocolParameters } from "src/ProtocolParameters.sol";
-import { PositionLedger, LedgerEntry, PositionState } from "src/PositionLedger.sol";
+import { PositionLedger } from "src/PositionLedger.sol";
 import { PositionOpener } from "src/PositionOpener.sol";
-import { PositionCloser } from "src/PositionCloser.sol";
-import { OracleManager } from "src/OracleManager.sol";
-import { LeveragedStrategy } from "src/LeveragedStrategy.sol";
 
-contract BaseTest is PRBTest, StdCheats {
-
-    using SafeERC20 for IERC20;
-
+contract Deployer  {
     DependencyAddresses internal dependencyAddresses;
 
-    address feeCollector = makeAddr("feeCollector");
+    LeverageEngine internal leverageEngine;
     PositionToken internal positionToken;
     LeverageDepositor internal leverageDepositor;
     WBTCVault internal wbtcVault;
     ProxyAdmin internal proxyAdmin;
+    IOracle internal oracle;
     TransparentUpgradeableProxy internal proxy;
     TransparentUpgradeableProxy internal expiredVaultProxy;
     SwapAdapter internal swapAdapter;
     ExpiredVault internal expiredVault;
-    LeveragedStrategy leveragedStrategy;
+    LeveragedStrategy strategyManager;
     ProtocolParameters protocolParameters;
     PositionLedger positionLedger;
     PositionOpener positionOpener;
-    PositionCloser positionCloser;
     OracleManager oracleManager;
 
     IERC20 internal wbtc;
@@ -63,29 +57,17 @@ contract BaseTest is PRBTest, StdCheats {
     ChainlinkOracle btcEthOracle;
     ChainlinkOracle wbtcUsdOracle;
 
-    function initFork() internal {
-        string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
-        if (bytes(alchemyApiKey).length == 0) {
-            return;
-        }
-
-        // Otherwise, run the test against the mainnet fork.
-        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
-    }
-
-    function initTestFramework() internal {
+    function deployAllContracts() internal {
         wbtc = IERC20(WBTC);
 
         createOracles();
 
         deployProxyAndContracts();
 
+        leverageEngine.setDependencies(dependencyAddresses);
         expiredVault.setDependencies(dependencyAddresses);
-        leveragedStrategy.setDependencies(dependencyAddresses);
+        leveragedStrategysetDependencies(dependencyAddresses);
         positionLedger.setDependencies(dependencyAddresses);
-        positionOpener.setDependencies(dependencyAddresses);
-        positionCloser.setDependencies(dependencyAddresses);
-        positionToken.setDependencies(dependencyAddresses);
     }
 
     function createOracles() internal {
@@ -116,8 +98,8 @@ contract BaseTest is PRBTest, StdCheats {
         dependencyAddresses.expiredVault = createProxiedExpiredVault();
         expiredVault = ExpiredVault(dependencyAddresses.expiredVault);
 
-        dependencyAddresses.leveragedStrategy = createProxiedStrategyManager();
-        leveragedStrategy = LeveragedStrategy(dependencyAddresses.leveragedStrategy);
+        dependencyAddresses.strategyManager = createProxiedStrategyManager();
+        strategyManager = LeveragedStrategy(dependencyAddresses.strategyManager);
 
         dependencyAddresses.protocolParameters = createProxiedProtocolParameters();
         protocolParameters = ProtocolParameters(dependencyAddresses.protocolParameters);
@@ -125,11 +107,21 @@ contract BaseTest is PRBTest, StdCheats {
         dependencyAddresses.positionOpener = createProxiedPositionOpener();
         positionOpener = PositionOpener(dependencyAddresses.positionOpener);
 
-        dependencyAddresses.positionCloser = createProxiedPositionCloser();
-        positionCloser = PositionCloser(dependencyAddresses.positionCloser);
+        dependencyAddresses.leverageEngine = createProxiedLeverageEngine();
+        leverageEngine = LeverageEngine(dependencyAddresses.leverageEngine);
 
         dependencyAddresses.positionLedger = createProxiedPositionLedger();
         positionLedger = PositionLedger(dependencyAddresses.positionLedger);
+    }
+
+    function createProxiedLeverageEngine() internal returns (address) {
+        LeverageEngine implLeverageEngine = new LeverageEngine();
+        address addrLeverageEngine = createUpgradableContract(
+            implLeverageEngine.initialize.selector, address(implLeverageEngine), address(proxyAdmin)
+        );
+        LeverageEngine proxyLeverageEngine = LeverageEngine(addrLeverageEngine);
+
+        return addrLeverageEngine;
     }
 
     function createProxiedExpiredVault() internal returns (address) {
@@ -193,17 +185,9 @@ contract BaseTest is PRBTest, StdCheats {
         address addrPositionOpener = createUpgradableContract(
             implPositionOpener.initialize.selector, address(implPositionOpener), address(proxyAdmin)
         );
+        PositionOpener proxyPositionOpener = PositionOpener(addrPositionOpener);
 
         return addrPositionOpener;
-    }
-
-    function createProxiedPositionCloser() internal returns (address) {
-        PositionCloser implPositionCloser = new PositionCloser();
-        address addrPositionCloser = createUpgradableContract(
-            implPositionCloser.initialize.selector, address(implPositionCloser), address(proxyAdmin)
-        );
-
-        return addrPositionCloser;
     }
 
     function createProxiedPositionLedger() internal returns (address) {
@@ -211,6 +195,7 @@ contract BaseTest is PRBTest, StdCheats {
         address addrPositionLedger = createUpgradableContract(
             implPositionLedger.initialize.selector, address(implPositionLedger), address(proxyAdmin)
         );
+        PositionLedger proxyPositionLedger = PositionLedger(addrPositionLedger);
 
         return addrPositionLedger;
     }
@@ -241,7 +226,7 @@ contract BaseTest is PRBTest, StdCheats {
 
         deal(WBTC, address(this), 1000e8);
 
-        nftId = positionOpener.openPosition(
+        nftId = leverageEngine.openPosition(
             collateralAmount, borrowAmount, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
         );
     }
@@ -266,25 +251,25 @@ contract BaseTest is PRBTest, StdCheats {
             deal(WBTC, address(fakeSwapAdapter), 1000e8);
             fakeSwapAdapter.setWbtcToWethExchangeRate(fakeBtcEthPrice);
             fakeSwapAdapter.setWethToWbtcExchangeRate(1e36 / fakeBtcEthPrice);
-            positionCloser.changeSwapAdapter(address(fakeSwapAdapter));
+            leverageEngine.changeSwapAdapter(address(fakeSwapAdapter));
         }
 
         {
             FakeOracle fakeETHUSDOracle = new FakeOracle();
             fakeETHUSDOracle.updateFakePrice(fakeEthUsdPrice);
             fakeETHUSDOracle.updateDecimals(8);
-            oracleManager.setOracle(WETH, fakeETHUSDOracle);
+            leverageEngine.setOracle(WETH, fakeETHUSDOracle);
             FakeOracle fakeWBTCUSDOracle = new FakeOracle();
             fakeWBTCUSDOracle.updateFakePrice(fakeBtcUsdPrice);
             fakeWBTCUSDOracle.updateDecimals(8);
-            oracleManager.setOracle(WBTC, fakeWBTCUSDOracle);
+            leverageEngine.setOracle(WBTC, fakeWBTCUSDOracle);
         }
 
         {
             // Liquidate position
-            positionCloser.setMonitor(address(this));
+            leverageEngine.setMonitor(address(this));
             uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(wbtcVault));
-            positionCloser.liquidatePosition(
+            leverageEngine.liquidatePosition(
                 nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, getWBTCWETHUniswapPayload(), address(0)
             );
             uint256 wbtcVaultBalanceAfter = IERC20(WBTC).balanceOf(address(wbtcVault));
@@ -308,21 +293,21 @@ contract BaseTest is PRBTest, StdCheats {
 
             fakeSwapAdapter.setWbtcToUsdcExchangeRate(fakeBtcUsdPrice);
             fakeSwapAdapter.setUsdcToWbtcExchangeRate(1e16 / fakeBtcUsdPrice);
-            positionCloser.changeSwapAdapter(address(fakeSwapAdapter));
+            leverageEngine.changeSwapAdapter(address(fakeSwapAdapter));
         }
 
         {
             FakeOracle fakeWBTCUSDOracle = new FakeOracle();
             fakeWBTCUSDOracle.updateFakePrice(fakeBtcUsdPrice);
             fakeWBTCUSDOracle.updateDecimals(8);
-            oracleManager.setOracle(WBTC, fakeWBTCUSDOracle);
+            leverageEngine.setOracle(WBTC, fakeWBTCUSDOracle);
         }
 
         {
             // Liquidate position
-            positionCloser.setMonitor(address(this));
+            leverageEngine.setMonitor(address(this));
             uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(wbtcVault));
-            positionCloser.liquidatePosition(
+            leverageEngine.liquidatePosition(
                 nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, getUSDCWBTCUniswapPayload(), address(0)
             );
             uint256 wbtcVaultBalanceAfter = IERC20(WBTC).balanceOf(address(wbtcVault));
@@ -342,7 +327,7 @@ contract BaseTest is PRBTest, StdCheats {
     function closeETHBasedPosition(uint256 nftId) internal {
         bytes memory payload = getWETHWBTCUniswapPayload();
 
-        positionCloser.closePosition(nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
+        leverageEngine.closePosition(nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
     }
 
     function getWETHWBTCUniswapPayload() internal view returns (bytes memory payload) {
@@ -359,7 +344,7 @@ contract BaseTest is PRBTest, StdCheats {
 
         deal(WBTC, address(this), 1000e8);
 
-        nftId = positionOpener.openPosition(
+        nftId = leverageEngine.openPosition(
             collateralAmount,
             borrowAmount,
             FRAXBPALUSD_STRATEGY,

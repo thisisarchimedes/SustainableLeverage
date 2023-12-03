@@ -9,5 +9,10 @@ struct DependencyAddresses {
     address wbtcVault;
     address proxyAdmin;
     address swapAdapter;
+    address leveragedStrategy;
+    address protocolParameters;
+    address oracleManager;
+    address positionOpener;
+    address positionCloser;
+    address positionLedger;
 }
-

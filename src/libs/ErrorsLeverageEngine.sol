@@ -3,7 +3,7 @@ pragma solidity >=0.8.21;
 
 library ErrorsLeverageEngine {
 
-   error ExceedBorrowLimit();
+    error ExceedBorrowLimit();
     error LessThanMinimumShares();
     error OracleNotSet();
     error NotEnoughTokensReceived();
@@ -14,4 +14,6 @@ library ErrorsLeverageEngine {
     error PositionNotExpiredOrLiquidated();
     error NotEnoughWBTC();
     error NotEligibleForLiquidation();
+    error InsufficientFunds();
+    error PositionHasNoBalance();
 }
