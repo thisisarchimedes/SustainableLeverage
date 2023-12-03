@@ -25,6 +25,30 @@ contract DeployContracts is BaseScript, UnifiedDeployer {
         
         CreateContractJSON();
 
+        postDeployconfig();
+    }
+
+    function CreateContractJSON() internal {
+        
+        deployedContracts.push(dependencyAddresses.expiredVault);
+        deployedContracts.push(dependencyAddresses.leverageDepositor);
+        deployedContracts.push(dependencyAddresses.positionToken);
+        deployedContracts.push(dependencyAddresses.wbtcVault);
+        deployedContracts.push(dependencyAddresses.proxyAdmin);
+        deployedContracts.push(dependencyAddresses.swapAdapter);
+        deployedContracts.push(dependencyAddresses.leveragedStrategy);
+        deployedContracts.push(dependencyAddresses.protocolParameters);
+        deployedContracts.push(dependencyAddresses.oracleManager);
+        deployedContracts.push(dependencyAddresses.positionOpener);
+        deployedContracts.push(dependencyAddresses.positionCloser);
+        deployedContracts.push(dependencyAddresses.positionLedger);
+
+        deployedContractsNames.push("LeverageEngine");
+        
+        _writeDeploymentsToJson();
+    }
+
+    function postDeployconfig() internal {
         if (block.chainid == 1337) {
             LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
                 quota: 10_000e8,
@@ -46,25 +70,5 @@ contract DeployContracts is BaseScript, UnifiedDeployer {
 
             vm.ffi(inputs);
         }
-    }
-
-    function CreateContractJSON() internal {
-        
-        deployedContracts.push(dependencyAddresses.expiredVault);
-        deployedContracts.push(dependencyAddresses.leverageDepositor);
-        deployedContracts.push(dependencyAddresses.positionToken);
-        deployedContracts.push(dependencyAddresses.wbtcVault);
-        deployedContracts.push(dependencyAddresses.proxyAdmin);
-        deployedContracts.push(dependencyAddresses.swapAdapter);
-        deployedContracts.push(dependencyAddresses.leveragedStrategy);
-        deployedContracts.push(dependencyAddresses.protocolParameters);
-        deployedContracts.push(dependencyAddresses.oracleManager);
-        deployedContracts.push(dependencyAddresses.positionOpener);
-        deployedContracts.push(dependencyAddresses.positionCloser);
-        deployedContracts.push(dependencyAddresses.positionLedger);
-
-        deployedContractsNames.push("LeverageEngine");
-        
-        _writeDeploymentsToJson();
     }
 }
