@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
 import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
