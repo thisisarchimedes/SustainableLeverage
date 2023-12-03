@@ -27,7 +27,6 @@ import { PositionOpener } from "src/PositionOpener.sol";
 contract Deployer  {
     DependencyAddresses internal dependencyAddresses;
 
-    LeverageEngine internal leverageEngine;
     PositionToken internal positionToken;
     LeverageDepositor internal leverageDepositor;
     WBTCVault internal wbtcVault;

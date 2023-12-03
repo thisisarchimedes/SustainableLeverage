@@ -25,12 +25,12 @@ contract ClosePositionTest is BaseTest {
         // Otherwise, run the test against the mainnet fork.
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
         initTestFramework();
-        deal(WBTC, address(wbtcVault), 100e8);
+        deal(WBTC, address(allContracts.wbtcVault), 100e8);
     }
 
     function _openPosition() internal {
         deal(WBTC, address(this), 10e8);
-        ERC20(WBTC).approve(address(positionOpener), 10e8);
+        ERC20(WBTC).approve(address(allContracts.positionOpener), 10e8);
 
         bytes memory payload = abi.encode(
             SwapAdapter.UniswapV3Data({
@@ -38,18 +38,18 @@ contract ClosePositionTest is BaseTest {
                 deadline: block.timestamp + 1000
             })
         );
-        positionOpener.openPosition(
+        allContracts.positionOpener.openPosition(
             5e8, 15e8, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
         );
     }
 
     function test_ShouldRevertWithNotOwner() external {
         _openPosition();
-        address ownerOfNft = positionToken.ownerOf(0);
+        address ownerOfNft = allContracts.positionToken.ownerOf(0);
         assertEq(ownerOfNft, address(this), "Should be owner");
-        positionToken.transferFrom(address(this), positionReceiver, 0);
+        allContracts.positionToken.transferFrom(address(this), positionReceiver, 0);
         vm.expectRevert(ErrorsLeverageEngine.NotOwner.selector);
-        positionCloser.closePosition(0, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
+        allContracts.positionCloser.closePosition(0, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
     }
 
     function test_ShouldRevertWithNotEnoughTokensReceived() external {
@@ -61,7 +61,7 @@ contract ClosePositionTest is BaseTest {
             })
         );
         vm.expectRevert(ErrorsLeverageEngine.NotEnoughTokensReceived.selector);
-        positionCloser.closePosition(0, 5e8, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
+        allContracts.positionCloser.closePosition(0, 5e8, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
     }
 
     function test_ShouldRevertIfPositionAlreadyClosed() external {
@@ -72,14 +72,14 @@ contract ClosePositionTest is BaseTest {
                 deadline: block.timestamp + 1000
             })
         );
-        positionCloser.closePosition(0, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
+        allContracts.positionCloser.closePosition(0, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
         vm.expectRevert();
-        positionCloser.closePosition(0, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
+        allContracts.positionCloser.closePosition(0, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
     }
 
     function test_ShouldClosePosition() external {
         _openPosition();
-        address ownerOfNft = positionToken.ownerOf(0);
+        address ownerOfNft = allContracts.positionToken.ownerOf(0);
         assertEq(ownerOfNft, address(this), "Should be owner");
         bytes memory payload = abi.encode(
             SwapAdapter.UniswapV3Data({
@@ -88,11 +88,11 @@ contract ClosePositionTest is BaseTest {
             })
         );
 
-        uint256 wbtcBalanceBeforeClose = wbtc.balanceOf(address(wbtcVault));
+        uint256 wbtcBalanceBeforeClose = wbtc.balanceOf(address(allContracts.wbtcVault));
 
-        positionCloser.closePosition(0, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
-        uint256 wbtcBalanceAfterClose = wbtc.balanceOf(address(wbtcVault));
-        LedgerEntry memory position = positionLedger.getPosition(0);
+        allContracts.positionCloser.closePosition(0, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
+        uint256 wbtcBalanceAfterClose = wbtc.balanceOf(address(allContracts.wbtcVault));
+        LedgerEntry memory position = allContracts.positionLedger.getPosition(0);
         assertEq(uint8(position.state), uint8(PositionState.CLOSED));
         assertEq(wbtcBalanceAfterClose - wbtcBalanceBeforeClose, position.wbtcDebtAmount);
     }

@@ -17,22 +17,22 @@ contract OpenPositionTest is BaseTest {
     function setUp() public virtual {
         initFork();
         initTestFramework();
-        deal(WBTC, address(wbtcVault), 100e8);
+        deal(WBTC, address(allContracts.wbtcVault), 100e8);
     }
 
     function test_ShouldRevertWithArithmeticOverflow() external {
         vm.expectRevert();
-        positionOpener.openPosition(5e18, 5e18, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
+        allContracts.positionOpener.openPosition(5e18, 5e18, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
     }
 
     function test_ShouldRevertWithExceedBorrowLimit() external {
         vm.expectRevert(ErrorsLeverageEngine.ExceedBorrowLimit.selector);
-        positionOpener.openPosition(5e8, 80e8, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
+        allContracts.positionOpener.openPosition(5e8, 80e8, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
     }
 
     function test_ShouldAbleToOpenPosForWETHStrategy() external {
         deal(WBTC, address(this), 10e8);
-        ERC20(WBTC).approve(address(positionOpener), 10e8);
+        ERC20(WBTC).approve(address(allContracts.positionOpener), 10e8);
 
         bytes memory payload = abi.encode(
             SwapAdapter.UniswapV3Data({
@@ -40,17 +40,17 @@ contract OpenPositionTest is BaseTest {
                 deadline: block.timestamp + 1000
             })
         );
-        positionOpener.openPosition(
+        allContracts.positionOpener.openPosition(
             5e8, 15e8, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
         );
-        LedgerEntry memory position = positionLedger.getPosition(0);
+        LedgerEntry memory position = allContracts.positionLedger.getPosition(0);
         assertEq(position.collateralAmount, 5e8);
         assertEq(position.wbtcDebtAmount, 15e8);
     }
 
     function test_ShouldAbleToOpenPosForUSDCStrategy() external {
         deal(WBTC, address(this), 10e8);
-        ERC20(WBTC).approve(address(positionOpener), 10e8);
+        ERC20(WBTC).approve(address(allContracts.positionOpener), 10e8);
 
         bytes memory payload = abi.encode(
             SwapAdapter.UniswapV3Data({
@@ -58,20 +58,20 @@ contract OpenPositionTest is BaseTest {
                 deadline: block.timestamp + 1000
             })
         );
-        positionOpener.openPosition(
+        allContracts.positionOpener.openPosition(
             5e8, 15e8, FRAXBPALUSD_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
         );
-        LedgerEntry memory position = positionLedger.getPosition(0);
+        LedgerEntry memory position = allContracts.positionLedger.getPosition(0);
         assertEq(position.collateralAmount, 5e8);
         assertEq(position.wbtcDebtAmount, 15e8);
     }
 
     function test_oracleDoesntReturnZero() external {
 
-        uint256 ethUsd = oracleManager.getLatestPrice(WETH);
+        uint256 ethUsd = allContracts.oracleManager.getLatestPrice(WETH);
         assertGt(ethUsd, 0);
 
-        uint256 wbtcUsd = oracleManager.getLatestPrice(WBTC);
+        uint256 wbtcUsd = allContracts.oracleManager.getLatestPrice(WBTC);
         assertGt(wbtcUsd, 0);
     }
 

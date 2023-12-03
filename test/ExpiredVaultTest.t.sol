@@ -26,23 +26,23 @@ contract ExpiredVaultTest is BaseTest {
         // Otherwise, run the test against the mainnet fork.
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
         initTestFramework();
-        deal(WBTC, address(wbtcVault), 100e8);
-        ERC20(WBTC).approve(address(positionOpener), type(uint256).max);
-        ERC20(WBTC).approve(address(positionCloser), type(uint256).max);
+        deal(WBTC, address(allContracts.wbtcVault), 100e8);
+        ERC20(WBTC).approve(address(allContracts.positionOpener), type(uint256).max);
+        ERC20(WBTC).approve(address(allContracts.positionCloser), type(uint256).max);
     }
 
     function testDeposit() public {
-        vm.startPrank(address(positionCloser));
+        vm.startPrank(address(allContracts.positionCloser));
 
         // Arrange
         uint256 depositAmount = 1e8; // 1 WBTC for simplicity
 
         // Act
-        deal(address(wbtc), address(positionCloser), 100e8);
-        expiredVault.deposit(depositAmount);
+        deal(address(wbtc), address(allContracts.positionCloser), 100e8);
+        allContracts.expiredVault.deposit(depositAmount);
 
         // Assert
-        assertEq(expiredVault.balance(), depositAmount, "Vault balance should be updated");
+        assertEq(allContracts.expiredVault.balance(), depositAmount, "Vault balance should be updated");
     }
 
     function testDepositNotMonitor() public {
@@ -50,7 +50,7 @@ contract ExpiredVaultTest is BaseTest {
 
         // Act
         vm.expectRevert();
-        expiredVault.deposit(depositAmount); // This should fail because 'user' is not in MONITOR_ROLE
+        allContracts.expiredVault.deposit(depositAmount); // This should fail because 'user' is not in MONITOR_ROLE
     }
 
     function testClaim() public {
@@ -59,18 +59,18 @@ contract ExpiredVaultTest is BaseTest {
 
         // Liquidate the position
         liquidateETHPosition(nftId);
-        uint256 claimableAmount = positionLedger.getPosition(nftId).claimableAmount;
+        uint256 claimableAmount = allContracts.positionLedger.getPosition(nftId).claimableAmount;
 
         // Act
         uint256 balanceBefore = wbtc.balanceOf(address(this));
-        expiredVault.claim(nftId);
+        allContracts.expiredVault.claim(nftId);
         uint256 balanceAfter = wbtc.balanceOf(address(this));
 
         // Assert
-        LedgerEntry memory position = positionLedger.getPosition(nftId);
+        LedgerEntry memory position = allContracts.positionLedger.getPosition(nftId);
         assertEq(position.claimableAmount, 0, "Position claimableAmount should be 0");
         assertTrue(position.state == PositionState.CLOSED, "Position state should be CLOSED");
-        assertEq(expiredVault.balance(), 0, "Expired vault balance should be 0");
+        assertEq(allContracts.expiredVault.balance(), 0, "Expired vault balance should be 0");
         assertEq(
             balanceAfter - balanceBefore,
             claimableAmount,
@@ -78,7 +78,7 @@ contract ExpiredVaultTest is BaseTest {
         );
 
         vm.expectRevert();
-        positionToken.ownerOf(nftId);
+        allContracts.positionToken.ownerOf(nftId);
     }
 
     function testClaimNonExistingNftId() public {
@@ -87,20 +87,20 @@ contract ExpiredVaultTest is BaseTest {
         // Expect a revert
         
         vm.expectRevert();
-        expiredVault.claim(nonExistingNftID);
+        allContracts.expiredVault.claim(nonExistingNftID);
     }
 
     function testClaimPositionNotExpiredOrLiquidated() public {
         // Arrange
         uint256 nftId = openETHBasedPosition(10e8, 30e8);
 
-        deal(WBTC, address(positionCloser), 100e8);
-        vm.startPrank(address(positionCloser));
-        expiredVault.deposit(1e8);
+        deal(WBTC, address(allContracts.positionCloser), 100e8);
+        vm.startPrank(address(allContracts.positionCloser));
+        allContracts.expiredVault.deposit(1e8);
         vm.stopPrank();
 
         vm.expectRevert(ErrorsLeverageEngine.PositionNotExpiredOrLiquidated.selector);
-        expiredVault.claim(nftId);
+        allContracts.expiredVault.claim(nftId);
     }
 
     function testClaimPositionOwnedByAnotherUser() public {
@@ -112,7 +112,7 @@ contract ExpiredVaultTest is BaseTest {
         vm.startPrank(address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE));
 
         vm.expectRevert(ErrorsLeverageEngine.NotOwner.selector);
-        expiredVault.claim(nftId);
+        allContracts.expiredVault.claim(nftId);
     }
 
     function testResetExpiredVault() external {
