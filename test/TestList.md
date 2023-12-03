@@ -51,6 +51,7 @@
 - Only upgradable the contracts that hold WBTC or shares (and data like Ledger)
 - Hold shares with Ledger
 - remove the bare strcut of position ledger outside of the contract
+- Fix swapAdapter make it more generic wrapper
 
 # Architecture
 
