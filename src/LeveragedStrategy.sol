@@ -40,7 +40,6 @@ contract LeveragedStrategy is AccessControlUpgradeable {
     }
 
     function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
-        _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.leverageEngine);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionOpener);
 
         positionLedger = PositionLedger(dependencies.positionLedger);

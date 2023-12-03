@@ -2,7 +2,6 @@
 pragma solidity >=0.8.21;
 
 struct DependencyAddresses {
-    address leverageEngine;
     address expiredVault;
     address leverageDepositor;
     address positionToken;
