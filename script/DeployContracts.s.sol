@@ -31,19 +31,40 @@ contract DeployContracts is BaseScript, UnifiedDeployer {
     function CreateContractJSON() internal {
         
         deployedContracts.push(dependencyAddresses.expiredVault);
-        deployedContracts.push(dependencyAddresses.leverageDepositor);
-        deployedContracts.push(dependencyAddresses.positionToken);
-        deployedContracts.push(dependencyAddresses.wbtcVault);
-        deployedContracts.push(dependencyAddresses.proxyAdmin);
-        deployedContracts.push(dependencyAddresses.swapAdapter);
-        deployedContracts.push(dependencyAddresses.leveragedStrategy);
-        deployedContracts.push(dependencyAddresses.protocolParameters);
-        deployedContracts.push(dependencyAddresses.oracleManager);
-        deployedContracts.push(dependencyAddresses.positionOpener);
-        deployedContracts.push(dependencyAddresses.positionCloser);
-        deployedContracts.push(dependencyAddresses.positionLedger);
+        deployedContractsNames.push("ExpiredVault");
 
-        deployedContractsNames.push("LeverageEngine");
+        deployedContracts.push(dependencyAddresses.leverageDepositor);
+        deployedContractsNames.push("LeverageDepositor");
+
+        deployedContracts.push(dependencyAddresses.wbtcVault);
+        deployedContractsNames.push("wbtcVault");
+
+        deployedContracts.push(dependencyAddresses.positionToken);
+        deployedContractsNames.push("PositionToken");
+        
+        deployedContracts.push(dependencyAddresses.proxyAdmin);
+        deployedContractsNames.push("ProxyAdmin");
+
+        deployedContracts.push(dependencyAddresses.swapAdapter);
+        deployedContractsNames.push("SwapAdapter");
+
+        deployedContracts.push(dependencyAddresses.leveragedStrategy);
+        deployedContractsNames.push("LeveragedStrategy");
+        
+        deployedContracts.push(dependencyAddresses.protocolParameters);
+        deployedContractsNames.push("ProtocolParameters");
+
+        deployedContracts.push(dependencyAddresses.oracleManager);
+        deployedContractsNames.push("OracleManager");
+
+        deployedContracts.push(dependencyAddresses.positionOpener);
+        deployedContractsNames.push("PositionOpener");
+
+        deployedContracts.push(dependencyAddresses.positionCloser);
+        deployedContractsNames.push("PositionCloser");
+
+        deployedContracts.push(dependencyAddresses.positionLedger);
+        deployedContractsNames.push("pPositionLedger");
         
         _writeDeploymentsToJson();
     }
