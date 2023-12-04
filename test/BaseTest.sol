@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
-import { PositionLedgerLib } from "../src/PositionLedgerLib.sol";
-import "../src/LeverageEngine.sol";
-import { PositionToken } from "../src/PositionToken.sol";
+import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
+
+import { PositionToken } from "src/PositionToken.sol";
 import "../src/LeverageDepositor.sol";
 import { WBTCVault } from "src/WBTCVault.sol";
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
@@ -20,34 +20,18 @@ import { console2 } from "forge-std/console2.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { ExpiredVault } from "src/ExpiredVault.sol";
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
+import { ProtocolParameters } from "src/ProtocolParameters.sol";
+import { PositionLedger, LedgerEntry, PositionState } from "src/PositionLedger.sol";
+import { PositionOpener } from "src/PositionOpener.sol";
+import { PositionCloser } from "src/PositionCloser.sol";
+import { OracleManager } from "src/OracleManager.sol";
+import { LeveragedStrategy } from "src/LeveragedStrategy.sol";
+import { UnifiedDeployer, AllContracts } from "script/UnifiedDeployer.sol";
 
-contract BaseTest is PRBTest, StdCheats {
-    DependencyAddresses internal dependencyAddresses;
+contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
+    using SafeERC20 for IERC20;
 
     address feeCollector = makeAddr("feeCollector");
-    LeverageEngine internal leverageEngine;
-    PositionToken internal positionToken;
-    LeverageDepositor internal leverageDepositor;
-    WBTCVault internal wbtcVault;
-    ProxyAdmin internal proxyAdmin;
-    IOracle internal oracle;
-    TransparentUpgradeableProxy internal proxy;
-    TransparentUpgradeableProxy internal expiredVaultProxy;
-    SwapAdapter internal swapAdapter;
-    ExpiredVault internal expiredVault;
-    IERC20 internal wbtc;
-    address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
-    address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    address public constant ETHPLUSETH_STRATEGY = 0xf3E920f099B19Ce604d672F0e87AAce490558fCA;
-    address public constant WBTCUSDORACLE = 0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c;
-    address public constant ETHUSDORACLE = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-    address public constant USDCUSDORACLE = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
-    address public constant BTCETHORACLE = 0xdeb288F737066589598e9214E782fa5A8eD689e8;
-    address public constant FRAXBPALUSD_STRATEGY = 0xB888b8204Df31B54728e963ebA5465A95b695103;
-    ChainlinkOracle ethUsdOracle;
-    ChainlinkOracle btcEthOracle;
-    ChainlinkOracle wbtcUsdOracle;
 
     function initFork() internal {
         string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
@@ -57,93 +41,15 @@ contract BaseTest is PRBTest, StdCheats {
 
         // Otherwise, run the test against the mainnet fork.
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
+
     }
 
     function initTestFramework() internal {
         wbtc = IERC20(WBTC);
 
-        deployProxyAndContracts();
+        DeployAllContracts();
 
-        leverageEngine.setDependencies(dependencyAddresses);
-        expiredVault.setDependencies(dependencyAddresses);
-    }
-
-    function deployProxyAndContracts() internal {
-        proxyAdmin = new ProxyAdmin(address(this));
-        dependencyAddresses.proxyAdmin = address(proxyAdmin);
-
-        positionToken = new PositionToken();
-        dependencyAddresses.positionToken = address(positionToken);
-
-        wbtcVault = new WBTCVault(WBTC);
-        dependencyAddresses.wbtcVault = address(wbtcVault);
-
-        leverageDepositor = new LeverageDepositor(WBTC, WETH);
-        dependencyAddresses.leverageDepositor = address(leverageDepositor);
-
-        swapAdapter = new SwapAdapter(WBTC, address(leverageDepositor));
-        dependencyAddresses.swapAdapter = address(swapAdapter);
-
-        dependencyAddresses.leverageEngine = createProxiedLeverageEngine();
-        leverageEngine = LeverageEngine(dependencyAddresses.leverageEngine);
-
-        dependencyAddresses.expiredVault = createProxiedExpiredVault();
-        expiredVault = ExpiredVault(dependencyAddresses.expiredVault);
-    }
-
-    function createProxiedLeverageEngine() internal returns (address) {
-        LeverageEngine implLeverageEngine = new LeverageEngine();
-        address addrLeverageEngine = createUpgradableContract(
-            implLeverageEngine.initialize.selector, address(implLeverageEngine), address(proxyAdmin)
-        );
-        LeverageEngine proxyLeverageEngine = LeverageEngine(addrLeverageEngine);
-
-        ethUsdOracle = new ChainlinkOracle(ETHUSDORACLE);
-        btcEthOracle = new ChainlinkOracle(BTCETHORACLE);
-        wbtcUsdOracle = new ChainlinkOracle(WBTCUSDORACLE);
-        proxyLeverageEngine.setOracle(WBTC, wbtcUsdOracle);
-        proxyLeverageEngine.setOracle(WETH, ethUsdOracle);
-        proxyLeverageEngine.setOracle(USDC, new ChainlinkOracle(USDCUSDORACLE));
-
-        LeverageEngine.StrategyConfig memory strategyConfig = ILeverageEngine.StrategyConfig({
-            quota: 100e8,
-            maximumMultiplier: 3e8,
-            positionLifetime: 1000,
-            liquidationBuffer: 1.25e8,
-            liquidationFee: 0.02e8
-        });
-        proxyLeverageEngine.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
-        proxyLeverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
-
-        proxyLeverageEngine.setFeeCollector(feeCollector);
-
-        return addrLeverageEngine;
-    }
-
-    function createProxiedExpiredVault() internal returns (address) {
-        ExpiredVault implExpiredVault = new ExpiredVault();
-
-        address addrExpiredVault = createUpgradableContract(
-            implExpiredVault.initialize.selector, address(implExpiredVault), address(proxyAdmin)
-        );
-
-        return addrExpiredVault;
-    }
-
-    function createUpgradableContract(
-        bytes4 selector,
-        address implementationAddress,
-        address proxyAddress
-    )
-        internal
-        returns (address)
-    {
-        bytes memory initData = abi.encodeWithSelector(selector);
-
-        TransparentUpgradeableProxy proxied =
-            new TransparentUpgradeableProxy(implementationAddress, proxyAddress, initData);
-
-        return address(proxied);
+        allContracts.protocolParameters.setFeeCollector(feeCollector);
     }
 
     //erc721 receiver
@@ -156,7 +62,7 @@ contract BaseTest is PRBTest, StdCheats {
 
         deal(WBTC, address(this), 1000e8);
 
-        nftId = leverageEngine.openPosition(
+        nftId = allContracts.positionOpener.openPosition(
             collateralAmount, borrowAmount, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
         );
     }
@@ -168,8 +74,8 @@ contract BaseTest is PRBTest, StdCheats {
 
         {
             // Get current eth price
-            (, int256 ethUsdPrice,,,) = ethUsdOracle.latestRoundData();
-            (, int256 wtbcUsdPrice,,,) = wbtcUsdOracle.latestRoundData();
+            (, int256 ethUsdPrice,,,) = allContracts.ethUsdOracle.latestRoundData();
+            (, int256 wtbcUsdPrice,,,) = allContracts.wbtcUsdOracle.latestRoundData();
 
             // Drop the eth price by 20%
             fakeEthUsdPrice = (uint256(ethUsdPrice) * 0.9e8) / 1e8;
@@ -181,28 +87,28 @@ contract BaseTest is PRBTest, StdCheats {
             deal(WBTC, address(fakeSwapAdapter), 1000e8);
             fakeSwapAdapter.setWbtcToWethExchangeRate(fakeBtcEthPrice);
             fakeSwapAdapter.setWethToWbtcExchangeRate(1e36 / fakeBtcEthPrice);
-            leverageEngine.changeSwapAdapter(address(fakeSwapAdapter));
+            allContracts.positionCloser.changeSwapAdapter(address(fakeSwapAdapter));
         }
 
         {
             FakeOracle fakeETHUSDOracle = new FakeOracle();
             fakeETHUSDOracle.updateFakePrice(fakeEthUsdPrice);
             fakeETHUSDOracle.updateDecimals(8);
-            leverageEngine.setOracle(WETH, fakeETHUSDOracle);
+            allContracts.oracleManager.setOracle(WETH, fakeETHUSDOracle);
             FakeOracle fakeWBTCUSDOracle = new FakeOracle();
             fakeWBTCUSDOracle.updateFakePrice(fakeBtcUsdPrice);
             fakeWBTCUSDOracle.updateDecimals(8);
-            leverageEngine.setOracle(WBTC, fakeWBTCUSDOracle);
+            allContracts.oracleManager.setOracle(WBTC, fakeWBTCUSDOracle);
         }
 
         {
             // Liquidate position
-            leverageEngine.setMonitor(address(this));
-            uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(wbtcVault));
-            leverageEngine.liquidatePosition(
+            allContracts.positionCloser.setMonitor(address(this));
+            uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
+            allContracts.positionCloser.liquidatePosition(
                 nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, getWBTCWETHUniswapPayload(), address(0)
             );
-            uint256 wbtcVaultBalanceAfter = IERC20(WBTC).balanceOf(address(wbtcVault));
+            uint256 wbtcVaultBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
             debtPaidBack = wbtcVaultBalanceAfter - wbtcVaultBalanceBefore;
         }
     }
@@ -212,7 +118,7 @@ contract BaseTest is PRBTest, StdCheats {
 
         {
             // Get current eth price
-            (, int256 wtbcUsdPrice,,,) = wbtcUsdOracle.latestRoundData();
+            (, int256 wtbcUsdPrice,,,) = allContracts.wbtcUsdOracle.latestRoundData();
 
             // Drop the eth price by 20%
             fakeBtcUsdPrice = (uint256(wtbcUsdPrice) * 1.3e8) / 1e8;
@@ -223,24 +129,24 @@ contract BaseTest is PRBTest, StdCheats {
 
             fakeSwapAdapter.setWbtcToUsdcExchangeRate(fakeBtcUsdPrice);
             fakeSwapAdapter.setUsdcToWbtcExchangeRate(1e16 / fakeBtcUsdPrice);
-            leverageEngine.changeSwapAdapter(address(fakeSwapAdapter));
+            allContracts.positionCloser.changeSwapAdapter(address(fakeSwapAdapter));
         }
 
         {
             FakeOracle fakeWBTCUSDOracle = new FakeOracle();
             fakeWBTCUSDOracle.updateFakePrice(fakeBtcUsdPrice);
             fakeWBTCUSDOracle.updateDecimals(8);
-            leverageEngine.setOracle(WBTC, fakeWBTCUSDOracle);
+            allContracts.oracleManager.setOracle(WBTC, fakeWBTCUSDOracle);
         }
 
         {
             // Liquidate position
-            leverageEngine.setMonitor(address(this));
-            uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(wbtcVault));
-            leverageEngine.liquidatePosition(
+            allContracts.positionCloser.setMonitor(address(this));
+            uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
+            allContracts.positionCloser.liquidatePosition(
                 nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, getUSDCWBTCUniswapPayload(), address(0)
             );
-            uint256 wbtcVaultBalanceAfter = IERC20(WBTC).balanceOf(address(wbtcVault));
+            uint256 wbtcVaultBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
             debtPaidBack = wbtcVaultBalanceAfter - wbtcVaultBalanceBefore;
         }
     }
@@ -257,7 +163,7 @@ contract BaseTest is PRBTest, StdCheats {
     function closeETHBasedPosition(uint256 nftId) internal {
         bytes memory payload = getWETHWBTCUniswapPayload();
 
-        leverageEngine.closePosition(nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
+        allContracts.positionCloser.closePosition(nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
     }
 
     function getWETHWBTCUniswapPayload() internal view returns (bytes memory payload) {
@@ -274,7 +180,7 @@ contract BaseTest is PRBTest, StdCheats {
 
         deal(WBTC, address(this), 1000e8);
 
-        nftId = leverageEngine.openPosition(
+        nftId = allContracts.positionOpener.openPosition(
             collateralAmount,
             borrowAmount,
             FRAXBPALUSD_STRATEGY,

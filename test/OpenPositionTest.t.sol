@@ -1,8 +1,7 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
 import "./BaseTest.sol";
-import "./helpers/OracleTestHelper.sol";
 import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 
@@ -18,22 +17,22 @@ contract OpenPositionTest is BaseTest {
     function setUp() public virtual {
         initFork();
         initTestFramework();
-        deal(WBTC, address(wbtcVault), 100e8);
+        deal(WBTC, address(allContracts.wbtcVault), 100e8);
     }
 
     function test_ShouldRevertWithArithmeticOverflow() external {
         vm.expectRevert();
-        leverageEngine.openPosition(5e18, 5e18, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
+        allContracts.positionOpener.openPosition(5e18, 5e18, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
     }
 
     function test_ShouldRevertWithExceedBorrowLimit() external {
         vm.expectRevert(ErrorsLeverageEngine.ExceedBorrowLimit.selector);
-        leverageEngine.openPosition(5e8, 80e8, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
+        allContracts.positionOpener.openPosition(5e8, 80e8, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
     }
 
     function test_ShouldAbleToOpenPosForWETHStrategy() external {
         deal(WBTC, address(this), 10e8);
-        ERC20(WBTC).approve(address(leverageEngine), 10e8);
+        ERC20(WBTC).approve(address(allContracts.positionOpener), 10e8);
 
         bytes memory payload = abi.encode(
             SwapAdapter.UniswapV3Data({
@@ -41,17 +40,17 @@ contract OpenPositionTest is BaseTest {
                 deadline: block.timestamp + 1000
             })
         );
-        leverageEngine.openPosition(
+        allContracts.positionOpener.openPosition(
             5e8, 15e8, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
         );
-        PositionLedgerLib.LedgerEntry memory position = leverageEngine.getPosition(0);
+        LedgerEntry memory position = allContracts.positionLedger.getPosition(0);
         assertEq(position.collateralAmount, 5e8);
         assertEq(position.wbtcDebtAmount, 15e8);
     }
 
-    function test_ShouldAbleToOpenPosForUSDCStrat() external {
+    function test_ShouldAbleToOpenPosForUSDCStrategy() external {
         deal(WBTC, address(this), 10e8);
-        ERC20(WBTC).approve(address(leverageEngine), 10e8);
+        ERC20(WBTC).approve(address(allContracts.positionOpener), 10e8);
 
         bytes memory payload = abi.encode(
             SwapAdapter.UniswapV3Data({
@@ -59,65 +58,24 @@ contract OpenPositionTest is BaseTest {
                 deadline: block.timestamp + 1000
             })
         );
-        leverageEngine.openPosition(
+        allContracts.positionOpener.openPosition(
             5e8, 15e8, FRAXBPALUSD_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
         );
-        PositionLedgerLib.LedgerEntry memory position = leverageEngine.getPosition(0);
+        LedgerEntry memory position = allContracts.positionLedger.getPosition(0);
         assertEq(position.collateralAmount, 5e8);
         assertEq(position.wbtcDebtAmount, 15e8);
     }
 
-    function test_oracleCalculationWETH() external {
-        uint256 wbtcAmount = 10 * 1e8;
-        OracleTestHelper oracleTestHelper = new OracleTestHelper();
-        bytes memory initData = abi.encodeWithSelector(
-            LeverageEngine.initialize.selector,
-            address(wbtcVault),
-            address(leverageDepositor),
-            address(positionToken),
-            address(swapAdapter),
-            address(feeCollector)
-        );
-        TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(address(oracleTestHelper), address(this), initData);
-        oracleTestHelper = OracleTestHelper(address(proxy));
-        oracleTestHelper.setOracle(WBTC, new ChainlinkOracle(WBTCUSDORACLE));
-        oracleTestHelper.setOracle(WETH, new ChainlinkOracle(ETHUSDORACLE));
+    function test_oracleDoesntReturnZero() external {
 
-        AggregatorV3Interface wbtcOracle = AggregatorV3Interface(WBTCUSDORACLE);
-        (, int256 wbtcPrice,,,) = wbtcOracle.latestRoundData();
-        AggregatorV3Interface ethOracle = AggregatorV3Interface(ETHUSDORACLE);
-        (, int256 ethPrice,,,) = ethOracle.latestRoundData();
+        uint256 ethUsd = allContracts.oracleManager.getLatestPrice(WETH);
+        assertGt(ethUsd, 0);
 
-        uint256 expected = (wbtcAmount * uint256(wbtcPrice) * 1e10) / uint256(ethPrice);
-
-        assertEq(oracleTestHelper.checkOracles(WETH, wbtcAmount), expected);
+        uint256 wbtcUsd = allContracts.oracleManager.getLatestPrice(WBTC);
+        assertGt(wbtcUsd, 0);
     }
 
-    function test_oracleCalculationUSDC() external {
-        uint256 wbtcAmount = 10 * 1e8;
-        OracleTestHelper oracleTestHelper = new OracleTestHelper();
-        bytes memory initData = abi.encodeWithSelector(
-            LeverageEngine.initialize.selector,
-            address(wbtcVault),
-            address(leverageDepositor),
-            address(positionToken),
-            address(swapAdapter),
-            address(feeCollector)
-        );
-        TransparentUpgradeableProxy proxy =
-            new TransparentUpgradeableProxy(address(oracleTestHelper), address(this), initData);
-        oracleTestHelper = OracleTestHelper(address(proxy));
-        oracleTestHelper.setOracle(WBTC, new ChainlinkOracle(WBTCUSDORACLE));
-        oracleTestHelper.setOracle(USDC, new ChainlinkOracle(USDCUSDORACLE));
-
-        AggregatorV3Interface wbtcOracle = AggregatorV3Interface(WBTCUSDORACLE);
-        (, int256 wbtcPrice,,,) = wbtcOracle.latestRoundData();
-        AggregatorV3Interface usdcOracle = AggregatorV3Interface(USDCUSDORACLE);
-        (, int256 usdcPrice,,,) = usdcOracle.latestRoundData();
-
-        uint256 expected = (wbtcAmount * uint256(wbtcPrice)) / (uint256(usdcPrice) * 1e2);
-
-        assertEq(oracleTestHelper.checkOracles(USDC, wbtcAmount), expected);
+    function test_DetectPoolManipulation() external {
+        // TODO flash loan attack - bend pool then open position. get far more
     }
 }

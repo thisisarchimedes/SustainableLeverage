@@ -34,3 +34,33 @@
 - Have the Oracle upgradeable so we can switch from Chainlink if we want to
 - Move swapDatas inside openPosition function as TS is struggling with decoding
 - Check access control to function
+
+
+---
+
+# refactoring notes
+
+- test_DetectPoolManipulation implement
+- look for TODOs and address them
+- add no immediate close position (force 50 block cool down)
+- setOracle should get 2 tokens also getOracle price should get two tokens + add getOracleDecimals
+- Test: external cannot call ADMIN, INTERNAL CONTRACT and MONITOR functions
+- Decouple the contracts initalization and have the same code running in Deploy and tests
+
+- LeverageEngine contract as "main" to create all other contracts and manage admins
+- Only upgradable the contracts that hold WBTC or shares (and data like Ledger)
+- Hold shares with Ledger
+- remove the bare strcut of position ledger outside of the contract
+- Fix swapAdapter make it more generic wrapper
+- LeverageDepositor no access control?
+
+# Architecture
+
+- ProtocolParameters: Manages global admin parameters
+- LeveragedStrategy: Handles strategy configuration (change the name)
+- OracleManager: Manage oracles and pricing information
+- PositionOpener: Open a leveraged position
+- PostionCloser: Close a leveraged position
+- LedgerManager: Manages the position ledger
+- ExpiredVault: Holds expired positions
+- WBTC: WBTC token

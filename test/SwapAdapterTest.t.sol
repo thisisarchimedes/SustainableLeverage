@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
 import "./BaseTest.sol";
@@ -26,18 +26,18 @@ contract SwapAdapterTest is BaseTest {
                 deadline: block.timestamp + 1000
             })
         );
-        IERC20(WBTC).transfer(address(swapAdapter), 1e8);
-        uint256 wethBalanceBefore = IERC20(WETH).balanceOf(address(leverageDepositor));
-        swapAdapter.swap(
+        IERC20(WBTC).transfer(address(allContracts.swapAdapter), 1e8);
+        uint256 wethBalanceBefore = IERC20(WETH).balanceOf(address(allContracts.leverageDepositor));
+        allContracts.swapAdapter.swap(
             IERC20(WBTC),
             IERC20(WETH),
             1e8,
-            address(swapAdapter),
+            address(allContracts.swapAdapter),
             payload,
             SwapAdapter.SwapRoute.UNISWAPV3,
-            address(leverageDepositor)
+            address(allContracts.leverageDepositor)
         );
-        uint256 wethBalanceAfter = IERC20(WETH).balanceOf(address(leverageDepositor));
+        uint256 wethBalanceAfter = IERC20(WETH).balanceOf(address(allContracts.leverageDepositor));
         assertGt(wethBalanceAfter - wethBalanceBefore, 0);
     }
 }
