@@ -36,5 +36,12 @@ library EventsLeverageEngine {
         uint256 wbtcDebtAmount,
         uint256 exitFee
     );
+    event PositionLiquidated(
+        uint256 indexed nftId,
+        address indexed strategy,
+        uint256 wbtcDebtPaid,
+        uint256 claimableAmount,
+        uint256 liquidationFee
+    );
     event OracleSet(address token, IOracle oracle);
 }
