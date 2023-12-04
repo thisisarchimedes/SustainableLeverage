@@ -2,7 +2,6 @@
 pragma solidity >=0.8.21 <0.9.0;
 
 import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
-import { ILeverageEngine } from "src/interfaces/ILeverageEngine.sol";
 import { FakeOracle } from "../src/ports/FakeOracle.sol";
 import { FakeWBTCWETHSwapAdapter } from "../src/ports/FakeWBTCWETHSwapAdapter.sol";
 import { FakeOracle } from "src/ports/FakeOracle.sol";

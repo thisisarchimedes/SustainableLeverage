@@ -4,7 +4,6 @@ pragma solidity >=0.8.21;
 import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./interfaces/ILeverageEngine.sol";
 import "./interfaces/IERC20Detailed.sol";
 import { IWBTCVault } from "./interfaces/IWBTCVault.sol";
 import { IExpiredVault } from "./interfaces/IExpiredVault.sol";
