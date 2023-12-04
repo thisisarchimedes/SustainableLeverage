@@ -57,8 +57,10 @@
 # Architecture
 
 - ProtocolParameters: Manages global admin parameters
-- LeveragedStrategy: Handles strategy configuration
+- LeveragedStrategy: Handles strategy configuration (change the name)
 - OracleManager: Manage oracles and pricing information
 - PositionOpener: Open a leveraged position
 - PostionCloser: Close a leveraged position
 - LedgerManager: Manages the position ledger
+- ExpiredVault: Holds expired positions
+- WBTC: WBTC token
