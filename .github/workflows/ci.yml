@@ -17,7 +17,6 @@ on:
       - "main"
 
 jobs:
-
   build:
     if: github.event_name == 'pull_request'
     runs-on: "ubuntu-latest"
@@ -37,7 +36,7 @@ jobs:
         run: |
           echo "## Build result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
-    
+
   analyze:
     runs-on: ubuntu-latest
     steps:
@@ -53,8 +52,8 @@ jobs:
           slither-args:
             --checklist --detect
             msg-value-loop,delegatecall-loop,controlled-delegatecall,controlled-array-length,arbitrary-send-erc20-permit,weak-prng,reentrancy-eth,abiencoderv2-array,arbitrary-send-erc20,array-by-reference,encode-packed-collision,incorrect-shift,multiple-constructors,name-reused,protected-vars,public-mappings-nested,rtlo,shadowing-state,suicidal,uninitialized-state,uninitialized-storage,unprotected-upgrade
-            --filter-paths "lib|pseudo|test|script|openzeppelin*|forge-std*" --markdown-root ${{ github.server_url }}/${{
-            github.repository }}/blob/${{ github.sha }}/
+            --filter-paths "lib|pseudo|test|script|openzeppelin*|forge-std*" --markdown-root ${{ github.server_url
+            }}/${{ github.repository }}/blob/${{ github.sha }}/
 
       - name: "Add build summary"
         run: |
@@ -132,20 +131,21 @@ jobs:
         run: |
           forge script script/DeployContracts.s.sol --fork-url ${{ vars.AWS_FORK_URL }} --broadcast -vvvvv --slow --skip-simulation
           aws s3 cp deployments/31337-deployments.json s3://smart-contract-backend-config/staging_leverage_addresses.json
-  
+
       - name: "Deploy the contracts to demo environment"
         run: |
-            forge script script/DeployContracts.s.sol --fork-url  ${{ vars.DEMO_RPC }} --broadcast -vvvvv --slow --skip-simulation
-      
+          forge script script/DeployContracts.s.sol --fork-url  ${{ vars.DEMO_RPC }} --broadcast -vvvvv --slow --skip-simulation
+
       - name: Create JSON file
         run: |
           echo '{
             "rpc": "${{ vars.DEMO_RPC }}"
             }' > deployments/demo_rpc.json
-      
+
       - name: "Updating AWS S3 bucket with the contract addresses"
-        run: | 
+        run: |
           aws s3 cp deployments/31337-deployments.json s3://smart-contract-backend-config/demo_leverage_addresses.json --acl public-read
+          aws s3 cp deployments/1337-deployments.json s3://smart-contract-backend-config/main_leverage_addresses.json --acl public-read
           aws s3 cp deployments/demo_rpc.json s3://smart-contract-backend-config/demo_rpc.json --acl public-read
 
       - name: "Commit the deployment changes"
