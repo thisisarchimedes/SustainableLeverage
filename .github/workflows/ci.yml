@@ -142,10 +142,16 @@ jobs:
             "rpc": "${{ vars.DEMO_RPC }}"
             }' > deployments/demo_rpc.json
 
+      - name: Compute SHA256 Hash
+        id: hash_step
+        run: |
+          echo "::set-output name=hash::$(echo -n '${{ vars.DEMO_RPC }}' | openssl dgst -sha256)"
+          
+
       - name: "Updating AWS S3 bucket with the contract addresses"
         run: |
           python script/prep_addresses_json.py
-          aws s3 cp deployments/1-deployments.json s3://smart-contract-backend-config/${{ vars.DEMO_RPC }}_leverage_addresses.json --acl public-read
+          aws s3 cp deployments/1-deployments.json s3://smart-contract-backend-config/addresses/${{ steps.hash_step.outputs.hash }}_leverage_addresses.json --acl public-read
           aws s3 cp deployments/demo_rpc.json s3://smart-contract-backend-config/demo_rpc.json --acl public-read
 
       - name: "Commit the deployment changes"
