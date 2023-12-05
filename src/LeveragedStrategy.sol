@@ -108,6 +108,10 @@ contract LeveragedStrategy is AccessControlUpgradeable {
         return strategyConfig[strategy].liquidationBuffer;
     }
 
+    function getMaximumMultiplier(address strategy) external view returns (uint256) {
+        return strategyConfig[strategy].maximumMultiplier;
+    }
+
     function isCollateralToBorrowRatioAllowed(
         address strategy,
         uint256 collateralAmount,
