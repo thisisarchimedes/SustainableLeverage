@@ -1,50 +1,50 @@
 [
   {
-    "address": "0x9FB8D9e57831290b453D3C40722656B09b147076",
+    "address": "0xc1D10847F18FA2cB5B98440396B41ce3e6C2589F",
     "name": "ExpiredVault"
   },
   {
-    "address": "0xDCbD7Ad7b134cF8B00a4cBaAb01f937DeaD71077",
+    "address": "0x4d857E1d580fA036d0BCB58B7a665AbFE988f0dD",
     "name": "LeverageDepositor"
   },
   {
-    "address": "0x5c9E9E6F797440a13F032034716E73a0872e92AF",
+    "address": "0x1D2bB7BE2284eBc1388f8177BD2352C47E624555",
     "name": "wbtcVault"
   },
   {
-    "address": "0xD2845963515e061C7d04a0B97838f936c9E49b2a",
+    "address": "0x94DCd7D5cDa64370BE8789ACA858f605dEFd0dE0",
     "name": "PositionToken"
   },
   {
-    "address": "0xceE8981F1268238Ed9E385dF1135Fa022bb2696F",
+    "address": "0x9d8bA3451990EEAD359D8816d0FaD2040F6dE1ba",
     "name": "ProxyAdmin"
   },
   {
-    "address": "0xfAD806986Bf2Ac67a1447AF908fbd02FAD6203f7",
+    "address": "0x61d8DAc8c07ba721d774026af48de76d062ccDEc",
     "name": "SwapAdapter"
   },
   {
-    "address": "0x78b69f488b2A1D9711a101429437Cc3B4017779d",
+    "address": "0x5D6eB2aC3E65D23C62e31650A990D6B925cD1a46",
     "name": "LeveragedStrategy"
   },
   {
-    "address": "0x3aD289b1cdEF75D4b186d2aEA8856624Cf0Ff15e",
+    "address": "0x9B5dD2571bd9F00A019a49F3e374AC0062563feb",
     "name": "ProtocolParameters"
   },
   {
-    "address": "0x1fad8C2c8284bc473f235692038d1cDa0F598182",
+    "address": "0x3C6EafF6E8B23E1Ec44DAB323080041C5e58527b",
     "name": "OracleManager"
   },
   {
-    "address": "0x29F794c375722BB20825907dBCceDf684742cc3D",
+    "address": "0xA9f9B4C6FfF2ff64F168D01f76bB72EE4CA44f7d",
     "name": "PositionOpener"
   },
   {
-    "address": "0xF5c5c4a326A39541D77EB403c71cB29fa4419c60",
+    "address": "0x32FB4f6aB174c0B231ea1c038C99E6E759b0166b",
     "name": "PositionCloser"
   },
   {
-    "address": "0xbC97f6B670968Ebe7Ec961ED6f3eA3524d794054",
+    "address": "0x79C917F8617ff5cA3A8D7DfEd0B075a6AdF65C72",
     "name": "PositionLedger"
   }
 ]
