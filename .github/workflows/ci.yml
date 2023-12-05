@@ -144,6 +144,7 @@ jobs:
 
       - name: "Updating AWS S3 bucket with the contract addresses"
         run: |
+          python script/prep_addresses_json.py
           aws s3 cp deployments/1-deployments.json s3://smart-contract-backend-config/demo_leverage_addresses.json --acl public-read
           aws s3 cp deployments/demo_rpc.json s3://smart-contract-backend-config/demo_rpc.json --acl public-read
 
