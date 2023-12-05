@@ -1,6 +1,6 @@
 [
     {
-        "address": "0x75F5e3836b8c2892385bEA8151804d1b81C7F7b0",
+        "address": "0x977D898209178e47329F8905EDfa4B347d93F7f1",
         "name": "ExpiredVault",
         "abi": [
             {
@@ -482,7 +482,7 @@
         ]
     },
     {
-        "address": "0xaE250fd1437Ef6E8FD71d96048B14376c7D96907",
+        "address": "0x3543B59eaDD952BE94De9f1Cb30bb1E9715EA0D9",
         "name": "LeverageDepositor",
         "abi": [
             {
@@ -557,11 +557,11 @@
         ]
     },
     {
-        "address": "0xA3A32883C0F5ba5E572FCb0E1055945df0D0996D",
+        "address": "0xA1a1708A50F22bABe51B4c71686Fd39bc4BB38aB",
         "name": "wbtcVault"
     },
     {
-        "address": "0xEb55b86D066C8209a6a74D5311d1B0711b38E489",
+        "address": "0x79b9dEB54C5dF46a6806CD634A1A8227Aa3888B1",
         "name": "PositionToken",
         "abi": [
             {
@@ -1331,7 +1331,7 @@
         ]
     },
     {
-        "address": "0x3bce6CADC0405b9eb001A8BD41507068440ea1Fd",
+        "address": "0xD4726F93D9e555cE86719cf8006a95668dAd8F12",
         "name": "ProxyAdmin",
         "abi": [
             {
@@ -1458,7 +1458,7 @@
         ]
     },
     {
-        "address": "0xb2fc45465feEB9A58Bf6aFdCDEd477B707300beA",
+        "address": "0x28CC017Ea8139764BBB33D4A9be88b0aFFc9DF50",
         "name": "SwapAdapter",
         "abi": [
             {
@@ -1542,7 +1542,7 @@
         ]
     },
     {
-        "address": "0xf23689D96AF55242eCd12c620b2507CDD6bDCEfb",
+        "address": "0x14dfD362F39eD99aB9a50b9CCD99Cf2A6a294551",
         "name": "LeveragedStrategy",
         "abi": [
             {
@@ -2290,7 +2290,7 @@
         ]
     },
     {
-        "address": "0xA76Df536146434D18954a17eDEBEaC501991Fc4B",
+        "address": "0x615a4B08C416636A2F1E0B30A22443DA0C1D6944",
         "name": "ProtocolParameters",
         "abi": [
             {
@@ -2629,7 +2629,7 @@
         ]
     },
     {
-        "address": "0x9c8B64930Cd526913c1FF59a6f911F21e6DdF39D",
+        "address": "0x78F61b19830899D15E9D35cB5d340E3b55bA04F4",
         "name": "OracleManager",
         "abi": [
             {
@@ -2965,7 +2965,7 @@
         ]
     },
     {
-        "address": "0xAc502076AC4ACfa818E230E58E0B8De4a58CaBC7",
+        "address": "0xe02A762aD1d7B3137ae1531746d0fF53Fbe3744F",
         "name": "PositionOpener",
         "abi": [
             {
@@ -3497,7 +3497,7 @@
         ]
     },
     {
-        "address": "0x61b5495ae53c81BE3dEd66cb100ab5482e1F6b9D",
+        "address": "0xD856aBA0e5D8574331Bd655fA0258461A5f83366",
         "name": "PositionCloser",
         "abi": [
             {
@@ -4086,7 +4086,7 @@
         ]
     },
     {
-        "address": "0x4555e71B41E569e3CC3Ea5335E1f839EA0A40d50",
+        "address": "0x84187FB8fAd4ed2abE38f10ACF7DAB665861847e",
         "name": "PositionLedger",
         "abi": [
             {
