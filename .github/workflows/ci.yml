@@ -144,9 +144,8 @@ jobs:
 
       - name: "Updating AWS S3 bucket with the contract addresses"
         run: |
-          export JSON_NAME=`echo -n 'abc' | openssl dgst -sha256 | awk '{print $2}'`
           python script/prep_addresses_json.py
-          aws s3 cp deployments/1-deployments.json s3://smart-contract-backend-config/addresses/`$JSON_NAME`_leverage_addresses.json --acl public-read
+          aws s3 cp deployments/1-deployments.json s3://smart-contract-backend-config/addresses/`echo -n 'abc' | openssl dgst -sha256 | awk '{print $2}'`_leverage_addresses.json --acl public-read
           aws s3 cp deployments/demo_rpc.json s3://smart-contract-backend-config/demo_rpc.json --acl public-read
 
       - name: "Commit the deployment changes"
