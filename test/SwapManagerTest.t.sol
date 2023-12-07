@@ -5,14 +5,14 @@ import "./BaseTest.sol";
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 import { SwapManager } from "src/SwapManager.sol";
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
-
-/// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
-/// https://book.getfoundry.sh/forge/writing-tests
+import { FakeWBTCUSDCSwapAdapter } from "src/ports/swap_adapters/FakeWBTCUSDCSwapAdapter.sol";
+import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
 
 contract SwapManagerTest is BaseTest {
     using ErrorsLeverageEngine for *;
 
     ISwapAdapter uniswapV3Adapter;
+    FakeWBTCUSDCSwapAdapter fakeWBTCUSDCAdapter;
 
     function setUp() public virtual {
         string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
@@ -20,11 +20,42 @@ contract SwapManagerTest is BaseTest {
             return;
         }
 
-        // Otherwise, run the test against the mainnet fork. blockNumber: 18_369_197
         vm.createSelectFork({ urlOrAlias: "mainnet" });
         initTestFramework();
 
         uniswapV3Adapter = allContracts.swapManager.getSwapAdapterForRoute(SwapManager.SwapRoute.UNISWAPV3);
+
+        fakeWBTCUSDCAdapter = new FakeWBTCUSDCSwapAdapter();
+        deal(USDC, address(fakeWBTCUSDCAdapter), 1_000_000_000 * (10 ** ERC20(USDC).decimals()));
+        deal(WBTC, address(fakeWBTCUSDCAdapter), 1_000_000_000 * (10 ** ERC20(WBTC).decimals()));
+    }
+
+    function testShouldSwapWbtcToUsdconFakeSwapper() external {
+        uint256 wbtcAmountToSwap = 1 * (10 ** ERC20(WBTC).decimals());
+        deal(WBTC, address(this), wbtcAmountToSwap);
+
+        uint256 wbtcToUsdcExchangeRate = 10_000 * (10 ** ERC20(USDC).decimals());
+        fakeWBTCUSDCAdapter.setWbtcToUsdcExchangeRate(wbtcToUsdcExchangeRate);
+
+        swapWbtcToUsdcOnFake(wbtcAmountToSwap);                
+
+        uint256 wbtcBalanceAfter = IERC20(WBTC).balanceOf(address(this));
+        uint256 usdcBalanceAfter = IERC20(USDC).balanceOf(address(this));
+
+        uint256 expectedUsdcAmount = (wbtcAmountToSwap * wbtcToUsdcExchangeRate) / (10 ** ERC20(USDC).decimals());
+        assertEq(wbtcBalanceAfter, 0);
+        assertEq(usdcBalanceAfter, expectedUsdcAmount);
+    }
+
+    function swapWbtcToUsdcOnFake(uint256 wbtcAmountToSwap) internal {
+        ISwapAdapter.SwapWbtcParams memory params = ISwapAdapter.SwapWbtcParams({
+            otherToken: IERC20(USDC),
+            fromAmount: wbtcAmountToSwap,
+            payload: getUniswapWBTCUSDCPayload(),
+            recipient: address(this)
+        });
+        IERC20(WBTC).transfer(address(fakeWBTCUSDCAdapter), wbtcAmountToSwap);
+        fakeWBTCUSDCAdapter.swapFromWbtc(params);
     }
 
     function testShouldSwapWbtcToUsdcOnUniV3() external {
@@ -150,18 +181,3 @@ contract SwapManagerTest is BaseTest {
         assertEq(address(swapAdapter).balance, 0);
     }
 }
-
-/*
-// WBTC decimals: 8
-// USDc decimals: 6
-
-Test List
-
-[X] Can swap to BTC on Uniswap (after contract sends token with transfer) - without validting price
-[X] Can swap from BTC on Uniswap (after contract sends WBTC with transfer)
-[X] repeat these ^ two tests just verify with price oracle
-[] Can swap to BTC with fake swapper (after contract sends token with transfer)
-[] Can swap from BTC with fake swapper (after contract sends WBTC with transfer)
-[] Only previliaged can swap
-
-*/
