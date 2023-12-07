@@ -10,9 +10,9 @@ import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
 /// https://book.getfoundry.sh/forge/writing-tests
 
 contract SwapManagerTest is BaseTest {
-    /* solhint-disable  */
-
     using ErrorsLeverageEngine for *;
+
+    ISwapAdapter uniswap;
 
     function setUp() public virtual {
         string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
@@ -23,7 +23,8 @@ contract SwapManagerTest is BaseTest {
         // Otherwise, run the test against the mainnet fork. blockNumber: 18_369_197
         vm.createSelectFork({ urlOrAlias: "mainnet" });
         initTestFramework();
-        
+
+        uniswap = allContracts.swapManager.getSwapAdapterForRoute(SwapManager.SwapRoute.UNISWAPV3);
     }
 
     function testShouldSwapWbtcToUsdcOnUniV3() external {
@@ -39,9 +40,7 @@ contract SwapManagerTest is BaseTest {
             payload: getUniswapWBTCUSDCPayload(),
             recipient: address(this)
         });
-        ISwapAdapter uniswap = allContracts.swapManager.getSwapAdapterForRoute(SwapManager.SwapRoute.UNISWAPV3);
-
-        IERC20(WBTC).transfer(address(uniswap), 1e8);
+        IERC20(WBTC).transfer(address(uniswap), wbtcAmountToSwap);
         uniswap.swapFromWbtc(params);
 
         uint256 wbtcBalanceAfter = IERC20(WBTC).balanceOf(address(this));
@@ -51,6 +50,15 @@ contract SwapManagerTest is BaseTest {
         assertGt(usdcBalanceAfter, usdcBalanceBefore);
 
         verifyThatNothingLeftOnSwapper(uniswap);
+    }
+
+    function getUniswapWBTCUSDCPayload() internal view returns (bytes memory) {
+        return abi.encode(
+            UniV3SwapAdapter.UniswapV3Data({
+                path: abi.encodePacked(WBTC, uint24(3000), USDC),
+                deadline: block.timestamp + 100_000
+            })
+        );
     }
 
     function testShouldSwapUsdcToWBtcOnUniV3() external {
@@ -67,9 +75,7 @@ contract SwapManagerTest is BaseTest {
             payload: getUniswapUSDCWBTCPayload(),
             recipient: address(this)
         });
-        ISwapAdapter uniswap = allContracts.swapManager.getSwapAdapterForRoute(SwapManager.SwapRoute.UNISWAPV3);
-
-        IERC20(USDC).transfer(address(uniswap), 1e8);
+        IERC20(USDC).transfer(address(uniswap), usdcAmountToSwap);
         uniswap.swapToWbtc(params);
 
         uint256 wbtcBalanceAfter = IERC20(WBTC).balanceOf(address(this));
@@ -79,16 +85,6 @@ contract SwapManagerTest is BaseTest {
         assertLt(usdcBalanceAfter, usdcBalanceBefore);
 
         verifyThatNothingLeftOnSwapper(uniswap);
-    }
-
-
-    function getUniswapWBTCUSDCPayload() internal view returns (bytes memory) {
-        return abi.encode(
-            UniV3SwapAdapter.UniswapV3Data({
-                path: abi.encodePacked(WBTC, uint24(3000), USDC),
-                deadline: block.timestamp + 100_000
-            })
-        );
     }
 
     function getUniswapUSDCWBTCPayload() internal view returns (bytes memory) {
