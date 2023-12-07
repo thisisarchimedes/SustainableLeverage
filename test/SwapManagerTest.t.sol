@@ -28,9 +28,9 @@ contract SwapManagerTest is BaseTest {
     }
 
     function testShouldSwapWbtcToUsdcOnUniV3() external {
-        uint256 wbtcAmountToSwap = 1e8;
+        uint256 wbtcAmountToSwap = 1 * (10 ** ERC20(WBTC).decimals());
         deal(WBTC, address(this), wbtcAmountToSwap);
-        
+
         uint256 wbtcBalanceBefore = IERC20(WBTC).balanceOf(address(this));
         uint256 usdcBalanceBefore = IERC20(USDC).balanceOf(address(this));
 
@@ -66,8 +66,7 @@ contract SwapManagerTest is BaseTest {
     }
 
     function testShouldSwapUsdcToWBtcOnUniV3() external {
-
-        uint256 usdcAmountToSwap = 1e8;
+        uint256 usdcAmountToSwap = 100_000 * (10 ** ERC20(USDC).decimals());
         deal(USDC, address(this), usdcAmountToSwap);
 
         uint256 wbtcBalanceBefore = IERC20(WBTC).balanceOf(address(this));
@@ -104,6 +103,46 @@ contract SwapManagerTest is BaseTest {
         );
     }
 
+    function testSwapOfWbtcToUsdcOnUniV3AndOracle() external {
+        uint256 wbtcAmountToSwap = 10 * (10 ** ERC20(WBTC).decimals());
+        deal(WBTC, address(this), wbtcAmountToSwap);
+
+        uint256 usdcBalanceBefore = IERC20(USDC).balanceOf(address(this));
+        swapWbtcToUsdcOnUniswapV3(wbtcAmountToSwap);         
+        uint256 usdcBalanceAfter = IERC20(USDC).balanceOf(address(this));
+
+        uint256 expectedUsdcAmount = getOracleWbtcAmountUsdcValue(wbtcAmountToSwap);
+
+        uint256 delta = expectedUsdcAmount * 2_500 / 100_000;
+        assertAlmostEq(expectedUsdcAmount, usdcBalanceAfter - usdcBalanceBefore, delta);
+    }
+
+    function getOracleWbtcAmountUsdcValue(uint256 wbtcAmount) internal view returns(uint256) { 
+
+        uint256 totalDecimals = allContracts.oracleManager.getOracleDecimals(WBTC) + ERC20(WBTC).decimals() - ERC20(USDC).decimals();
+        return allContracts.oracleManager.getLatestPrice(WBTC) * wbtcAmount / 10 ** (totalDecimals);
+    }
+
+    function testSwapOfUsdcToWbtcOnUniV3AndOracle() external {
+        uint256 usdcAmountToSwap = 420_000 * (10 ** ERC20(USDC).decimals());
+        deal(USDC, address(this), usdcAmountToSwap);
+
+        uint256 wbtcBalanceBefore = IERC20(WBTC).balanceOf(address(this));
+        swapUsdcToWbtcOnUniswapV3(usdcAmountToSwap);
+        uint256 wbtcBalanceAfter = IERC20(WBTC).balanceOf(address(this));
+
+        uint256 expectedWbtcAmount = getOracleUsdcAmountWbtcValue(usdcAmountToSwap);
+
+        uint256 delta = expectedWbtcAmount * 2_500 / 100_000;
+        assertAlmostEq(expectedWbtcAmount, wbtcBalanceAfter - wbtcBalanceBefore, delta);
+    }
+
+    function getOracleUsdcAmountWbtcValue(uint256 usdcAmount) internal view returns(uint256) { 
+
+        uint256 totalDecimals = allContracts.oracleManager.getOracleDecimals(WBTC) + ERC20(WBTC).decimals() - ERC20(USDC).decimals();
+        return (usdcAmount * 10 ** totalDecimals) / allContracts.oracleManager.getLatestPrice(WBTC);
+    }
+
     function verifyThatNothingLeftOnSwapper(ISwapAdapter swapAdapter) internal {
         assertEq(IERC20(WBTC).balanceOf(address(swapAdapter)), 0);
         assertEq(IERC20(USDC).balanceOf(address(swapAdapter)), 0);
@@ -111,13 +150,16 @@ contract SwapManagerTest is BaseTest {
         assertEq(address(swapAdapter).balance, 0);
     }
 }
+
 /*
+// WBTC decimals: 8
+// USDc decimals: 6
 
 Test List
 
 [X] Can swap to BTC on Uniswap (after contract sends token with transfer) - without validting price
 [X] Can swap from BTC on Uniswap (after contract sends WBTC with transfer)
-[] Swap and check against oracle
+[X] repeat these ^ two tests just verify with price oracle
 [] Can swap to BTC with fake swapper (after contract sends token with transfer)
 [] Can swap from BTC with fake swapper (after contract sends WBTC with transfer)
 [] Only previliaged can swap
