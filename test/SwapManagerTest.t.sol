@@ -12,7 +12,7 @@ import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
 contract SwapManagerTest is BaseTest {
     using ErrorsLeverageEngine for *;
 
-    ISwapAdapter uniswap;
+    ISwapAdapter uniswapV3Adapter;
 
     function setUp() public virtual {
         string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
@@ -24,7 +24,7 @@ contract SwapManagerTest is BaseTest {
         vm.createSelectFork({ urlOrAlias: "mainnet" });
         initTestFramework();
 
-        uniswap = allContracts.swapManager.getSwapAdapterForRoute(SwapManager.SwapRoute.UNISWAPV3);
+        uniswapV3Adapter = allContracts.swapManager.getSwapAdapterForRoute(SwapManager.SwapRoute.UNISWAPV3);
     }
 
     function testShouldSwapWbtcToUsdcOnUniV3() external {
@@ -34,14 +34,7 @@ contract SwapManagerTest is BaseTest {
         uint256 wbtcBalanceBefore = IERC20(WBTC).balanceOf(address(this));
         uint256 usdcBalanceBefore = IERC20(USDC).balanceOf(address(this));
 
-        ISwapAdapter.SwapWbtcParams memory params = ISwapAdapter.SwapWbtcParams({
-            otherToken: IERC20(USDC),
-            fromAmount: wbtcAmountToSwap,
-            payload: getUniswapWBTCUSDCPayload(),
-            recipient: address(this)
-        });
-        IERC20(WBTC).transfer(address(uniswap), wbtcAmountToSwap);
-        uniswap.swapFromWbtc(params);
+        swapWbtcToUsdcOnUniswapV3(wbtcAmountToSwap);
 
         uint256 wbtcBalanceAfter = IERC20(WBTC).balanceOf(address(this));
         uint256 usdcBalanceAfter = IERC20(USDC).balanceOf(address(this));
@@ -49,7 +42,18 @@ contract SwapManagerTest is BaseTest {
         assertLt(wbtcBalanceAfter, wbtcBalanceBefore);
         assertGt(usdcBalanceAfter, usdcBalanceBefore);
 
-        verifyThatNothingLeftOnSwapper(uniswap);
+        verifyThatNothingLeftOnSwapper(uniswapV3Adapter);
+    }
+
+    function swapWbtcToUsdcOnUniswapV3(uint256 wbtcAmountToSwap) internal {
+        ISwapAdapter.SwapWbtcParams memory params = ISwapAdapter.SwapWbtcParams({
+            otherToken: IERC20(USDC),
+            fromAmount: wbtcAmountToSwap,
+            payload: getUniswapWBTCUSDCPayload(),
+            recipient: address(this)
+        });
+        IERC20(WBTC).transfer(address(uniswapV3Adapter), wbtcAmountToSwap);
+        uniswapV3Adapter.swapFromWbtc(params);
     }
 
     function getUniswapWBTCUSDCPayload() internal view returns (bytes memory) {
@@ -69,14 +73,7 @@ contract SwapManagerTest is BaseTest {
         uint256 wbtcBalanceBefore = IERC20(WBTC).balanceOf(address(this));
         uint256 usdcBalanceBefore = IERC20(USDC).balanceOf(address(this));
 
-        ISwapAdapter.SwapWbtcParams memory params = ISwapAdapter.SwapWbtcParams({
-            otherToken: IERC20(USDC),
-            fromAmount: usdcAmountToSwap,
-            payload: getUniswapUSDCWBTCPayload(),
-            recipient: address(this)
-        });
-        IERC20(USDC).transfer(address(uniswap), usdcAmountToSwap);
-        uniswap.swapToWbtc(params);
+        swapUsdcToWbtcOnUniswapV3(usdcAmountToSwap);
 
         uint256 wbtcBalanceAfter = IERC20(WBTC).balanceOf(address(this));
         uint256 usdcBalanceAfter = IERC20(USDC).balanceOf(address(this));
@@ -84,7 +81,18 @@ contract SwapManagerTest is BaseTest {
         assertGt(wbtcBalanceAfter, wbtcBalanceBefore);
         assertLt(usdcBalanceAfter, usdcBalanceBefore);
 
-        verifyThatNothingLeftOnSwapper(uniswap);
+        verifyThatNothingLeftOnSwapper(uniswapV3Adapter);
+    }
+
+    function swapUsdcToWbtcOnUniswapV3(uint256 usdcAmountToSwap) internal {
+        ISwapAdapter.SwapWbtcParams memory params = ISwapAdapter.SwapWbtcParams({
+            otherToken: IERC20(USDC),
+            fromAmount: usdcAmountToSwap,
+            payload: getUniswapUSDCWBTCPayload(),
+            recipient: address(this)
+        });
+        IERC20(USDC).transfer(address(uniswapV3Adapter), usdcAmountToSwap);
+        uniswapV3Adapter.swapToWbtc(params);
     }
 
     function getUniswapUSDCWBTCPayload() internal view returns (bytes memory) {
