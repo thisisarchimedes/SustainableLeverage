@@ -5,7 +5,7 @@ import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.so
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
-import "./interfaces/IExpiredVault.sol";
+import "src/interfaces/IExpiredVault.sol";
 import { ProtocolRoles } from "./libs/ProtocolRoles.sol";
 import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
 import { PositionToken } from "./PositionToken.sol";

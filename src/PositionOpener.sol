@@ -10,8 +10,8 @@ import { IExpiredVault } from "./interfaces/IExpiredVault.sol";
 import { ILeverageDepositor } from "./interfaces/ILeverageDepositor.sol";
 import { IOracle } from "./interfaces/IOracle.sol";
 import { PositionToken } from "./PositionToken.sol";
-import { SwapAdapter } from "./SwapAdapter.sol";
-import { IMultiPoolStrategy } from "./interfaces/IMultiPoolStrategy.sol";
+import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
+import { SwapManager } from "./SwapManager.sol";
 import { AggregatorV3Interface } from "./interfaces/AggregatorV3Interface.sol";
 import { ProtocolRoles } from "./libs/ProtocolRoles.sol";
 import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
@@ -37,7 +37,7 @@ contract PositionOpener is AccessControlUpgradeable {
     IWBTCVault internal wbtcVault;
     PositionToken internal positionToken;
     ILeverageDepositor internal leverageDepositor;
-    SwapAdapter internal swapAdapter;
+    SwapManager internal swapManager;
     LeveragedStrategy internal leveragedStrategy;
     ProtocolParameters internal protocolParameters;
     OracleManager internal oracleManager;
@@ -51,7 +51,7 @@ contract PositionOpener is AccessControlUpgradeable {
     function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
         leverageDepositor = ILeverageDepositor(dependencies.leverageDepositor);
         positionToken = PositionToken(dependencies.positionToken);
-        swapAdapter = SwapAdapter(dependencies.swapAdapter);
+        swapManager = SwapManager(dependencies.swapManager);
         wbtcVault = IWBTCVault(dependencies.wbtcVault);
         leveragedStrategy = LeveragedStrategy(dependencies.leveragedStrategy);
         protocolParameters = ProtocolParameters(dependencies.protocolParameters);
@@ -70,7 +70,7 @@ contract PositionOpener is AccessControlUpgradeable {
         uint256 wbtcToBorrow,
         address strategy,
         uint256 minStrategyShares,
-        SwapAdapter.SwapRoute swapRoute,
+        SwapManager.SwapRoute swapRoute,
         bytes calldata swapData,
         address exchange
     )
@@ -92,55 +92,57 @@ contract PositionOpener is AccessControlUpgradeable {
 
         wbtcVault.borrow(wbtcToBorrow); //TODO: directly transfer from vault to swapadapter
 
+        ISwapAdapter swapAdapter = swapManager.getSwapAdapterForRoute(swapRoute);
+
         wbtc.transfer(address(swapAdapter), totalAmount); // TODO remove that when we implement wbtcvault and transfer
 
-        // directly
-        address strategyUnderlyingToken = IMultiPoolStrategy(strategy).asset();
-        // Swap borrowed WBTC to strategy token
-        uint256 receivedAmount = swapAdapter.swap(
-            wbtc,
-            IERC20(strategyUnderlyingToken),
-            totalAmount,
-            exchange,
-            swapData,
-            swapRoute,
-            address(leverageDepositor)
-        );
-
+        address strategyUnderlyingToken = leveragedStrategy.getStrategyValueAsset(strategy);
+        ISwapAdapter.SwapWbtcParams memory swapParams = ISwapAdapter.SwapWbtcParams({
+            otherToken: IERC20(strategyUnderlyingToken),
+            fromAmount: totalAmount,
+            payload: swapData,
+            recipient: address(leverageDepositor)
+        });
+      
         // we don't want to open a position that is immediatly liquidable
-        uint256 receivedTokensInWbtc =
-            leveragedStrategy.getWBTCValueFromTokenAmount(strategyUnderlyingToken, receivedAmount);
-        if (leveragedStrategy.isPositionLiquidatable(strategy, receivedTokensInWbtc, wbtcToBorrow) == true) {
-            revert ErrorsLeverageEngine.NotEnoughTokensReceived();
+        {
+            uint256 receivedTokenAmount = swapAdapter.swapFromWbtc(swapParams);
+
+            uint256 receivedTokensInWbtc =
+                leveragedStrategy.getWBTCValueFromTokenAmount(strategyUnderlyingToken, receivedTokenAmount);
+            if (leveragedStrategy.isPositionLiquidatable(strategy, receivedTokensInWbtc, wbtcToBorrow) == true) {
+                revert ErrorsLeverageEngine.NotEnoughTokensReceived();
+            }
+        
+        
+         // Deposit borrowed WBTC to LeverageDepositor->strategy and get back shares
+            uint256 sharesReceived = leverageDepositor.deposit(strategy, strategyUnderlyingToken, receivedTokenAmount);
+            if (sharesReceived < minStrategyShares) revert ErrorsLeverageEngine.LessThanMinimumShares();
+
+            // Update Ledger
+            LedgerEntry memory newEntry;
+            newEntry.collateralAmount = collateralAmount;
+            newEntry.strategyAddress = strategy;
+            newEntry.strategyShares = sharesReceived;
+            newEntry.wbtcDebtAmount = wbtcToBorrow;
+            newEntry.positionExpirationBlock = block.number + leveragedStrategy.getPositionLifetime(strategy);
+            newEntry.liquidationBuffer = leveragedStrategy.getLiquidationBuffer(strategy);
+            newEntry.state = PositionState.LIVE;
+            nftId = positionToken.mint(msg.sender); // Mint NFT and send to user
+            positionLedger.createNewPositionEntry(nftId, newEntry);
+
+            // emit event
+            emit EventsLeverageEngine.PositionOpened(
+                nftId,
+                msg.sender,
+                newEntry.strategyAddress,
+                newEntry.collateralAmount,
+                newEntry.wbtcDebtAmount,
+                newEntry.positionExpirationBlock,
+                sharesReceived,
+                newEntry.liquidationBuffer
+            );
         }
-
-        // Deposit borrowed WBTC to LeverageDepositor->strategy and get back shares
-        uint256 sharesReceived = leverageDepositor.deposit(strategy, strategyUnderlyingToken, receivedAmount);
-        if (sharesReceived < minStrategyShares) revert ErrorsLeverageEngine.LessThanMinimumShares();
-
-        // Update Ledger
-        LedgerEntry memory newEntry;
-        newEntry.collateralAmount = collateralAmount;
-        newEntry.strategyAddress = strategy;
-        newEntry.strategyShares = sharesReceived;
-        newEntry.wbtcDebtAmount = wbtcToBorrow;
-        newEntry.positionExpirationBlock = block.number + leveragedStrategy.getPositionLifetime(strategy);
-        newEntry.liquidationBuffer = leveragedStrategy.getLiquidationBuffer(strategy);
-        newEntry.state = PositionState.LIVE;
-        nftId = positionToken.mint(msg.sender); // Mint NFT and send to user
-        positionLedger.createNewPositionEntry(nftId, newEntry);
-
-        // emit event
-        emit EventsLeverageEngine.PositionOpened(
-            nftId,
-            msg.sender,
-            newEntry.strategyAddress,
-            newEntry.collateralAmount,
-            newEntry.wbtcDebtAmount,
-            newEntry.positionExpirationBlock,
-            sharesReceived,
-            newEntry.liquidationBuffer
-        );
     }
 
     /// @notice Preview the number of AMM LP tokensexpected from opening a position.
@@ -167,8 +169,6 @@ contract PositionOpener is AccessControlUpgradeable {
             revert ErrorsLeverageEngine.ExceedBorrowLimit();
         }
 
-        uint256 estimatedShares = IMultiPoolStrategy(strategy).previewDeposit(minimumExpected);
-
-        return estimatedShares;
+        return leveragedStrategy.estimateSharesForDeposit(strategy, minimumExpected);
     }
 }

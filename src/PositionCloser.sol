@@ -10,9 +10,9 @@ import { IExpiredVault } from "./interfaces/IExpiredVault.sol";
 import { ILeverageDepositor } from "./interfaces/ILeverageDepositor.sol";
 import { IOracle } from "./interfaces/IOracle.sol";
 import { PositionToken } from "./PositionToken.sol";
-import { SwapAdapter } from "./SwapAdapter.sol";
-import { IMultiPoolStrategy } from "./interfaces/IMultiPoolStrategy.sol";
-import { AggregatorV3Interface } from "./interfaces/AggregatorV3Interface.sol";
+import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
+import { IMultiPoolStrategy } from "src/interfaces/IMultiPoolStrategy.sol";
+import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
 import { ProtocolRoles } from "./libs/ProtocolRoles.sol";
 import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
 import { ErrorsLeverageEngine } from "./libs/ErrorsLeverageEngine.sol";
@@ -21,6 +21,7 @@ import { LeveragedStrategy } from "./LeveragedStrategy.sol";
 import { ProtocolParameters } from "./ProtocolParameters.sol";
 import { OracleManager } from "src/OracleManager.sol";
 import { PositionLedger, LedgerEntry, PositionState } from "src/PositionLedger.sol";
+import { SwapManager } from "./SwapManager.sol";
 
 
 /// @title LeverageEngine Contract
@@ -43,7 +44,7 @@ contract PositionCloser is AccessControlUpgradeable {
     IWBTCVault internal wbtcVault;
     PositionToken internal positionToken;
     ILeverageDepositor internal leverageDepositor;
-    SwapAdapter internal swapAdapter;
+    SwapManager internal swapManager;
     LeveragedStrategy internal leveragedStrategy;
     ProtocolParameters internal protocolParameters;
     OracleManager internal oracleManager;
@@ -63,7 +64,7 @@ contract PositionCloser is AccessControlUpgradeable {
     function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
         leverageDepositor = ILeverageDepositor(dependencies.leverageDepositor);
         positionToken = PositionToken(dependencies.positionToken);
-        swapAdapter = SwapAdapter(dependencies.swapAdapter);
+        swapManager = SwapManager(dependencies.swapManager);
         wbtcVault = IWBTCVault(dependencies.wbtcVault);
         leveragedStrategy = LeveragedStrategy(dependencies.leveragedStrategy);
         protocolParameters = ProtocolParameters(dependencies.protocolParameters);
@@ -74,11 +75,6 @@ contract PositionCloser is AccessControlUpgradeable {
 
         wbtc.approve(dependencies.wbtcVault, type(uint256).max);
     }  
-
-    // TODO: remove this one - we have setDependecies
-    function changeSwapAdapter(address _swapAdapter) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
-        swapAdapter = SwapAdapter(_swapAdapter);
-    }
 
     function setMonitor(address _monitor) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
         if (monitor != address(0)) {
@@ -114,7 +110,7 @@ contract PositionCloser is AccessControlUpgradeable {
     function closePosition(
         uint256 nftId,
         uint256 minWBTC,
-        SwapAdapter.SwapRoute swapRoute,
+        SwapManager.SwapRoute swapRoute,
         bytes calldata swapData,
         address exchange
     )
@@ -183,7 +179,7 @@ contract PositionCloser is AccessControlUpgradeable {
     function liquidatePosition(
         uint256 nftId,
         uint256 minWBTC,
-        SwapAdapter.SwapRoute swapRoute,
+        SwapManager.SwapRoute swapRoute,
         bytes calldata swapData,
         address exchange
     )
@@ -272,7 +268,7 @@ contract PositionCloser is AccessControlUpgradeable {
 
     function _unwindPosition(
         LedgerEntry memory position,
-        SwapAdapter.SwapRoute swapRoute,
+        SwapManager.SwapRoute swapRoute,
         bytes calldata swapData,
         address exchange
     )
@@ -282,10 +278,20 @@ contract PositionCloser is AccessControlUpgradeable {
         // Unwind the position
         uint256 assetsReceived = leverageDepositor.redeem(position.strategyAddress, position.strategyShares);
         address strategyAsset = IMultiPoolStrategy(position.strategyAddress).asset();
+        
         // Swap the assets to WBTC
+        ISwapAdapter swapAdapter = swapManager.getSwapAdapterForRoute(swapRoute);
+        
+        ISwapAdapter.SwapWbtcParams memory swapParams = ISwapAdapter.SwapWbtcParams({
+            otherToken: IERC20(strategyAsset),
+            fromAmount: assetsReceived,
+            payload: swapData,
+            recipient: address(this)
+        });
+
         IERC20(strategyAsset).transfer(address(swapAdapter), assetsReceived);
-        wbtcReceived =
-            swapAdapter.swap(IERC20(strategyAsset), wbtc, assetsReceived, exchange, swapData, swapRoute, address(this));
+        wbtcReceived = swapAdapter.swapToWbtc(swapParams);
+            
     }
 
 

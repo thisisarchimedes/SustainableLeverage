@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.21;
 
-import { AggregatorV3Interface } from "../interfaces/AggregatorV3Interface.sol";
-import { IOracle } from "../interfaces/IOracle.sol";
+import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
+import { IOracle } from "src/interfaces/IOracle.sol";
 
 contract ChainlinkOracle is IOracle {
     AggregatorV3Interface internal chainlinkOracleInstance;

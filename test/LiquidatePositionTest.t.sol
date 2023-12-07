@@ -2,9 +2,8 @@
 pragma solidity >=0.8.21 <0.9.0;
 
 import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
-import { FakeOracle } from "../src/ports/FakeOracle.sol";
-import { FakeWBTCWETHSwapAdapter } from "../src/ports/FakeWBTCWETHSwapAdapter.sol";
-import { FakeOracle } from "src/ports/FakeOracle.sol";
+import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
+import { FakeOracle } from "src/ports/oracles/FakeOracle.sol";
 import "./BaseTest.sol";
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 
@@ -147,7 +146,7 @@ contract LiquidatePositionTest is BaseTest {
         allContracts.positionCloser.setMonitor(address(this));
 
         vm.expectRevert(ErrorsLeverageEngine.PositionNotLive.selector);
-        allContracts.positionCloser.liquidatePosition(nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, payloadClose, address(0));
+        allContracts.positionCloser.liquidatePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payloadClose, address(0));
     }
 
     function testLiquidationOfETHBasedPosition() external {

@@ -108,6 +108,10 @@ contract LeveragedStrategy is AccessControlUpgradeable {
         return strategyConfig[strategy].liquidationBuffer;
     }
 
+    function getMaximumMultiplier(address strategy) external view returns (uint256) {
+        return strategyConfig[strategy].maximumMultiplier;
+    }
+
     function isCollateralToBorrowRatioAllowed(
         address strategy,
         uint256 collateralAmount,
@@ -195,5 +199,13 @@ contract LeveragedStrategy is AccessControlUpgradeable {
         } else {
             return amountUnadjustedDecimals * 10 ** (toDec - fromDec);
         }
+    }
+
+    function estimateSharesForDeposit(address strategy, uint256 depositAmount) external view returns (uint256) {
+        return IMultiPoolStrategy(strategy).previewDeposit(depositAmount);
+    }
+    
+    function getStrategyValueAsset(address strategy) external view returns (address) {
+        return IMultiPoolStrategy(strategy).asset();
     }
 }

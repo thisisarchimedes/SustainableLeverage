@@ -33,13 +33,13 @@ contract ClosePositionTest is BaseTest {
         ERC20(WBTC).approve(address(allContracts.positionOpener), 10e8);
 
         bytes memory payload = abi.encode(
-            SwapAdapter.UniswapV3Data({
+            UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WBTC, uint24(3000), WETH),
                 deadline: block.timestamp + 1000
             })
         );
         allContracts.positionOpener.openPosition(
-            5e8, 15e8, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
+            5e8, 15e8, ETHPLUSETH_STRATEGY, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0)
         );
     }
 
@@ -49,32 +49,32 @@ contract ClosePositionTest is BaseTest {
         assertEq(ownerOfNft, address(this), "Should be owner");
         allContracts.positionToken.transferFrom(address(this), positionReceiver, 0);
         vm.expectRevert(ErrorsLeverageEngine.NotOwner.selector);
-        allContracts.positionCloser.closePosition(0, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
+        allContracts.positionCloser.closePosition(0, 0, SwapManager.SwapRoute.UNISWAPV3, "", address(0));
     }
 
     function test_ShouldRevertWithNotEnoughTokensReceived() external {
         _openPosition();
         bytes memory payload = abi.encode(
-            SwapAdapter.UniswapV3Data({
+            UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WETH, uint24(3000), WBTC),
                 deadline: block.timestamp + 1000
             })
         );
         vm.expectRevert(ErrorsLeverageEngine.NotEnoughTokensReceived.selector);
-        allContracts.positionCloser.closePosition(0, 5e8, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
+        allContracts.positionCloser.closePosition(0, 5e8, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
     }
 
     function test_ShouldRevertIfPositionAlreadyClosed() external {
         _openPosition();
         bytes memory payload = abi.encode(
-            SwapAdapter.UniswapV3Data({
+            UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WETH, uint24(3000), WBTC),
                 deadline: block.timestamp + 1000
             })
         );
-        allContracts.positionCloser.closePosition(0, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
+        allContracts.positionCloser.closePosition(0, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
         vm.expectRevert();
-        allContracts.positionCloser.closePosition(0, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
+        allContracts.positionCloser.closePosition(0, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
     }
 
     function test_ShouldClosePosition() external {
@@ -82,7 +82,7 @@ contract ClosePositionTest is BaseTest {
         address ownerOfNft = allContracts.positionToken.ownerOf(0);
         assertEq(ownerOfNft, address(this), "Should be owner");
         bytes memory payload = abi.encode(
-            SwapAdapter.UniswapV3Data({
+            UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WETH, uint24(3000), WBTC),
                 deadline: block.timestamp + 1000
             })
@@ -90,7 +90,7 @@ contract ClosePositionTest is BaseTest {
 
         uint256 wbtcBalanceBeforeClose = wbtc.balanceOf(address(allContracts.wbtcVault));
 
-        allContracts.positionCloser.closePosition(0, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
+        allContracts.positionCloser.closePosition(0, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
         uint256 wbtcBalanceAfterClose = wbtc.balanceOf(address(allContracts.wbtcVault));
         LedgerEntry memory position = allContracts.positionLedger.getPosition(0);
         assertEq(uint8(position.state), uint8(PositionState.CLOSED));

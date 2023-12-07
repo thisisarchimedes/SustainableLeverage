@@ -64,3 +64,5 @@
 - LedgerManager: Manages the position ledger
 - ExpiredVault: Holds expired positions
 - WBTC: WBTC token
+
+Clean up SwapAdapter replace it with SwapManager

@@ -22,12 +22,12 @@ contract OpenPositionTest is BaseTest {
 
     function test_ShouldRevertWithArithmeticOverflow() external {
         vm.expectRevert();
-        allContracts.positionOpener.openPosition(5e18, 5e18, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
+        allContracts.positionOpener.openPosition(5e18, 5e18, ETHPLUSETH_STRATEGY, 0, SwapManager.SwapRoute.UNISWAPV3, "", address(0));
     }
 
     function test_ShouldRevertWithExceedBorrowLimit() external {
         vm.expectRevert(ErrorsLeverageEngine.ExceedBorrowLimit.selector);
-        allContracts.positionOpener.openPosition(5e8, 80e8, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, "", address(0));
+        allContracts.positionOpener.openPosition(5e8, 80e8, ETHPLUSETH_STRATEGY, 0, SwapManager.SwapRoute.UNISWAPV3, "", address(0));
     }
 
     function test_ShouldAbleToOpenPosForWETHStrategy() external {
@@ -35,13 +35,13 @@ contract OpenPositionTest is BaseTest {
         ERC20(WBTC).approve(address(allContracts.positionOpener), 10e8);
 
         bytes memory payload = abi.encode(
-            SwapAdapter.UniswapV3Data({
+            UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WBTC, uint24(3000), WETH),
                 deadline: block.timestamp + 1000
             })
         );
         allContracts.positionOpener.openPosition(
-            5e8, 15e8, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
+            5e8, 15e8, ETHPLUSETH_STRATEGY, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0)
         );
         LedgerEntry memory position = allContracts.positionLedger.getPosition(0);
         assertEq(position.collateralAmount, 5e8);
@@ -53,13 +53,13 @@ contract OpenPositionTest is BaseTest {
         ERC20(WBTC).approve(address(allContracts.positionOpener), 10e8);
 
         bytes memory payload = abi.encode(
-            SwapAdapter.UniswapV3Data({
+            UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WBTC, uint24(500), WETH, uint24(3000), USDC),
                 deadline: block.timestamp + 1000
             })
         );
         allContracts.positionOpener.openPosition(
-            5e8, 15e8, FRAXBPALUSD_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
+            5e8, 15e8, FRAXBPALUSD_STRATEGY, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0)
         );
         LedgerEntry memory position = allContracts.positionLedger.getPosition(0);
         assertEq(position.collateralAmount, 5e8);
