@@ -21,13 +21,38 @@ contract OpenPositionTest is BaseTest {
     }
 
     function test_ShouldRevertWithArithmeticOverflow() external {
+
+        bytes memory payload = getWBTCWETHUniswapPayload();
+        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+            collateralAmount: 5e18,
+            wbtcToBorrow: 5e18,
+            minStrategyShares: 0,
+            strategy: ETHPLUSETH_STRATEGY,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payload
+        });
+         
         vm.expectRevert();
-        allContracts.positionOpener.openPosition(5e18, 5e18, ETHPLUSETH_STRATEGY, 0, SwapManager.SwapRoute.UNISWAPV3, "", address(0));
+        allContracts.positionOpener.openPosition(params);
     }
 
     function test_ShouldRevertWithExceedBorrowLimit() external {
+
+        uint256 multiplier = allContracts.leveragedStrategy.getMaximumMultiplier(ETHPLUSETH_STRATEGY);
+        uint256 collateralAmount = 5e8;
+        uint wbtcToBorrow = collateralAmount * (multiplier + 1);
+
+        bytes memory payload = getWBTCWETHUniswapPayload();
+        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+            collateralAmount: collateralAmount,
+            wbtcToBorrow: wbtcToBorrow,
+            minStrategyShares: 0,
+            strategy: ETHPLUSETH_STRATEGY,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payload
+        });
         vm.expectRevert(ErrorsLeverageEngine.ExceedBorrowLimit.selector);
-        allContracts.positionOpener.openPosition(5e8, 80e8, ETHPLUSETH_STRATEGY, 0, SwapManager.SwapRoute.UNISWAPV3, "", address(0));
+        allContracts.positionOpener.openPosition(params);
     }
 
     function test_ShouldAbleToOpenPositionForWETHStrategy() external {
