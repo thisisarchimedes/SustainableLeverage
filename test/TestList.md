@@ -11,12 +11,12 @@
     [x] liquidate position if it is eligible for liquidation (ETH value asset position) - enough WBTC in position to cover debt
     [x] liquidate position if it is eligible for liquidation (USDC value asset position) - enough WBTC in position to cover debt
     [] liquidate position if it is eligible for liquidation (ETH value asset position) - NOT enough WBTC in position to cover debt
-    [] move whatever left after liquidation to Exprired Vault
+    [x] move whatever left after liquidation to Exprired Vault
     [] Even if there is nothing left move 0 to expire vault
-    [] Collect liquidation fees
+    [x] Collect liquidation fees
     [] Detect when the total value of the position is less than debt during liquidation
     [] Only Monitor can liquidate position
-    [] Check that position state is LIQUIDATED after liquidation
+    [x] Check that position state is LIQUIDATED after liquidation
     [] Check that position state is live when there is a position
     [] Check that when we don't have a position the position state is correct
 
