@@ -28,32 +28,21 @@ contract ClosePositionTest is BaseTest {
         deal(WBTC, address(allContracts.wbtcVault), 100e8);
     }
 
-    function _openPosition() internal {
-        deal(WBTC, address(this), 10e8);
-        ERC20(WBTC).approve(address(allContracts.positionOpener), 10e8);
-
-        bytes memory payload = abi.encode(
-            UniV3SwapAdapter.UniswapV3Data({
-                path: abi.encodePacked(WBTC, uint24(3000), WETH),
-                deadline: block.timestamp + 1000
-            })
-        );
-        allContracts.positionOpener.openPosition(
-            5e8, 15e8, ETHPLUSETH_STRATEGY, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0)
-        );
-    }
-
     function test_ShouldRevertWithNotOwner() external {
-        _openPosition();
+        openETHBasedPosition(5e8, 15e8);
+        
         address ownerOfNft = allContracts.positionToken.ownerOf(0);
         assertEq(ownerOfNft, address(this), "Should be owner");
+        
         allContracts.positionToken.transferFrom(address(this), positionReceiver, 0);
+        
         vm.expectRevert(ErrorsLeverageEngine.NotOwner.selector);
         allContracts.positionCloser.closePosition(0, 0, SwapManager.SwapRoute.UNISWAPV3, "", address(0));
     }
 
     function test_ShouldRevertWithNotEnoughTokensReceived() external {
-        _openPosition();
+        openETHBasedPosition(5e8, 15e8);
+        
         bytes memory payload = abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WETH, uint24(3000), WBTC),
@@ -65,7 +54,8 @@ contract ClosePositionTest is BaseTest {
     }
 
     function test_ShouldRevertIfPositionAlreadyClosed() external {
-        _openPosition();
+        openETHBasedPosition(5e8, 15e8);
+
         bytes memory payload = abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WETH, uint24(3000), WBTC),
@@ -78,7 +68,8 @@ contract ClosePositionTest is BaseTest {
     }
 
     function test_ShouldClosePosition() external {
-        _openPosition();
+        openETHBasedPosition(5e8, 15e8);
+        
         address ownerOfNft = allContracts.positionToken.ownerOf(0);
         assertEq(ownerOfNft, address(this), "Should be owner");
         bytes memory payload = abi.encode(

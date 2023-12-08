@@ -30,6 +30,15 @@ contract PositionOpener is AccessControlUpgradeable {
     using ErrorsLeverageEngine for *;
     using EventsLeverageEngine for *;
 
+    struct OpenPositionParams {
+        uint256 collateralAmount;
+        uint256 wbtcToBorrow;
+        address strategy;
+        uint256 minStrategyShares;
+        SwapManager.SwapRoute swapRoute;
+        bytes swapData;
+    }
+
     uint256 internal constant BASE_DENOMINATOR = 10_000;
     uint8 internal constant WBTC_DECIMALS = 8;
     IERC20 internal constant wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
@@ -59,12 +68,7 @@ contract PositionOpener is AccessControlUpgradeable {
         positionLedger = PositionLedger(dependencies.positionLedger);
     }
 
-    /// @notice Allows a user to open a leverage position.
-    /// @param collateralAmount Amount of WBTC to be deposited as collateral.
-    /// @param wbtcToBorrow Amount of WBTC to borrow.
-    /// @param strategy Strategy to be used for leveraging.
-    /// @param minStrategyShares Minimum amount of strategy shares expected in return.
-    /// @param swapRoute Route to be used for swapping
+    // TODO: remove this one 
     function openPosition(
         uint256 collateralAmount,
         uint256 wbtcToBorrow,
@@ -77,98 +81,116 @@ contract PositionOpener is AccessControlUpgradeable {
         external
         returns (uint256 nftId)
     {
-        if (leveragedStrategy.isCollateralToBorrowRatioAllowed(strategy, collateralAmount, wbtcToBorrow) == false) {
+
+        OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+                collateralAmount: collateralAmount,
+                wbtcToBorrow: wbtcToBorrow,
+                minStrategyShares: minStrategyShares,
+                strategy: strategy,
+                swapRoute: swapRoute,
+                swapData: swapData
+            });
+
+        nftId = this.openPosition(params);
+
+        return nftId;
+         
+    }
+    function openPosition(OpenPositionParams calldata params) public returns (uint256) {
+
+        if (leveragedStrategy.isCollateralToBorrowRatioAllowed(params.strategy, params.collateralAmount, params.wbtcToBorrow) == false) {
             revert ErrorsLeverageEngine.ExceedBorrowLimit();
         }
 
-        leveragedStrategy.reduceQuotaBy(strategy, wbtcToBorrow);
+        leveragedStrategy.reduceQuotaBy(params.strategy, params.wbtcToBorrow);
 
-        // Transfer collateral and borrowed WBTC to LeverageEngine
-        wbtc.safeTransferFrom(msg.sender, address(this), collateralAmount);
+        ISwapAdapter swapAdapter = swapManager.getSwapAdapterForRoute(params.swapRoute);
 
-        // Assuming WBTC Vault has a function borrow that lets you borrow WBTC.
-        // This function might be different based on actual implementation.
-        uint256 totalAmount = collateralAmount + wbtcToBorrow;
+        sendWbtcToSwapAdapter(address(swapAdapter), params);
 
-        wbtcVault.borrow(wbtcToBorrow); //TODO: directly transfer from vault to swapadapter
+        uint256 receivedTokenAmount = swapWbtcToStrategyToken(swapAdapter, params);
+        
+        if (isSwapReturnedEnoughTokens(params, receivedTokenAmount) == false) {
+            revert ErrorsLeverageEngine.NotEnoughTokensReceived();
+        }
+        
+        address strategyUnderlyingToken = leveragedStrategy.getStrategyValueAsset(params.strategy);
+        uint256 sharesReceived = leverageDepositor.deposit(params.strategy, strategyUnderlyingToken, receivedTokenAmount);
+        if (sharesReceived < params.minStrategyShares) {
+            revert ErrorsLeverageEngine.LessThanMinimumShares();
+        }
 
-        ISwapAdapter swapAdapter = swapManager.getSwapAdapterForRoute(swapRoute);
+        uint256 nftId = createLedgerEntryAndPositionToken(params, sharesReceived);
 
-        wbtc.transfer(address(swapAdapter), totalAmount); // TODO remove that when we implement wbtcvault and transfer
+        emit EventsLeverageEngine.PositionOpened(
+            nftId,
+            msg.sender,
+            params.strategy,
+            params.collateralAmount,
+            params.wbtcToBorrow,
+            block.number + leveragedStrategy.getPositionLifetime(params.strategy),
+            sharesReceived
+        );
 
-        address strategyUnderlyingToken = leveragedStrategy.getStrategyValueAsset(strategy);
+        return nftId;
+    }
+
+    function sendWbtcToSwapAdapter(address swapAdapter, OpenPositionParams calldata params) internal {
+
+        wbtcVault.borrowAmountTo(params.wbtcToBorrow, swapAdapter);         
+        wbtc.safeTransferFrom(msg.sender, swapAdapter, params.collateralAmount);
+
+    }
+
+    function swapWbtcToStrategyToken(ISwapAdapter swapAdapter, OpenPositionParams calldata params) internal returns (uint256) {
+
+        address strategyUnderlyingToken = leveragedStrategy.getStrategyValueAsset(params.strategy);
         ISwapAdapter.SwapWbtcParams memory swapParams = ISwapAdapter.SwapWbtcParams({
             otherToken: IERC20(strategyUnderlyingToken),
-            fromAmount: totalAmount,
-            payload: swapData,
+            fromAmount: params.collateralAmount + params.wbtcToBorrow,
+            payload: params.swapData,
             recipient: address(leverageDepositor)
         });
       
-        // we don't want to open a position that is immediatly liquidable
-        {
-            uint256 receivedTokenAmount = swapAdapter.swapFromWbtc(swapParams);
-
-            uint256 receivedTokensInWbtc =
-                leveragedStrategy.getWBTCValueFromTokenAmount(strategyUnderlyingToken, receivedTokenAmount);
-            if (leveragedStrategy.isPositionLiquidatable(strategy, receivedTokensInWbtc, wbtcToBorrow) == true) {
-                revert ErrorsLeverageEngine.NotEnoughTokensReceived();
-            }
-        
-        
-         // Deposit borrowed WBTC to LeverageDepositor->strategy and get back shares
-            uint256 sharesReceived = leverageDepositor.deposit(strategy, strategyUnderlyingToken, receivedTokenAmount);
-            if (sharesReceived < minStrategyShares) revert ErrorsLeverageEngine.LessThanMinimumShares();
-
-            // Update Ledger
-            LedgerEntry memory newEntry;
-            newEntry.collateralAmount = collateralAmount;
-            newEntry.strategyAddress = strategy;
-            newEntry.strategyShares = sharesReceived;
-            newEntry.wbtcDebtAmount = wbtcToBorrow;
-            newEntry.positionExpirationBlock = block.number + leveragedStrategy.getPositionLifetime(strategy);
-            newEntry.liquidationBuffer = leveragedStrategy.getLiquidationBuffer(strategy);
-            newEntry.state = PositionState.LIVE;
-            nftId = positionToken.mint(msg.sender); // Mint NFT and send to user
-            positionLedger.createNewPositionEntry(nftId, newEntry);
-
-            // emit event
-            emit EventsLeverageEngine.PositionOpened(
-                nftId,
-                msg.sender,
-                newEntry.strategyAddress,
-                newEntry.collateralAmount,
-                newEntry.wbtcDebtAmount,
-                newEntry.positionExpirationBlock,
-                sharesReceived,
-                newEntry.liquidationBuffer
-            );
-        }
+        return swapAdapter.swapFromWbtc(swapParams);
     }
 
-    /// @notice Preview the number of AMM LP tokensexpected from opening a position.
-    /// @param collateralAmount Amount of WBTC the user is planning to deposit as collateral.
-    /// @param wbtcToBorrow Amount of WBTC the user is planning to borrow.
-    /// @param strategy The strategy user is considering.
-    /// @param minimumExpected Minimum amount of tokens expected after swap from WBTC to strategy token.
-    /// @return estimatedShares The estimated number of AMM LP tokens s the user will receive.
-    function previewOpenPosition(
-        uint256 collateralAmount,
-        uint256 wbtcToBorrow,
-        address strategy,
-        uint256 minimumExpected
-    )
-        external
-        view
-        returns (uint256)
-    {
-        if (leveragedStrategy.getQuota(strategy) < wbtcToBorrow) {
+    function isSwapReturnedEnoughTokens(OpenPositionParams calldata params, uint256 receivedTokenAmount) internal view returns (bool) {
+        
+        address strategyUnderlyingToken = leveragedStrategy.getStrategyValueAsset(params.strategy);
+        uint256 receivedTokensInWbtc = leveragedStrategy.getWBTCValueFromTokenAmount(strategyUnderlyingToken, receivedTokenAmount);
+        
+        return !leveragedStrategy.isPositionLiquidatable(params.strategy, receivedTokensInWbtc, params.wbtcToBorrow);
+    }
+
+    function createLedgerEntryAndPositionToken(OpenPositionParams calldata params, uint256 sharesReceived) internal returns (uint256) {
+        LedgerEntry memory newEntry;
+
+        newEntry.collateralAmount = params.collateralAmount;
+        newEntry.strategyAddress = params.strategy;
+        newEntry.strategyShares = sharesReceived;
+        newEntry.wbtcDebtAmount = params.wbtcToBorrow;
+        newEntry.positionExpirationBlock = block.number + leveragedStrategy.getPositionLifetime(params.strategy);
+        newEntry.liquidationBuffer = leveragedStrategy.getLiquidationBuffer(params.strategy);
+        newEntry.state = PositionState.LIVE;
+        uint256 nftId = positionToken.mint(msg.sender);
+        
+        positionLedger.createNewPositionEntry(nftId, newEntry);
+
+        return nftId;
+    }
+
+    function previewOpenPosition(OpenPositionParams calldata params) external view returns (uint256) {
+ 
+        if (leveragedStrategy.getQuota(params.strategy) < params.wbtcToBorrow) {
             revert ErrorsLeverageEngine.ExceedBorrowQuota();
         }
 
-        if (leveragedStrategy.isCollateralToBorrowRatioAllowed(strategy, collateralAmount, wbtcToBorrow)) {
+
+        if (leveragedStrategy.isCollateralToBorrowRatioAllowed(params.strategy, params.collateralAmount, params.wbtcToBorrow) == false) {
             revert ErrorsLeverageEngine.ExceedBorrowLimit();
         }
 
-        return leveragedStrategy.estimateSharesForDeposit(strategy, minimumExpected);
+        return leveragedStrategy.getEstimateSharesForWBTCDeposit(params.strategy, params.collateralAmount + params.wbtcToBorrow);
     }
 }

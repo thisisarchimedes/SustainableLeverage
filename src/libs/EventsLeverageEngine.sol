@@ -29,8 +29,7 @@ library EventsLeverageEngine {
         uint256 collateralAmount,
         uint256 wbtcToBorrow,
         uint256 positionExpireBlock,
-        uint256 sharesReceived,
-        uint256 liquidationBuffer
+        uint256 sharesReceived
     );
     event PositionClosed(
         uint256 indexed nftId,

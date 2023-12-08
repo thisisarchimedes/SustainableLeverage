@@ -61,13 +61,22 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
     }
 
     function openETHBasedPosition(uint256 collateralAmount, uint256 borrowAmount) internal returns (uint256 nftId) {
-        bytes memory payload = getWBTCWETHUniswapPayload();
 
-        deal(WBTC, address(this), 1000e8);
+        deal(WBTC, address(this), collateralAmount);
+        ERC20(WBTC).approve(address(allContracts.positionOpener), type(uint256).max);
 
-        nftId = allContracts.positionOpener.openPosition(
-            collateralAmount, borrowAmount, ETHPLUSETH_STRATEGY, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0)
-        );
+        bytes memory payload = getWBTCWETHUniswapPayload(); 
+
+        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+            collateralAmount: collateralAmount,
+            wbtcToBorrow: borrowAmount,
+            minStrategyShares: 0,
+            strategy: ETHPLUSETH_STRATEGY,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payload
+        });
+         
+        return allContracts.positionOpener.openPosition(params);
     }
 
     function liquidateETHPosition(uint256 nftId) internal returns (uint256 debtPaidBack) {
@@ -157,13 +166,16 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
         }
     }
 
-    function getWBTCWETHUniswapPayload() internal view returns (bytes memory payload) {
-        payload = abi.encode(
+    function getWBTCWETHUniswapPayload() internal view returns (bytes memory) {
+        
+        bytes memory payload = abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WBTC, uint24(3000), WETH),
                 deadline: block.timestamp + 1000
             })
         );
+
+        return payload;
     }
 
     function closeETHBasedPosition(uint256 nftId) internal {
@@ -172,46 +184,54 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
         allContracts.positionCloser.closePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
     }
 
-    function getWETHWBTCUniswapPayload() internal view returns (bytes memory payload) {
-        payload = abi.encode(
+    function getWETHWBTCUniswapPayload() internal view returns (bytes memory) {
+        bytes memory payload = abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WETH, uint24(3000), WBTC),
                 deadline: block.timestamp + 1000
             })
         );
+
+        return payload;
     }
 
     function openUSDCBasedPosition(uint256 collateralAmount, uint256 borrowAmount) internal returns (uint256 nftId) {
+        deal(WBTC, address(this), collateralAmount);
+        ERC20(WBTC).approve(address(allContracts.positionOpener), type(uint256).max);
+
         bytes memory payload = getWBTCUSDCUniswapPayload();
 
-        deal(WBTC, address(this), 1000e8);
-
-        nftId = allContracts.positionOpener.openPosition(
-            collateralAmount,
-            borrowAmount,
-            FRAXBPALUSD_STRATEGY,
-            0,
-            SwapManager.SwapRoute.UNISWAPV3,
-            payload,
-            address(0)
-        );
+        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+            collateralAmount: collateralAmount,
+            wbtcToBorrow: borrowAmount,
+            minStrategyShares: 0,
+            strategy: FRAXBPALUSD_STRATEGY,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payload
+        });
+         
+        return allContracts.positionOpener.openPosition(params);
     }
 
-    function getWBTCUSDCUniswapPayload() internal view returns (bytes memory payload) {
-        payload = abi.encode(
+    function getWBTCUSDCUniswapPayload() internal view returns (bytes memory) {
+        bytes memory payload = abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WBTC, uint24(500), WETH, uint24(3000), USDC),
                 deadline: block.timestamp + 1000
             })
         );
+
+        return payload;
     }
 
-    function getUSDCWBTCUniswapPayload() internal view returns (bytes memory payload) {
-        payload = abi.encode(
+    function getUSDCWBTCUniswapPayload() internal view returns (bytes memory) {
+        bytes memory payload = abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(USDC, uint24(3000), WETH, uint24(500), WBTC),
                 deadline: block.timestamp + 1000
             })
         );
+
+        return payload;
     }
 }

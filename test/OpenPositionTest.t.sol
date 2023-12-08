@@ -17,7 +17,7 @@ contract OpenPositionTest is BaseTest {
     function setUp() public virtual {
         initFork();
         initTestFramework();
-        deal(WBTC, address(allContracts.wbtcVault), 100e8);
+        deal(WBTC, address(allContracts.wbtcVault), 1000e8);
     }
 
     function test_ShouldRevertWithArithmeticOverflow() external {
@@ -30,38 +30,28 @@ contract OpenPositionTest is BaseTest {
         allContracts.positionOpener.openPosition(5e8, 80e8, ETHPLUSETH_STRATEGY, 0, SwapManager.SwapRoute.UNISWAPV3, "", address(0));
     }
 
-    function test_ShouldAbleToOpenPosForWETHStrategy() external {
+    function test_ShouldAbleToOpenPositionForWETHStrategy() external {
         deal(WBTC, address(this), 10e8);
         ERC20(WBTC).approve(address(allContracts.positionOpener), 10e8);
 
-        bytes memory payload = abi.encode(
-            UniV3SwapAdapter.UniswapV3Data({
-                path: abi.encodePacked(WBTC, uint24(3000), WETH),
-                deadline: block.timestamp + 1000
-            })
-        );
-        allContracts.positionOpener.openPosition(
-            5e8, 15e8, ETHPLUSETH_STRATEGY, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0)
-        );
-        LedgerEntry memory position = allContracts.positionLedger.getPosition(0);
+        uint256 nftId = openETHBasedPosition(5e8, 15e8);
+
+        assertEq(nftId, 0);
+        LedgerEntry memory position = allContracts.positionLedger.getPosition(nftId);
+
         assertEq(position.collateralAmount, 5e8);
         assertEq(position.wbtcDebtAmount, 15e8);
     }
 
-    function test_ShouldAbleToOpenPosForUSDCStrategy() external {
-        deal(WBTC, address(this), 10e8);
-        ERC20(WBTC).approve(address(allContracts.positionOpener), 10e8);
+    function test_ShouldAbleToOpenPositionForUSDCStrategy() external {
+        deal(WBTC, address(this), 100e8);
+        ERC20(WBTC).approve(address(allContracts.positionOpener), type(uint256).max);
 
-        bytes memory payload = abi.encode(
-            UniV3SwapAdapter.UniswapV3Data({
-                path: abi.encodePacked(WBTC, uint24(500), WETH, uint24(3000), USDC),
-                deadline: block.timestamp + 1000
-            })
-        );
-        allContracts.positionOpener.openPosition(
-            5e8, 15e8, FRAXBPALUSD_STRATEGY, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0)
-        );
-        LedgerEntry memory position = allContracts.positionLedger.getPosition(0);
+        uint256 nftId = openUSDCBasedPosition(5e8, 15e8);
+
+        assertEq(nftId, 0);
+        LedgerEntry memory position = allContracts.positionLedger.getPosition(nftId);
+
         assertEq(position.collateralAmount, 5e8);
         assertEq(position.wbtcDebtAmount, 15e8);
     }
@@ -78,4 +68,43 @@ contract OpenPositionTest is BaseTest {
     function test_DetectPoolManipulation() external {
         // TODO flash loan attack - bend pool then open position. get far more
     }
+
+    function test_previewOpenPositionETHStrategy() external {
+
+        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+            collateralAmount: 5e8,
+            wbtcToBorrow: 15e8,
+            minStrategyShares: 0,
+            strategy: ETHPLUSETH_STRATEGY,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: getWBTCWETHUniswapPayload() 
+        });
+        uint256 previewShareNumber = allContracts.positionOpener.previewOpenPosition(params);
+    
+        uint256 nftId = openETHBasedPosition(5e8, 15e8);
+        uint256 actualShareNumber = allContracts.positionLedger.getStrategyShares(nftId);
+
+        uint256 delta = previewShareNumber * 2e8 / 100e8;
+        assertAlmostEq(previewShareNumber, actualShareNumber, delta);
+    }
+
+        function test_previewOpenPositionUSDCStrategy() external {
+
+        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+            collateralAmount: 5e8,
+            wbtcToBorrow: 15e8,
+            minStrategyShares: 0,
+            strategy: FRAXBPALUSD_STRATEGY,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: getWBTCUSDCUniswapPayload() 
+        });
+        uint256 previewShareNumber = allContracts.positionOpener.previewOpenPosition(params);
+    
+        uint256 nftId = openUSDCBasedPosition(5e8, 15e8);
+        uint256 actualShareNumber = allContracts.positionLedger.getStrategyShares(nftId);
+
+        uint256 delta = previewShareNumber * 2e8 / 100e8;
+        assertAlmostEq(previewShareNumber, actualShareNumber, delta);
+    }
+
 }

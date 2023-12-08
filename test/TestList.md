@@ -40,19 +40,23 @@
 
 # refactoring notes
 
-- test_DetectPoolManipulation implement
-- look for TODOs and address them
-- add no immediate close position (force 50 block cool down)
-- setOracle should get 2 tokens also getOracle price should get two tokens + add getOracleDecimals
-- Test: external cannot call ADMIN, INTERNAL CONTRACT and MONITOR functions
-- Decouple the contracts initalization and have the same code running in Deploy and tests
+[X] Clean up SwapAdapter replace it with SwapManager
+[X] Decouple the contracts initalization and have the same code running in Deploy and tests
+[] Hold shares with Ledger
 
-- LeverageEngine contract as "main" to create all other contracts and manage admins
-- Only upgradable the contracts that hold WBTC or shares (and data like Ledger)
-- Hold shares with Ledger
-- remove the bare strcut of position ledger outside of the contract
-- Fix swapAdapter make it more generic wrapper
-- LeverageDepositor no access control?
+[] setOracle should get 2 tokens also getOracle price should get two tokens + add getOracleDecimals
+[] add no immediate close position (force 50 block cool down)
+[] test_DetectPoolManipulation implement
+
+[] Test: external cannot call ADMIN, INTERNAL CONTRACT and MONITOR functions
+[] Only upgradable the contracts that hold WBTC or shares (and data like Ledger)
+[] remove the bare strcut of position ledger outside of the contract
+
+[] Fix swapAdapter make it more generic wrapper
+[] LeverageDepositor no access control?
+[] look for TODOs and address them
+
+[] Remove the overloaded openPosition
 
 # Architecture
 
@@ -65,4 +69,3 @@
 - ExpiredVault: Holds expired positions
 - WBTC: WBTC token
 
-Clean up SwapAdapter replace it with SwapManager
