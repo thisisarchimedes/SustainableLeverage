@@ -1,16 +1,21 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
+import { IAccessControl } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
 import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
 import { FakeOracle } from "src/ports/oracles/FakeOracle.sol";
 import "./BaseTest.sol";
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
+
 
 contract LiquidatePositionTest is BaseTest {
     /* solhint-disable  */
 
     using ErrorsLeverageEngine for *;
+    using ProtocolRoles for *;
+
 
     function setUp() public virtual {
         string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
@@ -277,5 +282,27 @@ contract LiquidatePositionTest is BaseTest {
 
         assertEq(debtPaidBack, borrowAmount);
         assertEq(wbtcVaultBalanceBefore, wbtcVaultBalanceAfter);
+    }
+
+    function testNonMonitorCannotLiquidate() external {
+        
+        uint256 collateralAmount = 10e8;
+        uint256 borrowAmount = 30e8;
+
+        uint256 liquidationFee = 0.02e8;
+        LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
+            quota: 100e8,
+            maximumMultiplier: 3e8,
+            positionLifetime: 1000,
+            liquidationBuffer: 1.1e8,
+            liquidationFee: liquidationFee
+        });
+        allContracts.leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
+
+        uint256 nftId = openETHBasedPosition(collateralAmount, borrowAmount);
+        
+        vm.prank(address(0));
+        vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, 0, ProtocolRoles.MONITOR_ROLE));
+        allContracts.positionCloser.liquidatePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, getWBTCWETHUniswapPayload(), address(0));
     }
 }
