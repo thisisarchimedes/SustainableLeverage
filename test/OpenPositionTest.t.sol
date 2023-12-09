@@ -81,6 +81,17 @@ contract OpenPositionTest is BaseTest {
         assertEq(position.wbtcDebtAmount, 15e8);
     }
 
+    function test_PositionStateisLIVE() external {
+        deal(WBTC, address(this), 100e8);
+        ERC20(WBTC).approve(address(allContracts.positionOpener), type(uint256).max);
+
+        uint256 nftId = openUSDCBasedPosition(5e8, 15e8);
+
+        if (allContracts.positionLedger.getPositionState(nftId) != PositionState.LIVE) {
+            revert("Position state isn't LIVE");
+        }
+    }
+
     function test_oracleDoesntReturnZero() external {
 
         uint256 ethUsd = allContracts.oracleManager.getLatestPrice(WETH);
