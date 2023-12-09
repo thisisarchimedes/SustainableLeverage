@@ -88,7 +88,7 @@ jobs:
         run: |
           echo "## Tests result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
-  deploy_to_staging:
+  deploy_to_staging_and_demo:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: "ubuntu-latest"
     permissions: "write-all"
@@ -144,8 +144,8 @@ jobs:
 
       - name: "Updating AWS S3 bucket with the contract addresses"
         run: |
-          aws s3 cp deployments/31337-deployments.json s3://smart-contract-backend-config/demo_leverage_addresses.json --acl public-read
-          aws s3 cp deployments/1337-deployments.json s3://smart-contract-backend-config/main_leverage_addresses.json --acl public-read
+          python script/prep_addresses_json.py
+          aws s3 cp deployments/1-deployments.json s3://smart-contract-backend-config/addresses/`echo -n '${{ vars.DEMO_RPC }}' | openssl dgst -sha256 | awk '{print $2}'`_leverage_addresses.json --acl public-read
           aws s3 cp deployments/demo_rpc.json s3://smart-contract-backend-config/demo_rpc.json --acl public-read
 
       - name: "Commit the deployment changes"
