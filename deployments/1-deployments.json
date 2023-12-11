@@ -1,6 +1,6 @@
 [
     {
-        "address": "0x57C6eAf849043413F3731edA1D716F22d2b8b78F",
+        "address": "0x2dcbfD3F0ba32caD9Af693cC33F6FAA7E2e634De",
         "name": "ExpiredVault",
         "abi": [
             {
@@ -482,7 +482,7 @@
         ]
     },
     {
-        "address": "0x3c954F988b192094155A58C94760a2FeF492a7C0",
+        "address": "0x0bECbD10E87d3e7b211610FFE1Bd854BdaA821eF",
         "name": "LeverageDepositor",
         "abi": [
             {
@@ -867,11 +867,11 @@
         ]
     },
     {
-        "address": "0xeA4aBa6d2E0b31AF21165bF609942c44C0b1e5f3",
+        "address": "0x172BDF9E0f6a57298DD96F963E49e91691a89E83",
         "name": "wbtcVault"
     },
     {
-        "address": "0x32A156d38B7E55A25c52cdE5d2e07a4AB275155E",
+        "address": "0x2A9DDA5700A0B56846f160F3b5665A94132dB8d4",
         "name": "PositionToken",
         "abi": [
             {
@@ -1641,7 +1641,7 @@
         ]
     },
     {
-        "address": "0x392893e47592835470Ea94BFf3f6786c8f55b6E5",
+        "address": "0x741838fC54b61D730653f87df09fE125c3ead16f",
         "name": "ProxyAdmin",
         "abi": [
             {
@@ -1768,7 +1768,7 @@
         ]
     },
     {
-        "address": "0x335ea9edD93Ae79D58D77aE85bC5643Bb1D8688a",
+        "address": "0x24f5821D0df7799F9e0C40C604e22c0B0C1dC51f",
         "name": "LeveragedStrategy",
         "abi": [
             {
@@ -2583,7 +2583,7 @@
         ]
     },
     {
-        "address": "0x3cd4298b80e25847c68025d8ea11e4CDbb1849d8",
+        "address": "0x41f90Be59369471D70Bc868869CfA0b6fe5106ec",
         "name": "ProtocolParameters",
         "abi": [
             {
@@ -2922,7 +2922,7 @@
         ]
     },
     {
-        "address": "0xE289f6a0F235E68E4615eCCcB22996311eB6F426",
+        "address": "0xA6cD52b8558f8C71849EcC99C814d47F123a12cb",
         "name": "OracleManager",
         "abi": [
             {
@@ -2940,7 +2940,26 @@
             },
             {
                 "type": "function",
-                "name": "getLatestPrice",
+                "name": "getETHOracleDecimals",
+                "inputs": [
+                    {
+                        "name": "token",
+                        "type": "address",
+                        "internalType": "address"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "name": "",
+                        "type": "uint8",
+                        "internalType": "uint8"
+                    }
+                ],
+                "stateMutability": "view"
+            },
+            {
+                "type": "function",
+                "name": "getLatestTokenPriceInETH",
                 "inputs": [
                     {
                         "name": "token",
@@ -2959,7 +2978,7 @@
             },
             {
                 "type": "function",
-                "name": "getOracleDecimals",
+                "name": "getLatestTokenPriceInUSD",
                 "inputs": [
                     {
                         "name": "token",
@@ -2970,8 +2989,8 @@
                 "outputs": [
                     {
                         "name": "",
-                        "type": "uint8",
-                        "internalType": "uint8"
+                        "type": "uint256",
+                        "internalType": "uint256"
                     }
                 ],
                 "stateMutability": "view"
@@ -2991,6 +3010,25 @@
                         "name": "",
                         "type": "bytes32",
                         "internalType": "bytes32"
+                    }
+                ],
+                "stateMutability": "view"
+            },
+            {
+                "type": "function",
+                "name": "getUSDOracleDecimals",
+                "inputs": [
+                    {
+                        "name": "token",
+                        "type": "address",
+                        "internalType": "address"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "name": "",
+                        "type": "uint8",
+                        "internalType": "uint8"
                     }
                 ],
                 "stateMutability": "view"
@@ -3082,7 +3120,25 @@
             },
             {
                 "type": "function",
-                "name": "setOracle",
+                "name": "setETHOracle",
+                "inputs": [
+                    {
+                        "name": "token",
+                        "type": "address",
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "oracle",
+                        "type": "address",
+                        "internalType": "contract IOracle"
+                    }
+                ],
+                "outputs": [],
+                "stateMutability": "nonpayable"
+            },
+            {
+                "type": "function",
+                "name": "setUSDOracle",
                 "inputs": [
                     {
                         "name": "token",
@@ -3119,20 +3175,7 @@
             },
             {
                 "type": "event",
-                "name": "Initialized",
-                "inputs": [
-                    {
-                        "name": "version",
-                        "type": "uint64",
-                        "indexed": false,
-                        "internalType": "uint64"
-                    }
-                ],
-                "anonymous": false
-            },
-            {
-                "type": "event",
-                "name": "OracleSet",
+                "name": "ETHOracleSet",
                 "inputs": [
                     {
                         "name": "token",
@@ -3145,6 +3188,19 @@
                         "type": "address",
                         "indexed": false,
                         "internalType": "contract IOracle"
+                    }
+                ],
+                "anonymous": false
+            },
+            {
+                "type": "event",
+                "name": "Initialized",
+                "inputs": [
+                    {
+                        "name": "version",
+                        "type": "uint64",
+                        "indexed": false,
+                        "internalType": "uint64"
                     }
                 ],
                 "anonymous": false
@@ -3225,6 +3281,25 @@
                 "anonymous": false
             },
             {
+                "type": "event",
+                "name": "USDOracleSet",
+                "inputs": [
+                    {
+                        "name": "token",
+                        "type": "address",
+                        "indexed": false,
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "oracle",
+                        "type": "address",
+                        "indexed": false,
+                        "internalType": "contract IOracle"
+                    }
+                ],
+                "anonymous": false
+            },
+            {
                 "type": "error",
                 "name": "AccessControlBadConfirmation",
                 "inputs": []
@@ -3258,7 +3333,7 @@
         ]
     },
     {
-        "address": "0xa1Ea6F4D414342f8FF5F3E6918A850FeeDa58206",
+        "address": "0xf0cEaB0476bd0b583804035025c1BD9f4B37eac8",
         "name": "PositionOpener",
         "abi": [
             {
@@ -3852,7 +3927,7 @@
         ]
     },
     {
-        "address": "0x0c0e108510Ae7394e8080A5265eB91c778d95A95",
+        "address": "0xe8307425300A409Ab8F7fB2d3255FF64e5e3F076",
         "name": "PositionCloser",
         "abi": [
             {
@@ -4428,7 +4503,7 @@
         ]
     },
     {
-        "address": "0x6F00442709cf19058e58EB3D30872FcEaeaD0A27",
+        "address": "0xBbE115a05597ff008Ce4307c3541F771a583933D",
         "name": "PositionLedger",
         "abi": [
             {
@@ -5053,7 +5128,7 @@
         ]
     },
     {
-        "address": "0x250403cEe3612b6BF2746a748E326aD5227d8B4A",
+        "address": "0xC6c7ADAb3B14E9768B5C8511c35699867B6a9550",
         "name": "SwapManager",
         "abi": [
             {
