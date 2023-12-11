@@ -199,11 +199,6 @@
                                 "internalType": "address"
                             },
                             {
-                                "name": "swapAdapter",
-                                "type": "address",
-                                "internalType": "address"
-                            },
-                            {
                                 "name": "leveragedStrategy",
                                 "type": "address",
                                 "internalType": "address"
@@ -230,6 +225,11 @@
                             },
                             {
                                 "name": "positionLedger",
+                                "type": "address",
+                                "internalType": "address"
+                            },
+                            {
+                                "name": "swapManager",
                                 "type": "address",
                                 "internalType": "address"
                             }
@@ -927,11 +927,6 @@
                                 "internalType": "address"
                             },
                             {
-                                "name": "swapAdapter",
-                                "type": "address",
-                                "internalType": "address"
-                            },
-                            {
                                 "name": "leveragedStrategy",
                                 "type": "address",
                                 "internalType": "address"
@@ -958,6 +953,11 @@
                             },
                             {
                                 "name": "positionLedger",
+                                "type": "address",
+                                "internalType": "address"
+                            },
+                            {
+                                "name": "swapManager",
                                 "type": "address",
                                 "internalType": "address"
                             }
@@ -1560,6 +1560,30 @@
             },
             {
                 "type": "function",
+                "name": "getEstimateSharesForWBTCDeposit",
+                "inputs": [
+                    {
+                        "name": "strategy",
+                        "type": "address",
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "wbtcDepositAmount",
+                        "type": "uint256",
+                        "internalType": "uint256"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "name": "",
+                        "type": "uint256",
+                        "internalType": "uint256"
+                    }
+                ],
+                "stateMutability": "view"
+            },
+            {
+                "type": "function",
                 "name": "getLiquidationBuffer",
                 "inputs": [
                     {
@@ -1668,6 +1692,49 @@
                         "name": "",
                         "type": "bytes32",
                         "internalType": "bytes32"
+                    }
+                ],
+                "stateMutability": "view"
+            },
+            {
+                "type": "function",
+                "name": "getStrategyValueAsset",
+                "inputs": [
+                    {
+                        "name": "strategy",
+                        "type": "address",
+                        "internalType": "address"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "name": "",
+                        "type": "address",
+                        "internalType": "address"
+                    }
+                ],
+                "stateMutability": "view"
+            },
+            {
+                "type": "function",
+                "name": "getTokenValueFromWBTCAmount",
+                "inputs": [
+                    {
+                        "name": "token",
+                        "type": "address",
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "wbtcAmount",
+                        "type": "uint256",
+                        "internalType": "uint256"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "name": "",
+                        "type": "uint256",
+                        "internalType": "uint256"
                     }
                 ],
                 "stateMutability": "view"
@@ -1943,11 +2010,6 @@
                                 "internalType": "address"
                             },
                             {
-                                "name": "swapAdapter",
-                                "type": "address",
-                                "internalType": "address"
-                            },
-                            {
                                 "name": "leveragedStrategy",
                                 "type": "address",
                                 "internalType": "address"
@@ -1974,6 +2036,11 @@
                             },
                             {
                                 "name": "positionLedger",
+                                "type": "address",
+                                "internalType": "address"
+                            },
+                            {
+                                "name": "swapManager",
                                 "type": "address",
                                 "internalType": "address"
                             }
@@ -3076,7 +3143,7 @@
                     {
                         "name": "swapRoute",
                         "type": "uint8",
-                        "internalType": "enum SwapAdapter.SwapRoute"
+                        "internalType": "enum SwapManager.SwapRoute"
                     },
                     {
                         "name": "swapData",
@@ -3100,27 +3167,95 @@
             },
             {
                 "type": "function",
+                "name": "openPosition",
+                "inputs": [
+                    {
+                        "name": "params",
+                        "type": "tuple",
+                        "internalType": "struct PositionOpener.OpenPositionParams",
+                        "components": [
+                            {
+                                "name": "collateralAmount",
+                                "type": "uint256",
+                                "internalType": "uint256"
+                            },
+                            {
+                                "name": "wbtcToBorrow",
+                                "type": "uint256",
+                                "internalType": "uint256"
+                            },
+                            {
+                                "name": "strategy",
+                                "type": "address",
+                                "internalType": "address"
+                            },
+                            {
+                                "name": "minStrategyShares",
+                                "type": "uint256",
+                                "internalType": "uint256"
+                            },
+                            {
+                                "name": "swapRoute",
+                                "type": "uint8",
+                                "internalType": "enum SwapManager.SwapRoute"
+                            },
+                            {
+                                "name": "swapData",
+                                "type": "bytes",
+                                "internalType": "bytes"
+                            }
+                        ]
+                    }
+                ],
+                "outputs": [
+                    {
+                        "name": "",
+                        "type": "uint256",
+                        "internalType": "uint256"
+                    }
+                ],
+                "stateMutability": "nonpayable"
+            },
+            {
+                "type": "function",
                 "name": "previewOpenPosition",
                 "inputs": [
                     {
-                        "name": "collateralAmount",
-                        "type": "uint256",
-                        "internalType": "uint256"
-                    },
-                    {
-                        "name": "wbtcToBorrow",
-                        "type": "uint256",
-                        "internalType": "uint256"
-                    },
-                    {
-                        "name": "strategy",
-                        "type": "address",
-                        "internalType": "address"
-                    },
-                    {
-                        "name": "minimumExpected",
-                        "type": "uint256",
-                        "internalType": "uint256"
+                        "name": "params",
+                        "type": "tuple",
+                        "internalType": "struct PositionOpener.OpenPositionParams",
+                        "components": [
+                            {
+                                "name": "collateralAmount",
+                                "type": "uint256",
+                                "internalType": "uint256"
+                            },
+                            {
+                                "name": "wbtcToBorrow",
+                                "type": "uint256",
+                                "internalType": "uint256"
+                            },
+                            {
+                                "name": "strategy",
+                                "type": "address",
+                                "internalType": "address"
+                            },
+                            {
+                                "name": "minStrategyShares",
+                                "type": "uint256",
+                                "internalType": "uint256"
+                            },
+                            {
+                                "name": "swapRoute",
+                                "type": "uint8",
+                                "internalType": "enum SwapManager.SwapRoute"
+                            },
+                            {
+                                "name": "swapData",
+                                "type": "bytes",
+                                "internalType": "bytes"
+                            }
+                        ]
                     }
                 ],
                 "outputs": [
@@ -3203,11 +3338,6 @@
                                 "internalType": "address"
                             },
                             {
-                                "name": "swapAdapter",
-                                "type": "address",
-                                "internalType": "address"
-                            },
-                            {
                                 "name": "leveragedStrategy",
                                 "type": "address",
                                 "internalType": "address"
@@ -3234,6 +3364,11 @@
                             },
                             {
                                 "name": "positionLedger",
+                                "type": "address",
+                                "internalType": "address"
+                            },
+                            {
+                                "name": "swapManager",
                                 "type": "address",
                                 "internalType": "address"
                             }
@@ -3317,12 +3452,6 @@
                     },
                     {
                         "name": "sharesReceived",
-                        "type": "uint256",
-                        "indexed": false,
-                        "internalType": "uint256"
-                    },
-                    {
-                        "name": "liquidationBuffer",
                         "type": "uint256",
                         "indexed": false,
                         "internalType": "uint256"
@@ -3520,19 +3649,6 @@
             },
             {
                 "type": "function",
-                "name": "changeSwapAdapter",
-                "inputs": [
-                    {
-                        "name": "_swapAdapter",
-                        "type": "address",
-                        "internalType": "address"
-                    }
-                ],
-                "outputs": [],
-                "stateMutability": "nonpayable"
-            },
-            {
-                "type": "function",
                 "name": "closeExpiredOrLiquidatedPosition",
                 "inputs": [
                     {
@@ -3566,7 +3682,7 @@
                     {
                         "name": "swapRoute",
                         "type": "uint8",
-                        "internalType": "enum SwapAdapter.SwapRoute"
+                        "internalType": "enum SwapManager.SwapRoute"
                     },
                     {
                         "name": "swapData",
@@ -3680,7 +3796,7 @@
                     {
                         "name": "swapRoute",
                         "type": "uint8",
-                        "internalType": "enum SwapAdapter.SwapRoute"
+                        "internalType": "enum SwapManager.SwapRoute"
                     },
                     {
                         "name": "swapData",
@@ -3780,11 +3896,6 @@
                                 "internalType": "address"
                             },
                             {
-                                "name": "swapAdapter",
-                                "type": "address",
-                                "internalType": "address"
-                            },
-                            {
                                 "name": "leveragedStrategy",
                                 "type": "address",
                                 "internalType": "address"
@@ -3811,6 +3922,11 @@
                             },
                             {
                                 "name": "positionLedger",
+                                "type": "address",
+                                "internalType": "address"
+                            },
+                            {
+                                "name": "swapManager",
                                 "type": "address",
                                 "internalType": "address"
                             }
@@ -4507,11 +4623,6 @@
                                 "internalType": "address"
                             },
                             {
-                                "name": "swapAdapter",
-                                "type": "address",
-                                "internalType": "address"
-                            },
-                            {
                                 "name": "leveragedStrategy",
                                 "type": "address",
                                 "internalType": "address"
@@ -4538,6 +4649,11 @@
                             },
                             {
                                 "name": "positionLedger",
+                                "type": "address",
+                                "internalType": "address"
+                            },
+                            {
+                                "name": "swapManager",
                                 "type": "address",
                                 "internalType": "address"
                             }
