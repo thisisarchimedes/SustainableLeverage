@@ -23,7 +23,6 @@
 
 [X] Clean up SwapAdapter replace it with SwapManager
 [X] Decouple the contracts initalization and have the same code running in Deploy and tests
-[] Hold shares with Ledger
 
 [] setOracle should get 2 tokens also getOracle price should get two tokens + add getOracleDecimals
 [] add no immediate close position (force 50 block cool down)
