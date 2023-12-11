@@ -114,8 +114,7 @@ contract PositionOpener is AccessControlUpgradeable {
             revert ErrorsLeverageEngine.NotEnoughTokensReceived();
         }
         
-        address strategyUnderlyingToken = leveragedStrategy.getStrategyValueAsset(params.strategy);
-        uint256 sharesReceived = leverageDepositor.deposit(params.strategy, strategyUnderlyingToken, receivedTokenAmount);
+        uint256 sharesReceived = leverageDepositor.deposit(params.strategy, receivedTokenAmount);
         if (sharesReceived < params.minStrategyShares) {
             revert ErrorsLeverageEngine.LessThanMinimumShares();
         }

@@ -95,6 +95,9 @@ contract UnifiedDeployer {
         allContracts.positionOpener.setDependencies(dependencyAddresses);
         allContracts.positionCloser.setDependencies(dependencyAddresses);
         allContracts.positionToken.setDependencies(dependencyAddresses);
+        allContracts.leverageDepositor.setDependencies(dependencyAddresses);
+
+        allowStrategiesWithDepositor();
 
         admin = msg.sender;
     }
@@ -103,6 +106,11 @@ contract UnifiedDeployer {
         allContracts.ethUsdOracle = new ChainlinkOracle(ETHUSDORACLE);
         allContracts.btcEthOracle = new ChainlinkOracle(BTCETHORACLE);
         allContracts.wbtcUsdOracle = new ChainlinkOracle(WBTCUSDORACLE);
+    }
+
+    function allowStrategiesWithDepositor() internal {
+        allContracts.leverageDepositor.allowStrategyWithDepositor(ETHPLUSETH_STRATEGY);
+        allContracts.leverageDepositor.allowStrategyWithDepositor(FRAXBPALUSD_STRATEGY);
     }
 
     function deployProxyAndContracts() internal {
@@ -115,7 +123,7 @@ contract UnifiedDeployer {
         allContracts.wbtcVault = new WBTCVault(WBTC);
         dependencyAddresses.wbtcVault = address(allContracts.wbtcVault);
 
-        allContracts.leverageDepositor = new LeverageDepositor(WBTC, WETH);
+        allContracts.leverageDepositor = new LeverageDepositor();
         dependencyAddresses.leverageDepositor = address(allContracts.leverageDepositor);
 
         dependencyAddresses.oracleManager = createProxiedOracleManager();

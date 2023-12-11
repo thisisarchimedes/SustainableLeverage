@@ -40,7 +40,7 @@ contract OpenPositionTest is BaseTest {
 
         uint256 multiplier = allContracts.leveragedStrategy.getMaximumMultiplier(ETHPLUSETH_STRATEGY);
         uint256 collateralAmount = 5e8;
-        uint wbtcToBorrow = collateralAmount * (multiplier + 1);
+        uint256 wbtcToBorrow = collateralAmount * (multiplier + 1);
 
         bytes memory payload = getWBTCWETHUniswapPayload();
         PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({

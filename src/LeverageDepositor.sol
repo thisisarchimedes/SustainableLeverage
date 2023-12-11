@@ -2,48 +2,47 @@
 pragma solidity >=0.8.21;
 
 import "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import { ILeverageDepositor } from "./interfaces/ILeverageDepositor.sol";
-import { IMultiPoolStrategy } from "./interfaces/IMultiPoolStrategy.sol";
+import "openzeppelin-contracts/access/AccessControl.sol";
 
-/// @title LeverageDepositor Contract
-/// @notice This contract facilitates the swapping between WBTC and WETH (or USDC in future) and interacts with
-/// strategies.
-contract LeverageDepositor is ILeverageDepositor {
-    // ERC20 interface for WBTC and WETH (or USDC)
-    IERC20 internal wbtc;
-    IERC20 internal weth; // (or usdc in future)
+import { ILeverageDepositor } from "src/interfaces/ILeverageDepositor.sol";
+import { IMultiPoolStrategy } from "src/interfaces/IMultiPoolStrategy.sol";
+import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
+import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
 
-    // Add more routes as needed
-    constructor(address _wbtc, address _weth) {
-        wbtc = IERC20(_wbtc);
-        weth = IERC20(_weth);
+// @notice: This contract holds strategy shares and deposit/withdraw tokens from strategy
+contract LeverageDepositor is ILeverageDepositor, AccessControl {
+    using ProtocolRoles for *;
+   
+    constructor() {
+        
+        _grantRole(ProtocolRoles.ADMIN_ROLE, msg.sender);
     }
 
-    /// @notice Deposit WBTC and optionally swap to WETH before depositing into strategy
-    /// @param strategy Address of the strategy to deposit into.
-    /// @param amount Amount of WBTC to deposit.
-    // TODO - add access control
-    function deposit(
-        address strategy,
-        address strategyAsset,
-        uint256 amount
-    )
-        external
-        returns (uint256 receivedShares)
+    function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
+
+        _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionOpener);
+        _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionCloser);
+    }
+
+    function allowStrategyWithDepositor(address strategy) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
+        IERC20(IMultiPoolStrategy(strategy).asset()).approve(strategy, type(uint256).max);
+    }
+
+    function denyStrategyWithDepositor(address strategy) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
+        IERC20(IMultiPoolStrategy(strategy).asset()).approve(strategy, 0);
+    }
+
+    function deposit(address strategy, uint256 amount) external onlyRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE) returns (uint256)
     {
         require(amount > 0, "Amount should be greater than 0");
-        // Despoit WETH to strategy
-        IERC20(strategyAsset).approve(strategy, amount);
-        receivedShares = IMultiPoolStrategy(strategy).deposit(amount, address(this));
+        
+        return IMultiPoolStrategy(strategy).deposit(amount, address(this));
     }
 
-    /// @notice Redeem from strategy and optionally swap WETH to WBTC
-    /// @param strategy Address of the strategy to withdraw from.
-    /// @param shares Shares to withdraw from strategy.
-    /// TODO : ADD ACCESS CONTROL
-    function redeem(address strategy, uint256 shares) external returns (uint256 redeemedAmount) {
+    function redeem(address strategy, uint256 shares) external onlyRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE) returns (uint256) {
+        
         require(shares > 0, "Shares should be greater than 0");
-        // Redeem from strategy
-        redeemedAmount = IMultiPoolStrategy(strategy).redeem(shares, msg.sender, address(this), 0);
+
+        return IMultiPoolStrategy(strategy).redeem(shares, msg.sender, address(this), 0);
     }
 }
