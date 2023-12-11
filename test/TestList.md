@@ -13,8 +13,8 @@
 [X] Check that position state is LIQUIDATED after liquidation
 [X] move whatever left after liquidation to Exprired Vault
 [X] Collect liquidation fees
-[x] Only Monitor can liquidate position
-[x] Check that position state is live when there is a position
+[X] Only Monitor can liquidate position
+[X] Check that position state is live when there is a position
 [] Detect when the total value of the position is less than debt during liquidation
 [] Check that when we don't have a position the position state is correct
 [] liquidate position if it is eligible for liquidation (ETH value asset position) - NOT enough WBTC in position to cover debt
@@ -24,7 +24,7 @@
 [X] Clean up SwapAdapter replace it with SwapManager
 [X] Decouple the contracts initalization and have the same code running in Deploy and tests
 
-[] setOracle should get 2 tokens also getOracle price should get two tokens + add getOracleDecimals
+[X] setOracle should get 2 tokens also getOracle price should get two tokens + add getOracleDecimals
 [] add no immediate close position (force 50 block cool down)
 [] test_DetectPoolManipulation implement
 
@@ -38,6 +38,9 @@
 
 [] Have a fallback Oracle. Check if Oracle is healthy and if not revert to fallback Oracle
 [] Remove the overloaded openPosition
+
+[] Consider moving PositionLedger and PositionToken under LeveragedStrategy
+[] Consider hiding OracleManager under LeveragedStrategy
 
 # Comments
 
