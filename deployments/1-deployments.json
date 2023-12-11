@@ -1,6 +1,6 @@
 [
     {
-        "address": "0x52652be5e66c39dc698D687644e6E3f63b004859",
+        "address": "0x57C6eAf849043413F3731edA1D716F22d2b8b78F",
         "name": "ExpiredVault",
         "abi": [
             {
@@ -482,23 +482,51 @@
         ]
     },
     {
-        "address": "0x48273a62A8b8903d6757720f19165F090288BBC3",
+        "address": "0x3c954F988b192094155A58C94760a2FeF492a7C0",
         "name": "LeverageDepositor",
         "abi": [
             {
                 "type": "constructor",
+                "inputs": [],
+                "stateMutability": "nonpayable"
+            },
+            {
+                "type": "function",
+                "name": "DEFAULT_ADMIN_ROLE",
+                "inputs": [],
+                "outputs": [
+                    {
+                        "name": "",
+                        "type": "bytes32",
+                        "internalType": "bytes32"
+                    }
+                ],
+                "stateMutability": "view"
+            },
+            {
+                "type": "function",
+                "name": "allowStrategyWithDepositor",
                 "inputs": [
                     {
-                        "name": "_wbtc",
-                        "type": "address",
-                        "internalType": "address"
-                    },
-                    {
-                        "name": "_weth",
+                        "name": "strategy",
                         "type": "address",
                         "internalType": "address"
                     }
                 ],
+                "outputs": [],
+                "stateMutability": "nonpayable"
+            },
+            {
+                "type": "function",
+                "name": "denyStrategyWithDepositor",
+                "inputs": [
+                    {
+                        "name": "strategy",
+                        "type": "address",
+                        "internalType": "address"
+                    }
+                ],
+                "outputs": [],
                 "stateMutability": "nonpayable"
             },
             {
@@ -511,11 +539,6 @@
                         "internalType": "address"
                     },
                     {
-                        "name": "strategyAsset",
-                        "type": "address",
-                        "internalType": "address"
-                    },
-                    {
                         "name": "amount",
                         "type": "uint256",
                         "internalType": "uint256"
@@ -523,12 +546,73 @@
                 ],
                 "outputs": [
                     {
-                        "name": "receivedShares",
+                        "name": "",
                         "type": "uint256",
                         "internalType": "uint256"
                     }
                 ],
                 "stateMutability": "nonpayable"
+            },
+            {
+                "type": "function",
+                "name": "getRoleAdmin",
+                "inputs": [
+                    {
+                        "name": "role",
+                        "type": "bytes32",
+                        "internalType": "bytes32"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "name": "",
+                        "type": "bytes32",
+                        "internalType": "bytes32"
+                    }
+                ],
+                "stateMutability": "view"
+            },
+            {
+                "type": "function",
+                "name": "grantRole",
+                "inputs": [
+                    {
+                        "name": "role",
+                        "type": "bytes32",
+                        "internalType": "bytes32"
+                    },
+                    {
+                        "name": "account",
+                        "type": "address",
+                        "internalType": "address"
+                    }
+                ],
+                "outputs": [],
+                "stateMutability": "nonpayable"
+            },
+            {
+                "type": "function",
+                "name": "hasRole",
+                "inputs": [
+                    {
+                        "name": "role",
+                        "type": "bytes32",
+                        "internalType": "bytes32"
+                    },
+                    {
+                        "name": "account",
+                        "type": "address",
+                        "internalType": "address"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "name": "",
+                        "type": "bool",
+                        "internalType": "bool"
+                    }
+                ],
+                "stateMutability": "view"
             },
             {
                 "type": "function",
@@ -547,21 +631,247 @@
                 ],
                 "outputs": [
                     {
-                        "name": "redeemedAmount",
+                        "name": "",
                         "type": "uint256",
                         "internalType": "uint256"
                     }
                 ],
                 "stateMutability": "nonpayable"
+            },
+            {
+                "type": "function",
+                "name": "renounceRole",
+                "inputs": [
+                    {
+                        "name": "role",
+                        "type": "bytes32",
+                        "internalType": "bytes32"
+                    },
+                    {
+                        "name": "callerConfirmation",
+                        "type": "address",
+                        "internalType": "address"
+                    }
+                ],
+                "outputs": [],
+                "stateMutability": "nonpayable"
+            },
+            {
+                "type": "function",
+                "name": "revokeRole",
+                "inputs": [
+                    {
+                        "name": "role",
+                        "type": "bytes32",
+                        "internalType": "bytes32"
+                    },
+                    {
+                        "name": "account",
+                        "type": "address",
+                        "internalType": "address"
+                    }
+                ],
+                "outputs": [],
+                "stateMutability": "nonpayable"
+            },
+            {
+                "type": "function",
+                "name": "setDependencies",
+                "inputs": [
+                    {
+                        "name": "dependencies",
+                        "type": "tuple",
+                        "internalType": "struct DependencyAddresses",
+                        "components": [
+                            {
+                                "name": "expiredVault",
+                                "type": "address",
+                                "internalType": "address"
+                            },
+                            {
+                                "name": "leverageDepositor",
+                                "type": "address",
+                                "internalType": "address"
+                            },
+                            {
+                                "name": "positionToken",
+                                "type": "address",
+                                "internalType": "address"
+                            },
+                            {
+                                "name": "wbtcVault",
+                                "type": "address",
+                                "internalType": "address"
+                            },
+                            {
+                                "name": "proxyAdmin",
+                                "type": "address",
+                                "internalType": "address"
+                            },
+                            {
+                                "name": "leveragedStrategy",
+                                "type": "address",
+                                "internalType": "address"
+                            },
+                            {
+                                "name": "protocolParameters",
+                                "type": "address",
+                                "internalType": "address"
+                            },
+                            {
+                                "name": "oracleManager",
+                                "type": "address",
+                                "internalType": "address"
+                            },
+                            {
+                                "name": "positionOpener",
+                                "type": "address",
+                                "internalType": "address"
+                            },
+                            {
+                                "name": "positionCloser",
+                                "type": "address",
+                                "internalType": "address"
+                            },
+                            {
+                                "name": "positionLedger",
+                                "type": "address",
+                                "internalType": "address"
+                            },
+                            {
+                                "name": "swapManager",
+                                "type": "address",
+                                "internalType": "address"
+                            }
+                        ]
+                    }
+                ],
+                "outputs": [],
+                "stateMutability": "nonpayable"
+            },
+            {
+                "type": "function",
+                "name": "supportsInterface",
+                "inputs": [
+                    {
+                        "name": "interfaceId",
+                        "type": "bytes4",
+                        "internalType": "bytes4"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "name": "",
+                        "type": "bool",
+                        "internalType": "bool"
+                    }
+                ],
+                "stateMutability": "view"
+            },
+            {
+                "type": "event",
+                "name": "RoleAdminChanged",
+                "inputs": [
+                    {
+                        "name": "role",
+                        "type": "bytes32",
+                        "indexed": true,
+                        "internalType": "bytes32"
+                    },
+                    {
+                        "name": "previousAdminRole",
+                        "type": "bytes32",
+                        "indexed": true,
+                        "internalType": "bytes32"
+                    },
+                    {
+                        "name": "newAdminRole",
+                        "type": "bytes32",
+                        "indexed": true,
+                        "internalType": "bytes32"
+                    }
+                ],
+                "anonymous": false
+            },
+            {
+                "type": "event",
+                "name": "RoleGranted",
+                "inputs": [
+                    {
+                        "name": "role",
+                        "type": "bytes32",
+                        "indexed": true,
+                        "internalType": "bytes32"
+                    },
+                    {
+                        "name": "account",
+                        "type": "address",
+                        "indexed": true,
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "sender",
+                        "type": "address",
+                        "indexed": true,
+                        "internalType": "address"
+                    }
+                ],
+                "anonymous": false
+            },
+            {
+                "type": "event",
+                "name": "RoleRevoked",
+                "inputs": [
+                    {
+                        "name": "role",
+                        "type": "bytes32",
+                        "indexed": true,
+                        "internalType": "bytes32"
+                    },
+                    {
+                        "name": "account",
+                        "type": "address",
+                        "indexed": true,
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "sender",
+                        "type": "address",
+                        "indexed": true,
+                        "internalType": "address"
+                    }
+                ],
+                "anonymous": false
+            },
+            {
+                "type": "error",
+                "name": "AccessControlBadConfirmation",
+                "inputs": []
+            },
+            {
+                "type": "error",
+                "name": "AccessControlUnauthorizedAccount",
+                "inputs": [
+                    {
+                        "name": "account",
+                        "type": "address",
+                        "internalType": "address"
+                    },
+                    {
+                        "name": "neededRole",
+                        "type": "bytes32",
+                        "internalType": "bytes32"
+                    }
+                ]
             }
         ]
     },
     {
-        "address": "0x093634781f3b8785cDD37165b1F0E6507636Ad93",
+        "address": "0xeA4aBa6d2E0b31AF21165bF609942c44C0b1e5f3",
         "name": "wbtcVault"
     },
     {
-        "address": "0x64e4905eA8D48eF60259E8ecee2cc1863AB9eaFA",
+        "address": "0x32A156d38B7E55A25c52cdE5d2e07a4AB275155E",
         "name": "PositionToken",
         "abi": [
             {
@@ -1331,7 +1641,7 @@
         ]
     },
     {
-        "address": "0x7921581d5B38c22fB51a1989eEB3f9404d29e1F9",
+        "address": "0x392893e47592835470Ea94BFf3f6786c8f55b6E5",
         "name": "ProxyAdmin",
         "abi": [
             {
@@ -1458,7 +1768,7 @@
         ]
     },
     {
-        "address": "0xB19e2716e0EdDe546F8dea1481D1CE0645934307",
+        "address": "0x335ea9edD93Ae79D58D77aE85bC5643Bb1D8688a",
         "name": "LeveragedStrategy",
         "abi": [
             {
@@ -2273,7 +2583,7 @@
         ]
     },
     {
-        "address": "0xf4507848A8526f5B5cD8b8b02c0Bf2475D19F6FC",
+        "address": "0x3cd4298b80e25847c68025d8ea11e4CDbb1849d8",
         "name": "ProtocolParameters",
         "abi": [
             {
@@ -2612,7 +2922,7 @@
         ]
     },
     {
-        "address": "0xBb94A877a9270d9629E99dC60002DB9DECfE4cd3",
+        "address": "0xE289f6a0F235E68E4615eCCcB22996311eB6F426",
         "name": "OracleManager",
         "abi": [
             {
@@ -2948,7 +3258,7 @@
         ]
     },
     {
-        "address": "0x1e2EC31aE2A7Ee4f5e7115c2EAB1b68a8145E8A6",
+        "address": "0xa1Ea6F4D414342f8FF5F3E6918A850FeeDa58206",
         "name": "PositionOpener",
         "abi": [
             {
@@ -3542,7 +3852,7 @@
         ]
     },
     {
-        "address": "0x1Ce258f313b4970891B01b8E7f96Dcf010ddDb64",
+        "address": "0x0c0e108510Ae7394e8080A5265eB91c778d95A95",
         "name": "PositionCloser",
         "abi": [
             {
@@ -4118,7 +4428,7 @@
         ]
     },
     {
-        "address": "0x81bA8777ce37Ffd297f77f09f35b25c1b3215E42",
+        "address": "0x6F00442709cf19058e58EB3D30872FcEaeaD0A27",
         "name": "PositionLedger",
         "abi": [
             {
@@ -4743,7 +5053,7 @@
         ]
     },
     {
-        "address": "0x71BFC64f13dF2373eD8AEdd2377B8f7238E0A9B6",
+        "address": "0x250403cEe3612b6BF2746a748E326aD5227d8B4A",
         "name": "SwapManager",
         "abi": [
             {
