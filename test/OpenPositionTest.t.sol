@@ -94,10 +94,10 @@ contract OpenPositionTest is BaseTest {
 
     function test_oracleDoesntReturnZero() external {
 
-        uint256 ethUsd = allContracts.oracleManager.getLatestPrice(WETH);
+        uint256 ethUsd = allContracts.oracleManager.getLatestTokenPriceInUSD(WETH);
         assertGt(ethUsd, 0);
 
-        uint256 wbtcUsd = allContracts.oracleManager.getLatestPrice(WBTC);
+        uint256 wbtcUsd = allContracts.oracleManager.getLatestTokenPriceInUSD(WBTC);
         assertGt(wbtcUsd, 0);
     }
 

@@ -116,7 +116,7 @@ contract LiquidatePositionTest is BaseTest {
         FakeOracle fakeETHUSDOracle = new FakeOracle();
         fakeETHUSDOracle.updateFakePrice(100e8);
         fakeETHUSDOracle.updateDecimals(8);
-        allContracts.oracleManager.setOracle(WETH, fakeETHUSDOracle);
+        allContracts.oracleManager.setUSDOracle(WETH, fakeETHUSDOracle);
 
         assertEq(allContracts.leveragedStrategy.isPositionLiquidatable(nftId), true);
     }

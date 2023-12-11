@@ -170,8 +170,8 @@ contract LeveragedStrategy is AccessControlUpgradeable {
         view
         returns (uint256)
     {
-        uint256 tokenPriceInUSD = oracleManager.getLatestPrice(token);
-        uint256 wbtcPriceInUSD = oracleManager.getLatestPrice(address(wbtc));
+        uint256 tokenPriceInUSD = oracleManager.getLatestTokenPriceInUSD(token);
+        uint256 wbtcPriceInUSD = oracleManager.getLatestTokenPriceInUSD(address(wbtc));
 
         uint256 tokenValueInWBTCUnadjustedDecimals = ((amount * uint256(tokenPriceInUSD)) / (uint256(wbtcPriceInUSD)));
 
@@ -188,8 +188,8 @@ contract LeveragedStrategy is AccessControlUpgradeable {
     {
         uint8 fromTokenDecimals = IERC20Detailed(fromToken).decimals();
 
-        uint8 fromTokenOracleDecimals = oracleManager.getOracleDecimals(fromToken);
-        uint8 wbtcOracleDecimals = oracleManager.getOracleDecimals(address(wbtc));
+        uint8 fromTokenOracleDecimals = oracleManager.getUSDOracleDecimals(fromToken);
+        uint8 wbtcOracleDecimals = oracleManager.getUSDOracleDecimals(address(wbtc));
 
         uint256 fromDec = fromTokenDecimals + fromTokenOracleDecimals;
         uint256 toDec = wbtcOracleDecimals + WBTC_DECIMALS;
@@ -209,8 +209,8 @@ contract LeveragedStrategy is AccessControlUpgradeable {
         view
         returns (uint256)
     {
-        uint256 tokenPriceInUSD = oracleManager.getLatestPrice(token);
-        uint256 wbtcPriceInUSD = oracleManager.getLatestPrice(address(wbtc));
+        uint256 tokenPriceInUSD = oracleManager.getLatestTokenPriceInUSD(token);
+        uint256 wbtcPriceInUSD = oracleManager.getLatestTokenPriceInUSD(address(wbtc));
 
         uint256 tokenAmountUnadjustedDecimals = wbtcAmount * wbtcPriceInUSD / tokenPriceInUSD;
 
@@ -226,8 +226,8 @@ contract LeveragedStrategy is AccessControlUpgradeable {
         returns (uint256)
     {
         uint8 tokenDecimals = IERC20Detailed(fromToken).decimals();
-        uint8 tokenOracleDecimals = oracleManager.getOracleDecimals(fromToken);
-        uint8 wbtcOracleDecimals = oracleManager.getOracleDecimals(address(wbtc));
+        uint8 tokenOracleDecimals = oracleManager.getUSDOracleDecimals(fromToken);
+        uint8 wbtcOracleDecimals = oracleManager.getUSDOracleDecimals(address(wbtc));
 
         uint256 fromDec = WBTC_DECIMALS + wbtcOracleDecimals - tokenOracleDecimals;
 

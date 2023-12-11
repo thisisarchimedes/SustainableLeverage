@@ -150,8 +150,8 @@ contract SwapManagerTest is BaseTest {
 
     function getOracleWbtcAmountUsdcValue(uint256 wbtcAmount) internal view returns(uint256) { 
 
-        uint256 totalDecimals = allContracts.oracleManager.getOracleDecimals(WBTC) + ERC20(WBTC).decimals() - ERC20(USDC).decimals();
-        return allContracts.oracleManager.getLatestPrice(WBTC) * wbtcAmount / 10 ** (totalDecimals);
+        uint256 totalDecimals = allContracts.oracleManager.getUSDOracleDecimals(WBTC) + ERC20(WBTC).decimals() - ERC20(USDC).decimals();
+        return allContracts.oracleManager.getLatestTokenPriceInUSD(WBTC) * wbtcAmount / 10 ** (totalDecimals);
     }
 
     function testSwapOfUsdcToWbtcOnUniV3AndOracle() external {
@@ -170,8 +170,8 @@ contract SwapManagerTest is BaseTest {
 
     function getOracleUsdcAmountWbtcValue(uint256 usdcAmount) internal view returns(uint256) { 
 
-        uint256 totalDecimals = allContracts.oracleManager.getOracleDecimals(WBTC) + ERC20(WBTC).decimals() - ERC20(USDC).decimals();
-        return (usdcAmount * 10 ** totalDecimals) / allContracts.oracleManager.getLatestPrice(WBTC);
+        uint256 totalDecimals = allContracts.oracleManager.getUSDOracleDecimals(WBTC) + ERC20(WBTC).decimals() - ERC20(USDC).decimals();
+        return (usdcAmount * 10 ** totalDecimals) / allContracts.oracleManager.getLatestTokenPriceInUSD(WBTC);
     }
 
     function verifyThatNothingLeftOnSwapper(ISwapAdapter swapAdapter) internal {

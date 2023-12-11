@@ -311,9 +311,9 @@ contract PositionCloser is AccessControlUpgradeable {
         returns (uint256 expectedTargetTokenAmount)
     {
         uint8 targetTokenDecimals = IERC20Detailed(targetToken).decimals();
-        uint8 targetTokenOracleDecimals = oracleManager.getOracleDecimals(targetToken);
-        uint256 wbtcPrice = oracleManager.getLatestPrice(address(wbtc)); // in USD
-        uint256 targetTokenPrice = oracleManager.getLatestPrice(targetToken); // in USD
+        uint8 targetTokenOracleDecimals = oracleManager.getUSDOracleDecimals(targetToken);
+        uint256 wbtcPrice = oracleManager.getLatestTokenPriceInUSD(address(wbtc)); // in USD
+        uint256 targetTokenPrice = oracleManager.getLatestTokenPriceInUSD(targetToken); // in USD
 
         expectedTargetTokenAmount = (
             (

@@ -204,9 +204,9 @@ contract UnifiedDeployer {
         );
         OracleManager proxyOracleManager = OracleManager(addrOracleManager);
 
-        proxyOracleManager.setOracle(WBTC, new ChainlinkOracle(WBTCUSDORACLE));
-        proxyOracleManager.setOracle(WETH, new ChainlinkOracle(ETHUSDORACLE));
-        proxyOracleManager.setOracle(USDC, new ChainlinkOracle(USDCUSDORACLE));
+        proxyOracleManager.setUSDOracle(WBTC, new ChainlinkOracle(WBTCUSDORACLE));
+        proxyOracleManager.setUSDOracle(WETH, new ChainlinkOracle(ETHUSDORACLE));
+        proxyOracleManager.setUSDOracle(USDC, new ChainlinkOracle(USDCUSDORACLE));
 
         return addrOracleManager;
     }

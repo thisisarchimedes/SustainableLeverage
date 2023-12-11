@@ -19,7 +19,8 @@ library EventsLeverageEngine {
     event FeeCollectorUpdated(address newFeeCollector);
     event MonitorUpdated(address newMonitor);
     event ExpiredVaultUpdated(address newExpiredVault);
-    event OracleSet(address token, IOracle oracle);
+    event ETHOracleSet(address token, IOracle oracle);
+    event USDOracleSet(address token, IOracle oracle);
     event ExitFeeUpdated(uint256 fee);
 
     event PositionOpened(
