@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.21;
 
-import { IOracle } from "../interfaces/IOracle.sol";
+import { IOracle } from "src/interfaces/IOracle.sol";
 
 contract FakeOracle is IOracle {
     uint256 fakePrice;

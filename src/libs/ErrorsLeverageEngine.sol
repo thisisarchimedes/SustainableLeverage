@@ -16,4 +16,5 @@ library ErrorsLeverageEngine {
     error NotEligibleForLiquidation();
     error InsufficientFunds();
     error PositionHasNoBalance();
+    error SwapAdapterAlreadySet();
 }

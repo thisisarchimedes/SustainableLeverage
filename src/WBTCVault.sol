@@ -18,9 +18,8 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
     constructor(address _wbtc) {
         wbtc = IERC20(_wbtc);
     }
-
-    function borrow(uint256 amount) external override {
-        wbtc.transfer(msg.sender, amount);
+    function borrowAmountTo(uint256 amount, address to) external override {
+        wbtc.transfer(to, amount);
     }
 
     function repay(uint256 nftId, uint256 amount) external {

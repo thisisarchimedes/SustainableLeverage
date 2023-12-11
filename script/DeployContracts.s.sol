@@ -13,8 +13,8 @@ import { BaseScript } from "./Base.s.sol";
 import { PositionToken } from "src/PositionToken.sol";
 import { LeverageDepositor } from "src/LeverageDepositor.sol";
 import { WBTCVault } from "src/WBTCVault.sol";
-import { SwapAdapter } from "src/SwapAdapter.sol";
-import { ChainlinkOracle } from "src/ports/ChainlinkOracle.sol";
+import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
+import { ChainlinkOracle } from "src/ports/oracles/ChainlinkOracle.sol";
 import { LeveragedStrategy } from "src/LeveragedStrategy.sol";
 
 contract DeployContracts is BaseScript, UnifiedDeployer {
@@ -45,9 +45,6 @@ contract DeployContracts is BaseScript, UnifiedDeployer {
         deployedContracts.push(dependencyAddresses.proxyAdmin);
         deployedContractsNames.push("ProxyAdmin");
 
-        deployedContracts.push(dependencyAddresses.swapAdapter);
-        deployedContractsNames.push("SwapAdapter");
-
         deployedContracts.push(dependencyAddresses.leveragedStrategy);
         deployedContractsNames.push("LeveragedStrategy");
         
@@ -65,6 +62,9 @@ contract DeployContracts is BaseScript, UnifiedDeployer {
 
         deployedContracts.push(dependencyAddresses.positionLedger);
         deployedContractsNames.push("PositionLedger");
+        deployedContracts.push(dependencyAddresses.swapManager);
+        deployedContractsNames.push("SwapManager");
+
         
         _writeDeploymentsToJson();
     }

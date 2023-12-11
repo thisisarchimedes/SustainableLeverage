@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.21;
 
-import "../interfaces/IERC20Detailed.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { ISwapAdapter } from "../interfaces/ISwapAdapter.sol";
-import { ISwapRouterUniV3 } from "../interfaces/ISwapRouterUniV3.sol";
 import { console2 } from "forge-std/console2.sol";
+import "src/interfaces/IERC20Detailed.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
+import { ISwapRouterUniV3 } from "src/interfaces/ISwapRouterUniV3.sol";
+import { SwapManager } from "src/SwapManager.sol";
 
 
 //TODO: Implement swap on different exchanges such as curvev2 pools and balancer
@@ -18,25 +19,17 @@ contract FakeWBTCWETHSwapAdapter is ISwapAdapter {
 
     constructor() { }
 
-    function swap(
-        IERC20 fromToken,
-        IERC20 toToken,
-        uint256 fromAmount,
-        address exchange,
-        bytes calldata payload,
-        SwapRoute route,
-        address recipient
-    )
-        external
-        payable
-        returns (uint256 receivedAmount)
-    {
-        if (route == SwapRoute.UNISWAPV3) {
-            receivedAmount = swapOnUniswapV3(fromToken, toToken, fromAmount, payload, recipient);
-        }
+    function swapToWbtc(SwapWbtcParams calldata params) external returns (uint256) {
+         return swap(params.otherToken, wbtc, params.fromAmount, params.payload, params.recipient);
+
     }
 
-    function swapOnUniswapV3(
+    function swapFromWbtc(SwapWbtcParams calldata params) external returns (uint256) {
+        return swap(wbtc, params.otherToken, params.fromAmount, params.payload, params.recipient);
+
+    }
+
+    function swap(
         IERC20 fromToken,
         IERC20 toToken,
         uint256 fromAmount,

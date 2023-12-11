@@ -2,6 +2,6 @@
 pragma solidity >=0.8.21;
 
 interface IWBTCVault {
-    function borrow(uint256) external;
+    function borrowAmountTo(uint256 amount, address to) external;
     function repay(uint256, uint256) external;
 }

@@ -178,7 +178,7 @@ contract LeveragedStrategy is AccessControlUpgradeable {
         return adjustDecimalsToWBTCDecimals(token, tokenValueInWBTCUnadjustedDecimals);
     }
 
-    function adjustDecimalsToWBTCDecimals(
+  function adjustDecimalsToWBTCDecimals(
         address fromToken,
         uint256 amountUnadjustedDecimals
     )
@@ -199,5 +199,56 @@ contract LeveragedStrategy is AccessControlUpgradeable {
         } else {
             return amountUnadjustedDecimals * 10 ** (toDec - fromDec);
         }
+    }
+
+    function getTokenValueFromWBTCAmount(
+        address token,
+        uint256 wbtcAmount
+    )
+        public
+        view
+        returns (uint256)
+    {
+        uint256 tokenPriceInUSD = oracleManager.getLatestPrice(token);
+        uint256 wbtcPriceInUSD = oracleManager.getLatestPrice(address(wbtc));
+
+        uint256 tokenAmountUnadjustedDecimals = wbtcAmount * wbtcPriceInUSD / tokenPriceInUSD;
+
+        return adjustDecimalsToTokenDecimals(token, tokenAmountUnadjustedDecimals);
+    }
+
+      function adjustDecimalsToTokenDecimals(
+        address fromToken,
+        uint256 amountUnadjustedDecimals
+    )
+        internal
+        view
+        returns (uint256)
+    {
+        uint8 tokenDecimals = IERC20Detailed(fromToken).decimals();
+        uint8 tokenOracleDecimals = oracleManager.getOracleDecimals(fromToken);
+        uint8 wbtcOracleDecimals = oracleManager.getOracleDecimals(address(wbtc));
+
+        uint256 fromDec = WBTC_DECIMALS + wbtcOracleDecimals - tokenOracleDecimals;
+
+        if (fromDec > tokenDecimals) {
+            return amountUnadjustedDecimals / 10 ** (fromDec - tokenDecimals);
+        } else {
+            return amountUnadjustedDecimals * 10 ** (tokenDecimals - fromDec);
+        }
+    }
+
+
+    function getEstimateSharesForWBTCDeposit(address strategy, uint256 wbtcDepositAmount) external view returns (uint256) {
+
+        address token = getStrategyValueAsset(strategy);
+
+        uint256 depositAmount = getTokenValueFromWBTCAmount(token, wbtcDepositAmount);
+
+        return IMultiPoolStrategy(strategy).previewDeposit(depositAmount);
+    }
+    
+    function getStrategyValueAsset(address strategy) public view returns (address) {
+        return IMultiPoolStrategy(strategy).asset();
     }
 }

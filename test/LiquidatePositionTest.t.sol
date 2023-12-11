@@ -1,17 +1,21 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
+import { IAccessControl } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
-import { FakeOracle } from "../src/ports/FakeOracle.sol";
-import { FakeWBTCWETHSwapAdapter } from "../src/ports/FakeWBTCWETHSwapAdapter.sol";
-import { FakeOracle } from "src/ports/FakeOracle.sol";
+import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
+import { FakeOracle } from "src/ports/oracles/FakeOracle.sol";
 import "./BaseTest.sol";
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
+
 
 contract LiquidatePositionTest is BaseTest {
     /* solhint-disable  */
 
     using ErrorsLeverageEngine for *;
+    using ProtocolRoles for *;
+
 
     function setUp() public virtual {
         string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
@@ -147,11 +151,10 @@ contract LiquidatePositionTest is BaseTest {
         allContracts.positionCloser.setMonitor(address(this));
 
         vm.expectRevert(ErrorsLeverageEngine.PositionNotLive.selector);
-        allContracts.positionCloser.liquidatePosition(nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, payloadClose, address(0));
+        allContracts.positionCloser.liquidatePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payloadClose, address(0));
     }
 
     function testLiquidationOfETHBasedPosition() external {
-        // Set liquidateion BufferLeveragedStrategy
         uint256 liquidationFee = 0.02e8;
         LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
             quota: 100e8,
@@ -184,10 +187,14 @@ contract LiquidatePositionTest is BaseTest {
         assertAlmostEq(
             feeCollectorBalanceAfter - feeCollectorBalanceBefore, liquidationFee * position.claimableAmount / 1e8, delta
         );
+
+        if (allContracts.positionLedger.getPositionState(nftId) != PositionState.LIQUIDATED) {
+            assertEq(true, false);
+        }
     }
 
     function testLiquidationOfUSDCBasedPosition() external {
-        // Set liquidateion BufferLeveragedStrategy
+
         uint256 liquidationFee = 0.02e8;
         LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
             quota: 100e8,
@@ -220,5 +227,82 @@ contract LiquidatePositionTest is BaseTest {
         assertAlmostEq(
             feeCollectorBalanceAfter - feeCollectorBalanceBefore, liquidationFee * position.claimableAmount / 1e8, delta
         );
+
+        if (allContracts.positionLedger.getPositionState(nftId) != PositionState.LIQUIDATED) {
+            assertEq(true, false);
+        }
+    }
+
+    function testSendLeftoverToExpirationVault() external {
+        
+        uint256 collateralAmount = 10e8;
+        uint256 borrowAmount = 30e8;
+        uint256 expirationVaultBalance = ERC20(WBTC).balanceOf(address(allContracts.expiredVault));
+
+        uint256 liquidationFee = 0.02e8;
+        LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
+            quota: 100e8,
+            maximumMultiplier: 3e8,
+            positionLifetime: 1000,
+            liquidationBuffer: 1.1e8,
+            liquidationFee: liquidationFee
+        });
+        allContracts.leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
+
+        uint256 nftId = openETHBasedPosition(collateralAmount, borrowAmount);
+        uint256 debtPaidBack = liquidateETHPosition(nftId);
+
+        expirationVaultBalance = ERC20(WBTC).balanceOf(address(allContracts.expiredVault)) - expirationVaultBalance;
+
+        assertGt(expirationVaultBalance, 0);
+        assertLte(expirationVaultBalance, collateralAmount + borrowAmount - debtPaidBack);
+    }
+
+    function testAllDebtGotBackToValue() external {
+        
+        uint256 collateralAmount = 10e8;
+        uint256 borrowAmount = 30e8;
+        uint256 wbtcVaultBalanceBefore = ERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
+        assertGt(wbtcVaultBalanceBefore, 0);
+
+        uint256 liquidationFee = 0.02e8;
+        LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
+            quota: 100e8,
+            maximumMultiplier: 3e8,
+            positionLifetime: 1000,
+            liquidationBuffer: 1.1e8,
+            liquidationFee: liquidationFee
+        });
+        allContracts.leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
+
+        uint256 nftId = openETHBasedPosition(collateralAmount, borrowAmount);
+        uint256 debtPaidBack = liquidateETHPosition(nftId);
+
+        uint256 wbtcVaultBalanceAfter = ERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
+
+        assertEq(debtPaidBack, borrowAmount);
+        assertEq(wbtcVaultBalanceBefore, wbtcVaultBalanceAfter);
+    }
+
+    function testNonMonitorCannotLiquidate() external {
+        
+        uint256 collateralAmount = 10e8;
+        uint256 borrowAmount = 30e8;
+
+        uint256 liquidationFee = 0.02e8;
+        LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
+            quota: 100e8,
+            maximumMultiplier: 3e8,
+            positionLifetime: 1000,
+            liquidationBuffer: 1.1e8,
+            liquidationFee: liquidationFee
+        });
+        allContracts.leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
+
+        uint256 nftId = openETHBasedPosition(collateralAmount, borrowAmount);
+        
+        vm.prank(address(0));
+        vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, 0, ProtocolRoles.MONITOR_ROLE));
+        allContracts.positionCloser.liquidatePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, getWBTCWETHUniswapPayload(), address(0));
     }
 }

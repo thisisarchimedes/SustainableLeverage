@@ -9,12 +9,12 @@ import { WBTCVault } from "src/WBTCVault.sol";
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import { SwapAdapter } from "src/SwapAdapter.sol";
+import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
 import { ExpiredVault } from "src/ExpiredVault.sol";
-import { FakeOracle } from "src/ports/FakeOracle.sol";
-import { FakeWBTCWETHSwapAdapter } from "../src/ports/FakeWBTCWETHSwapAdapter.sol";
-import { FakeWBTCUSDCSwapAdapter } from "../src/ports/FakeWBTCUSDCSwapAdapter.sol";
-import { ChainlinkOracle } from "src/ports/ChainlinkOracle.sol";
+import { FakeOracle } from "src/ports/oracles/FakeOracle.sol";
+import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
+import { FakeWBTCUSDCSwapAdapter } from "src/ports/swap_adapters/FakeWBTCUSDCSwapAdapter.sol";
+import { ChainlinkOracle } from "src/ports/oracles/ChainlinkOracle.sol";
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
@@ -26,16 +26,16 @@ import { OracleManager } from "src/OracleManager.sol";
 import { LeveragedStrategy } from "src/LeveragedStrategy.sol";
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
-
+import { UniV3SwapAdapter } from "src/ports/swap_adapters/UniV3SwapAdapter.sol";
+import { SwapManager } from "src/SwapManager.sol";
 
 struct AllContracts {
-    PositionToken  positionToken;
-    LeverageDepositor  leverageDepositor;
-    WBTCVault  wbtcVault;
-    ProxyAdmin  proxyAdmin;
-    TransparentUpgradeableProxy  proxy;
-    TransparentUpgradeableProxy  expiredVaultProxy;
-    SwapAdapter swapAdapter;
+    PositionToken positionToken;
+    LeverageDepositor leverageDepositor;
+    WBTCVault wbtcVault;
+    ProxyAdmin proxyAdmin;
+    TransparentUpgradeableProxy proxy;
+    TransparentUpgradeableProxy expiredVaultProxy;
     ExpiredVault expiredVault;
     LeveragedStrategy leveragedStrategy;
     ProtocolParameters protocolParameters;
@@ -43,16 +43,17 @@ struct AllContracts {
     PositionOpener positionOpener;
     PositionCloser positionCloser;
     OracleManager oracleManager;
-
+    SwapManager swapManager;
     ChainlinkOracle ethUsdOracle;
     ChainlinkOracle btcEthOracle;
     ChainlinkOracle wbtcUsdOracle;
+    UniV3SwapAdapter uniV3SwapAdapter;
 }
 
 contract UnifiedDeployer {
     using SafeERC20 for IERC20;
     using ProtocolRoles for *;
-    
+
     IERC20 internal wbtc;
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -83,9 +84,7 @@ contract UnifiedDeployer {
         return admin;
     }
 
-
     function DeployAllContracts() public {
-
         createOracles();
 
         deployProxyAndContracts();
@@ -119,9 +118,6 @@ contract UnifiedDeployer {
         allContracts.leverageDepositor = new LeverageDepositor(WBTC, WETH);
         dependencyAddresses.leverageDepositor = address(allContracts.leverageDepositor);
 
-        allContracts.swapAdapter = new SwapAdapter(WBTC, address(allContracts.leverageDepositor));
-        dependencyAddresses.swapAdapter = address(allContracts.swapAdapter);
-
         dependencyAddresses.oracleManager = createProxiedOracleManager();
         allContracts.oracleManager = OracleManager(dependencyAddresses.oracleManager);
 
@@ -142,6 +138,9 @@ contract UnifiedDeployer {
 
         dependencyAddresses.positionLedger = createProxiedPositionLedger();
         allContracts.positionLedger = PositionLedger(dependencyAddresses.positionLedger);
+
+        dependencyAddresses.swapManager = createProxiedSwapManager();
+        allContracts.swapManager = SwapManager(dependencyAddresses.swapManager);
     }
 
     function createProxiedExpiredVault() internal returns (address) {
@@ -157,7 +156,9 @@ contract UnifiedDeployer {
     function createProxiedStrategyManager() internal returns (address) {
         LeveragedStrategy implleveragedStrategys = new LeveragedStrategy();
         address addrleveragedStrategy = createUpgradableContract(
-            implleveragedStrategys.initialize.selector, address(implleveragedStrategys), address(allContracts.proxyAdmin)
+            implleveragedStrategys.initialize.selector,
+            address(implleveragedStrategys),
+            address(allContracts.proxyAdmin)
         );
         LeveragedStrategy proxyleveragedStrategys = LeveragedStrategy(addrleveragedStrategy);
 
@@ -177,7 +178,9 @@ contract UnifiedDeployer {
     function createProxiedProtocolParameters() internal returns (address) {
         ProtocolParameters implProtocolParameters = new ProtocolParameters();
         address addrProtocolParameters = createUpgradableContract(
-            implProtocolParameters.initialize.selector, address(implProtocolParameters), address(allContracts.proxyAdmin)
+            implProtocolParameters.initialize.selector,
+            address(implProtocolParameters),
+            address(allContracts.proxyAdmin)
         );
         ProtocolParameters proxylProtocolParameters = ProtocolParameters(addrProtocolParameters);
 
@@ -227,6 +230,18 @@ contract UnifiedDeployer {
         return addrPositionLedger;
     }
 
+    function createProxiedSwapManager() internal returns (address) {
+        SwapManager implSwapManager = new SwapManager();
+        address addrSwapManager = createUpgradableContract(
+            implSwapManager.initialize.selector, address(implSwapManager), address(allContracts.proxyAdmin)
+        );
+
+        SwapManager proxySwapManager = SwapManager(addrSwapManager);
+        proxySwapManager.setSwapAdapter(SwapManager.SwapRoute.UNISWAPV3, new UniV3SwapAdapter());
+
+        return addrSwapManager;
+    }
+
     function createUpgradableContract(
         bytes4 selector,
         address implementationAddress,
@@ -243,4 +258,3 @@ contract UnifiedDeployer {
         return address(proxied);
     }
 }
-  

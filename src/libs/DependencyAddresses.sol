@@ -7,11 +7,11 @@ struct DependencyAddresses {
     address positionToken;
     address wbtcVault;
     address proxyAdmin;
-    address swapAdapter;
     address leveragedStrategy;
     address protocolParameters;
     address oracleManager;
     address positionOpener;
     address positionCloser;
     address positionLedger;
+    address swapManager;
 }

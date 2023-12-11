@@ -9,12 +9,12 @@ import { WBTCVault } from "src/WBTCVault.sol";
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import { SwapAdapter } from "../src/SwapAdapter.sol";
-import { ExpiredVault } from "../src/ExpiredVault.sol";
-import { FakeOracle } from "../src/ports/FakeOracle.sol";
-import { FakeWBTCWETHSwapAdapter } from "../src/ports/FakeWBTCWETHSwapAdapter.sol";
-import { FakeWBTCUSDCSwapAdapter } from "../src/ports/FakeWBTCUSDCSwapAdapter.sol";
-import { ChainlinkOracle } from "../src/ports/ChainlinkOracle.sol";
+import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
+import { ExpiredVault } from "src/ExpiredVault.sol";
+import { FakeOracle } from "src/ports/oracles/FakeOracle.sol";
+import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
+import { FakeWBTCUSDCSwapAdapter } from "src/ports/swap_adapters/FakeWBTCUSDCSwapAdapter.sol";
+import { ChainlinkOracle } from "src/ports/oracles/ChainlinkOracle.sol";
 import { PRBTest } from "@prb/test/PRBTest.sol";
 import { console2 } from "forge-std/console2.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
@@ -26,7 +26,10 @@ import { PositionOpener } from "src/PositionOpener.sol";
 import { PositionCloser } from "src/PositionCloser.sol";
 import { OracleManager } from "src/OracleManager.sol";
 import { LeveragedStrategy } from "src/LeveragedStrategy.sol";
+import { SwapManager } from "src/SwapManager.sol";
 import { UnifiedDeployer, AllContracts } from "script/UnifiedDeployer.sol";
+import { UniV3SwapAdapter } from "src/ports/swap_adapters/UniV3SwapAdapter.sol";
+
 
 contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
     using SafeERC20 for IERC20;
@@ -58,13 +61,22 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
     }
 
     function openETHBasedPosition(uint256 collateralAmount, uint256 borrowAmount) internal returns (uint256 nftId) {
-        bytes memory payload = getWBTCWETHUniswapPayload();
 
-        deal(WBTC, address(this), 1000e8);
+        deal(WBTC, address(this), collateralAmount);
+        ERC20(WBTC).approve(address(allContracts.positionOpener), type(uint256).max);
 
-        nftId = allContracts.positionOpener.openPosition(
-            collateralAmount, borrowAmount, ETHPLUSETH_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
-        );
+        bytes memory payload = getWBTCWETHUniswapPayload(); 
+
+        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+            collateralAmount: collateralAmount,
+            wbtcToBorrow: borrowAmount,
+            minStrategyShares: 0,
+            strategy: ETHPLUSETH_STRATEGY,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payload
+        });
+         
+        return allContracts.positionOpener.openPosition(params);
     }
 
     function liquidateETHPosition(uint256 nftId) internal returns (uint256 debtPaidBack) {
@@ -87,7 +99,8 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
             deal(WBTC, address(fakeSwapAdapter), 1000e8);
             fakeSwapAdapter.setWbtcToWethExchangeRate(fakeBtcEthPrice);
             fakeSwapAdapter.setWethToWbtcExchangeRate(1e36 / fakeBtcEthPrice);
-            allContracts.positionCloser.changeSwapAdapter(address(fakeSwapAdapter));
+            //allContracts.positionCloser.changeSwapAdapter(address(fakeSwapAdapter));
+            allContracts.swapManager.setSwapAdapter(SwapManager.SwapRoute.UNISWAPV3, fakeSwapAdapter);
         }
 
         {
@@ -106,7 +119,7 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
             allContracts.positionCloser.setMonitor(address(this));
             uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
             allContracts.positionCloser.liquidatePosition(
-                nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, getWBTCWETHUniswapPayload(), address(0)
+                nftId, 0, SwapManager.SwapRoute.UNISWAPV3, getWBTCWETHUniswapPayload(), address(0)
             );
             uint256 wbtcVaultBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
             debtPaidBack = wbtcVaultBalanceAfter - wbtcVaultBalanceBefore;
@@ -129,7 +142,9 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
 
             fakeSwapAdapter.setWbtcToUsdcExchangeRate(fakeBtcUsdPrice);
             fakeSwapAdapter.setUsdcToWbtcExchangeRate(1e16 / fakeBtcUsdPrice);
-            allContracts.positionCloser.changeSwapAdapter(address(fakeSwapAdapter));
+            //allContracts.positionCloser.changeSwapAdapter(address(fakeSwapAdapter));
+            allContracts.swapManager.setSwapAdapter(SwapManager.SwapRoute.UNISWAPV3, fakeSwapAdapter);
+
         }
 
         {
@@ -144,68 +159,79 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
             allContracts.positionCloser.setMonitor(address(this));
             uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
             allContracts.positionCloser.liquidatePosition(
-                nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, getUSDCWBTCUniswapPayload(), address(0)
+                nftId, 0, SwapManager.SwapRoute.UNISWAPV3, getUSDCWBTCUniswapPayload(), address(0)
             );
             uint256 wbtcVaultBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
             debtPaidBack = wbtcVaultBalanceAfter - wbtcVaultBalanceBefore;
         }
     }
 
-    function getWBTCWETHUniswapPayload() internal view returns (bytes memory payload) {
-        payload = abi.encode(
-            SwapAdapter.UniswapV3Data({
+    function getWBTCWETHUniswapPayload() internal view returns (bytes memory) {
+        
+        bytes memory payload = abi.encode(
+            UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WBTC, uint24(3000), WETH),
                 deadline: block.timestamp + 1000
             })
         );
+
+        return payload;
     }
 
     function closeETHBasedPosition(uint256 nftId) internal {
         bytes memory payload = getWETHWBTCUniswapPayload();
 
-        allContracts.positionCloser.closePosition(nftId, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0));
+        allContracts.positionCloser.closePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
     }
 
-    function getWETHWBTCUniswapPayload() internal view returns (bytes memory payload) {
-        payload = abi.encode(
-            SwapAdapter.UniswapV3Data({
+    function getWETHWBTCUniswapPayload() internal view returns (bytes memory) {
+        bytes memory payload = abi.encode(
+            UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WETH, uint24(3000), WBTC),
                 deadline: block.timestamp + 1000
             })
         );
+
+        return payload;
     }
 
     function openUSDCBasedPosition(uint256 collateralAmount, uint256 borrowAmount) internal returns (uint256 nftId) {
+        deal(WBTC, address(this), collateralAmount);
+        ERC20(WBTC).approve(address(allContracts.positionOpener), type(uint256).max);
+
         bytes memory payload = getWBTCUSDCUniswapPayload();
 
-        deal(WBTC, address(this), 1000e8);
-
-        nftId = allContracts.positionOpener.openPosition(
-            collateralAmount,
-            borrowAmount,
-            FRAXBPALUSD_STRATEGY,
-            0,
-            SwapAdapter.SwapRoute.UNISWAPV3,
-            payload,
-            address(0)
-        );
+        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+            collateralAmount: collateralAmount,
+            wbtcToBorrow: borrowAmount,
+            minStrategyShares: 0,
+            strategy: FRAXBPALUSD_STRATEGY,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payload
+        });
+         
+        return allContracts.positionOpener.openPosition(params);
     }
 
-    function getWBTCUSDCUniswapPayload() internal view returns (bytes memory payload) {
-        payload = abi.encode(
-            SwapAdapter.UniswapV3Data({
+    function getWBTCUSDCUniswapPayload() internal view returns (bytes memory) {
+        bytes memory payload = abi.encode(
+            UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WBTC, uint24(500), WETH, uint24(3000), USDC),
                 deadline: block.timestamp + 1000
             })
         );
+
+        return payload;
     }
 
-    function getUSDCWBTCUniswapPayload() internal view returns (bytes memory payload) {
-        payload = abi.encode(
-            SwapAdapter.UniswapV3Data({
+    function getUSDCWBTCUniswapPayload() internal view returns (bytes memory) {
+        bytes memory payload = abi.encode(
+            UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(USDC, uint24(3000), WETH, uint24(500), WBTC),
                 deadline: block.timestamp + 1000
             })
         );
+
+        return payload;
     }
 }

@@ -1,31 +1,44 @@
 # Test list:
 
-    [x] Set liquidation buffer per strategy V
-    [x] Set liquidation fees V
-    [x] Get current position value in WBTC (esitmation) - for USDC position (6 decimals) V
-    [x] Get current position value in WBTC (esitmation) - for ETH position (18 decimals) V
-    [x] check if position is eligible for liquidation V
-    [x] Call liquidation and revert if poistion state is not live V
-    [x] Call liquidation and check if poistion state is liveV
-    [x] Calc preview to how much WBTC we will get (so we can send a min to liquidation and avoid attacks) V
-    [x] liquidate position if it is eligible for liquidation (ETH value asset position) - enough WBTC in position to cover debt
-    [x] liquidate position if it is eligible for liquidation (USDC value asset position) - enough WBTC in position to cover debt
-    [] liquidate position if it is eligible for liquidation (ETH value asset position) - NOT enough WBTC in position to cover debt
-    [] move whatever left after liquidation to Exprired Vault
-    [] Even if there is nothing left move 0 to expire vault
-    [] Collect liquidation fees
-    [] Detect when the total value of the position is less than debt during liquidation
-    [] Only Monitor can liquidate position
-    [] Check that position state is LIQUIDATED after liquidation
-    [] Check that position state is live when there is a position
-    [] Check that when we don't have a position the position state is correct
+[X] Set liquidation buffer per strategy
+[X] Set liquidation fees
+[X] Get current position value in WBTC (esitmation) - for USDC position (6 decimals) 
+[X] Get current position value in WBTC (esitmation) - for ETH position (18 decimals) 
+[X] check if position is eligible for liquidation 
+[X] Call liquidation and revert if poistion state is not live 
+[X] Call liquidation and check if poistion state is liveV
+[X] Calc preview to how much WBTC we will get (so we can send a min to liquidation and avoid attacks) 
+[X] liquidate position if it is eligible for liquidation (ETH value asset position) - enough WBTC in position to cover debt
+[X] liquidate position if it is eligible for liquidation (USDC value asset position) - enough WBTC in position to cover debt
+[X] Check that position state is LIQUIDATED after liquidation
+[X] move whatever left after liquidation to Exprired Vault
+[X] Collect liquidation fees
+[x] Only Monitor can liquidate position
+[x] Check that position state is live when there is a position
+[] Detect when the total value of the position is less than debt during liquidation
+[] Check that when we don't have a position the position state is correct
+[] liquidate position if it is eligible for liquidation (ETH value asset position) - NOT enough WBTC in position to cover debt
 
 # Refactor list:
 
-    1. Oracle contract should be upgradable in case we want to switch Chainlink
-    2. Change leverageEngine current Oracle to Oracle contract
-    3. Have a fallback Oracle. Check if Oracle is healthy and if not revert to fallback Oracle
-    4. Leverage Engine gets the contract address of our Oracle wrapper and we can change it if we want to (one Oracle instance for all tokens)
+[X] Clean up SwapAdapter replace it with SwapManager
+[X] Decouple the contracts initalization and have the same code running in Deploy and tests
+[] Hold shares with Ledger
+
+[] setOracle should get 2 tokens also getOracle price should get two tokens + add getOracleDecimals
+[] add no immediate close position (force 50 block cool down)
+[] test_DetectPoolManipulation implement
+
+[] Test: external cannot call ADMIN, INTERNAL CONTRACT and MONITOR functions
+[] Only upgradable the contracts that hold WBTC or shares (and data like Ledger)
+[] remove the bare strcut of position ledger outside of the contract
+
+[] Fix swapAdapter make it more generic wrapper
+[] LeverageDepositor no access control?
+[] look for TODOs and address them
+
+[] Have a fallback Oracle. Check if Oracle is healthy and if not revert to fallback Oracle
+[] Remove the overloaded openPosition
 
 # Comments
 
@@ -35,24 +48,6 @@
 - Move swapDatas inside openPosition function as TS is struggling with decoding
 - Check access control to function
 
-
----
-
-# refactoring notes
-
-- test_DetectPoolManipulation implement
-- look for TODOs and address them
-- add no immediate close position (force 50 block cool down)
-- setOracle should get 2 tokens also getOracle price should get two tokens + add getOracleDecimals
-- Test: external cannot call ADMIN, INTERNAL CONTRACT and MONITOR functions
-- Decouple the contracts initalization and have the same code running in Deploy and tests
-
-- LeverageEngine contract as "main" to create all other contracts and manage admins
-- Only upgradable the contracts that hold WBTC or shares (and data like Ledger)
-- Hold shares with Ledger
-- remove the bare strcut of position ledger outside of the contract
-- Fix swapAdapter make it more generic wrapper
-- LeverageDepositor no access control?
 
 # Architecture
 
@@ -64,3 +59,4 @@
 - LedgerManager: Manages the position ledger
 - ExpiredVault: Holds expired positions
 - WBTC: WBTC token
+

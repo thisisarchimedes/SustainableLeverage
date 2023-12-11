@@ -6,8 +6,8 @@ import { console2 } from "forge-std/console2.sol";
 
 import { ExpiredVault } from "../src/ExpiredVault.sol";
 import { ERC721 } from "openzeppelin-contracts/token/ERC721/ERC721.sol";
-import { FakeWBTCWETHSwapAdapter } from "../src/ports/FakeWBTCWETHSwapAdapter.sol";
-import { FakeOracle } from "../src/ports/FakeOracle.sol";
+import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
+import { FakeOracle } from "src/ports/oracles/FakeOracle.sol";
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 
 /// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
