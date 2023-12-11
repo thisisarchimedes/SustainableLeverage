@@ -15,11 +15,9 @@ contract ChainlinkOracle is IOracle {
         return chainlinkOracleInstance.decimals();
     }
 
-    function latestRoundData()
-        external
-        view
-        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
-    {
-        return chainlinkOracleInstance.latestRoundData();
+    function getLatestPrice() external view returns (uint256) {
+        (, int256 price,,,) = chainlinkOracleInstance.latestRoundData();
+
+        return uint256(price);
     }
 }

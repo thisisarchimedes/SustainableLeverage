@@ -15,12 +15,9 @@ contract FakeOracle is IOracle {
         fakeDecimals = _decimals;
     }
 
-    function latestRoundData()
-        external
-        view
-        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
-    {
-        return (0, int256(fakePrice), 0, 0, 0);
+    function getLatestPrice() external view returns (uint256) {
+
+        return fakePrice;
     }
 
     function updateFakePrice(uint256 newPrice) external {

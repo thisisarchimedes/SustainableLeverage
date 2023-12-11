@@ -86,12 +86,12 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
 
         {
             // Get current eth price
-            (, int256 ethUsdPrice,,,) = allContracts.ethUsdOracle.latestRoundData();
-            (, int256 wtbcUsdPrice,,,) = allContracts.wbtcUsdOracle.latestRoundData();
+            uint256 ethUsdPrice = allContracts.ethUsdOracle.getLatestPrice();
+            uint256 wtbcUsdPrice = allContracts.wbtcUsdOracle.getLatestPrice();
 
             // Drop the eth price by 20%
-            fakeEthUsdPrice = (uint256(ethUsdPrice) * 0.9e8) / 1e8;
-            fakeBtcUsdPrice = (uint256(wtbcUsdPrice) * 1.1e8) / 1e8;
+            fakeEthUsdPrice = (ethUsdPrice * 0.9e8) / 1e8;
+            fakeBtcUsdPrice = (wtbcUsdPrice * 1.1e8) / 1e8;
             fakeBtcEthPrice = fakeBtcUsdPrice * 1e18 / fakeEthUsdPrice;
 
             FakeWBTCWETHSwapAdapter fakeSwapAdapter = new FakeWBTCWETHSwapAdapter();
@@ -107,11 +107,11 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
             FakeOracle fakeETHUSDOracle = new FakeOracle();
             fakeETHUSDOracle.updateFakePrice(fakeEthUsdPrice);
             fakeETHUSDOracle.updateDecimals(8);
-            allContracts.oracleManager.setOracle(WETH, fakeETHUSDOracle);
+            allContracts.oracleManager.setUSDOracle(WETH, fakeETHUSDOracle);
             FakeOracle fakeWBTCUSDOracle = new FakeOracle();
             fakeWBTCUSDOracle.updateFakePrice(fakeBtcUsdPrice);
             fakeWBTCUSDOracle.updateDecimals(8);
-            allContracts.oracleManager.setOracle(WBTC, fakeWBTCUSDOracle);
+            allContracts.oracleManager.setUSDOracle(WBTC, fakeWBTCUSDOracle);
         }
 
         {
@@ -131,7 +131,7 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
 
         {
             // Get current eth price
-            (, int256 wtbcUsdPrice,,,) = allContracts.wbtcUsdOracle.latestRoundData();
+            uint256 wtbcUsdPrice = allContracts.oracleManager.getLatestTokenPriceInUSD(WBTC);
 
             // Drop the eth price by 20%
             fakeBtcUsdPrice = (uint256(wtbcUsdPrice) * 1.3e8) / 1e8;
@@ -151,7 +151,7 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
             FakeOracle fakeWBTCUSDOracle = new FakeOracle();
             fakeWBTCUSDOracle.updateFakePrice(fakeBtcUsdPrice);
             fakeWBTCUSDOracle.updateDecimals(8);
-            allContracts.oracleManager.setOracle(WBTC, fakeWBTCUSDOracle);
+            allContracts.oracleManager.setUSDOracle(WBTC, fakeWBTCUSDOracle);
         }
 
         {

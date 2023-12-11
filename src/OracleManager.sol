@@ -11,7 +11,6 @@ import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
 import { ErrorsLeverageEngine } from "./libs/ErrorsLeverageEngine.sol";
 import { EventsLeverageEngine } from "./libs/EventsLeverageEngine.sol";
 
-
 /// @title OracleManager Contract
 /// @notice Manages oracles for token pricing in the Leverage Engine system.
 contract OracleManager is AccessControlUpgradeable {
@@ -20,27 +19,43 @@ contract OracleManager is AccessControlUpgradeable {
     using ErrorsLeverageEngine for *;
     using EventsLeverageEngine for *;
 
-    mapping(address => IOracle) internal oracles;
+    mapping(address => IOracle) internal ethOracles;
+    mapping(address => IOracle) internal usdOracles;
 
     function initialize() external initializer {
         __AccessControl_init();
         _grantRole(ProtocolRoles.ADMIN_ROLE, msg.sender);
     }
 
-      function setOracle(address token, IOracle oracle) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
-        oracles[token] = oracle;
-        emit EventsLeverageEngine.OracleSet(token, oracle);
+    function setETHOracle(address token, IOracle oracle) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
+        ethOracles[token] = oracle;
+        emit EventsLeverageEngine.ETHOracleSet(token, oracle);
     }
 
-    function getLatestPrice(address token) external view returns (uint256) {
-        IOracle oracle = oracles[token];
-        (, int256 price,,,) = oracle.latestRoundData();
-        
-        return uint256(price);
+    function setUSDOracle(address token, IOracle oracle) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
+        usdOracles[token] = oracle;
+        emit EventsLeverageEngine.USDOracleSet(token, oracle);
     }
 
-    function getOracleDecimals(address token) external view returns (uint8) {
-        IOracle oracle = oracles[token];
+    function getLatestTokenPriceInETH(address token) external view returns (uint256) {
+        IOracle oracle = ethOracles[token];
+
+        return oracle.getLatestPrice();
+    }
+
+    function getETHOracleDecimals(address token) external view returns (uint8) {
+        IOracle oracle = ethOracles[token];
+        return oracle.decimals();
+    }
+
+    function getLatestTokenPriceInUSD(address token) external view returns (uint256) {
+        IOracle oracle = usdOracles[token];
+
+        return oracle.getLatestPrice();
+    }
+
+    function getUSDOracleDecimals(address token) external view returns (uint8) {
+        IOracle oracle = usdOracles[token];
         return oracle.decimals();
     }
 }
