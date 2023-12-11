@@ -62,10 +62,10 @@ contract DeployContracts is BaseScript, UnifiedDeployer {
 
         deployedContracts.push(dependencyAddresses.positionLedger);
         deployedContractsNames.push("PositionLedger");
+
         deployedContracts.push(dependencyAddresses.swapManager);
         deployedContractsNames.push("SwapManager");
 
-        
         _writeDeploymentsToJson();
     }
 
