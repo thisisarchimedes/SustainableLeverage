@@ -179,8 +179,8 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
     }
 
     function closeETHBasedPosition(uint256 nftId) internal {
+        vm.roll(block.number + 2 days);
         bytes memory payload = getWETHWBTCUniswapPayload();
-
         allContracts.positionCloser.closePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
     }
 
@@ -222,6 +222,12 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
         );
 
         return payload;
+    }
+
+      function closeUSDCBasedPosition(uint256 nftId) internal {
+        vm.roll(block.number + 2 days);
+        bytes memory payload = getUSDCWBTCUniswapPayload();
+        allContracts.positionCloser.closePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
     }
 
     function getUSDCWBTCUniswapPayload() internal view returns (bytes memory) {

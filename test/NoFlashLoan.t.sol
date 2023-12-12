@@ -1,0 +1,93 @@
+// SPDX-License-Identifier: CC BY-NC-ND 4.0
+pragma solidity >=0.8.21 <0.9.0;
+
+import { IAccessControl } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
+import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
+import { FakeOracle } from "src/ports/oracles/FakeOracle.sol";
+import "./BaseTest.sol";
+import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
+
+
+contract NoFlashLoanTest is BaseTest {
+    /* solhint-disable  */
+
+    using ErrorsLeverageEngine for *;
+    using ProtocolRoles for *;
+
+    function setUp() public virtual {
+        string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
+        if (bytes(alchemyApiKey).length == 0) {
+            return;
+        }
+
+        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
+        initTestFramework();
+
+        deal(WBTC, address(allContracts.wbtcVault), 10_000_000e8);
+        deal(WBTC, address(this), 10_000_000e8);
+        ERC20(WBTC).approve(address(allContracts.positionOpener), type(uint256).max);
+        ERC20(WBTC).approve(address(allContracts.positionCloser), type(uint256).max);
+    }
+
+    function testCantOpenAndClosePositionAtTheSameBlock() external {
+
+        uint256 collateralAmount = 5e8;
+        uint256 borrowAmount = 15e8;
+
+        uint256 currentBlockNumber = block.number;
+        uint256 nftId = openUSDCBasedPosition(collateralAmount, borrowAmount);
+        assertEq(block.number, currentBlockNumber);
+
+        bytes memory payload = getUSDCWBTCUniswapPayload();
+        vm.expectRevert(ErrorsLeverageEngine.PositionRecentlyOpened.selector);
+        allContracts.positionCloser.closePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
+        
+        assertEq(block.number, currentBlockNumber);
+    }
+
+    function testCantClosePositionBeforeMinBlockDuration() external {
+
+        uint8 minBlockDuration = 50;
+        allContracts.protocolParameters.setMinPositionDurationInBlocks(minBlockDuration);
+
+        uint256 collateralAmount = 5e8;
+        uint256 borrowAmount = 15e8;
+
+        uint256 currentBlockNumber = block.number;
+        uint256 nftId = openETHBasedPosition(collateralAmount, borrowAmount);
+        assertEq(block.number, currentBlockNumber);
+
+        vm.roll(block.number + minBlockDuration);
+        bytes memory payload = getWETHWBTCUniswapPayload();
+        vm.expectRevert(ErrorsLeverageEngine.PositionRecentlyOpened.selector);
+        allContracts.positionCloser.closePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
+
+        if (allContracts.positionLedger.getPositionState(nftId) == PositionState.CLOSED) {
+            assertEq(true, false);
+        }
+    }
+
+    function testCanClosePositionAfterMinBlockDuration() external {
+
+        uint8 minBlockDuration = 50;
+        allContracts.protocolParameters.setMinPositionDurationInBlocks(minBlockDuration);
+
+        uint256 collateralAmount = 5e8;
+        uint256 borrowAmount = 15e8;
+
+        uint256 currentBlockNumber = block.number;
+        uint256 nftId = openETHBasedPosition(collateralAmount, borrowAmount);
+        assertEq(block.number, currentBlockNumber);
+
+        bytes memory payload = getWETHWBTCUniswapPayload();
+        vm.roll(block.number + minBlockDuration + 1);
+        allContracts.positionCloser.closePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
+
+        if (allContracts.positionLedger.getPositionState(nftId) != PositionState.CLOSED) {
+            assertEq(true, false);
+        }
+    }
+}
+

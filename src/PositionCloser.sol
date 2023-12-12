@@ -125,6 +125,11 @@ contract PositionCloser is AccessControlUpgradeable {
             revert ErrorsLeverageEngine.PositionNotLive();
         }
 
+        if (isPositionOpenedTooRecently(nftId)) {
+            revert ErrorsLeverageEngine.PositionRecentlyOpened();
+        }
+
+
         LedgerEntry memory position = positionLedger.getPosition(nftId);
 
 
@@ -155,6 +160,10 @@ contract PositionCloser is AccessControlUpgradeable {
         emit EventsLeverageEngine.PositionClosed(
             nftId, msg.sender, position.strategyAddress, wbtcLeft, wbtcDebtAmount, exitFeeAmount
         );
+    }
+
+    function isPositionOpenedTooRecently(uint256 nftId) internal view returns (bool) {
+        return block.number <= positionLedger.getOpenBlock(nftId) + protocolParameters.getMinPositionDurationInBlocks();
     }
 
     ///////////// Monitor functions /////////////

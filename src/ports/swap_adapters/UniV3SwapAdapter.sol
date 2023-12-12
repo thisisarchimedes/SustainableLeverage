@@ -33,7 +33,7 @@ contract UniV3SwapAdapter is ISwapAdapter, AccessControlUpgradeable {
         
         uint256 balanceBefore = wbtc.balanceOf(params.recipient);
 
-        swapOnUniswapV3(params.otherToken, wbtc, params.fromAmount, params.payload, params.recipient);
+        swapOnUniswapV3(params.otherToken, params.fromAmount, params.payload, params.recipient);
 
         return wbtc.balanceOf(params.recipient) - balanceBefore;
     }
@@ -45,14 +45,13 @@ contract UniV3SwapAdapter is ISwapAdapter, AccessControlUpgradeable {
     {
         uint256 balanceBefore = params.otherToken.balanceOf(params.recipient);
 
-        swapOnUniswapV3(wbtc, params.otherToken, params.fromAmount, params.payload, params.recipient);     
+        swapOnUniswapV3(wbtc, params.fromAmount, params.payload, params.recipient);     
 
         return params.otherToken.balanceOf(params.recipient) - balanceBefore;
     }
 
     function swapOnUniswapV3(
         IERC20 fromToken,
-        IERC20 toToken,
         uint256 fromAmount,
         bytes calldata payload,
         address recipient
