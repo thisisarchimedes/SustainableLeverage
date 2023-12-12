@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.21;
 
-import { PositionOpener } from "../src/PositionOpener.sol";
-import { PositionToken } from "../src/PositionToken.sol";
-import "../src/LeverageDepositor.sol";
+import { PositionOpener } from "src/PositionOpener.sol";
+import { PositionToken } from "src/PositionToken.sol";
+import "src/LeverageDepositor.sol";
 import { WBTCVault } from "src/WBTCVault.sol";
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
