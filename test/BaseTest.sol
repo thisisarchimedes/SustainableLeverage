@@ -74,7 +74,8 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
             minStrategyShares: 0,
             strategy: ETHPLUSETH_STRATEGY,
             swapRoute: SwapManager.SwapRoute.UNISWAPV3,
-            swapData: payload
+            swapData: payload,
+            exchange: address(0)
         });
          
         return allContracts.positionOpener.openPosition(params);
@@ -208,7 +209,8 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
             minStrategyShares: 0,
             strategy: FRAXBPALUSD_STRATEGY,
             swapRoute: SwapManager.SwapRoute.UNISWAPV3,
-            swapData: payload
+            swapData: payload,
+            exchange: address(0)
         });
          
         return allContracts.positionOpener.openPosition(params);

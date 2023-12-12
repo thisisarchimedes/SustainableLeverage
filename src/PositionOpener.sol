@@ -89,7 +89,8 @@ contract PositionOpener is AccessControlUpgradeable {
                 minStrategyShares: minStrategyShares,
                 strategy: strategy,
                 swapRoute: swapRoute,
-                swapData: swapData
+                swapData: swapData,
+                exchange: address(0)
             });
 
         nftId = this.openPosition(params);

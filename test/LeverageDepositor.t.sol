@@ -84,7 +84,8 @@ contract LeverageDepositorTest is BaseTest {
             minStrategyShares: 0,
             strategy: ETHPLUSETH_STRATEGY,
             swapRoute: SwapManager.SwapRoute.UNISWAPV3,
-            swapData: payload
+            swapData: payload,
+            exchange: address(0)
         });
     
         vm.expectRevert("SafeERC20: low-level call failed");

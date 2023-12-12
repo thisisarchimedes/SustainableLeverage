@@ -29,7 +29,8 @@ contract OpenPositionTest is BaseTest {
             minStrategyShares: 0,
             strategy: ETHPLUSETH_STRATEGY,
             swapRoute: SwapManager.SwapRoute.UNISWAPV3,
-            swapData: payload
+            swapData: payload,
+            exchange: address(0)
         });
          
         vm.expectRevert();
@@ -49,7 +50,8 @@ contract OpenPositionTest is BaseTest {
             minStrategyShares: 0,
             strategy: ETHPLUSETH_STRATEGY,
             swapRoute: SwapManager.SwapRoute.UNISWAPV3,
-            swapData: payload
+            swapData: payload,
+            exchange: address(0)
         });
         vm.expectRevert(ErrorsLeverageEngine.ExceedBorrowLimit.selector);
         allContracts.positionOpener.openPosition(params);
@@ -113,7 +115,8 @@ contract OpenPositionTest is BaseTest {
             minStrategyShares: 0,
             strategy: ETHPLUSETH_STRATEGY,
             swapRoute: SwapManager.SwapRoute.UNISWAPV3,
-            swapData: getWBTCWETHUniswapPayload() 
+            swapData: getWBTCWETHUniswapPayload(),
+            exchange: address(0) 
         });
         uint256 previewShareNumber = allContracts.positionOpener.previewOpenPosition(params);
     
@@ -132,7 +135,8 @@ contract OpenPositionTest is BaseTest {
             minStrategyShares: 0,
             strategy: FRAXBPALUSD_STRATEGY,
             swapRoute: SwapManager.SwapRoute.UNISWAPV3,
-            swapData: getWBTCUSDCUniswapPayload() 
+            swapData: getWBTCUSDCUniswapPayload(),
+            exchange: address(0) 
         });
         uint256 previewShareNumber = allContracts.positionOpener.previewOpenPosition(params);
     
