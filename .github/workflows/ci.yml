@@ -142,6 +142,7 @@ jobs:
         run: |
           ls -alh deployments/
           python script/prep_addresses_json.py
+          ls -alh deployments/
           aws s3 cp deployments/1-deployments.json s3://smart-contract-backend-config/addresses/tenderly_fork_leverage_addresses.json --acl public-read
           aws s3 cp deployments/demo_rpc.json s3://smart-contract-backend-config/tenderly_fork_rpc.json --acl public-read
 
@@ -155,6 +156,3 @@ jobs:
         run: |
           echo "## Deploy result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
-
-
-          forge script script/DeployContracts.s.sol --fork-url https://rpc.tenderly.co/fork/e7270bef-7d0e-47f6-b2f0-d400256e64a3 --broadcast -vvvvv --slow --skip-simulation
