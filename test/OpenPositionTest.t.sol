@@ -56,7 +56,6 @@ contract OpenPositionTest is BaseTest {
     }
 
     function test_ShouldAbleToOpenPositionForWETHStrategy() external {
-        deal(WBTC, address(this), 10e8);
         ERC20(WBTC).approve(address(allContracts.positionOpener), 10e8);
 
         uint256 nftId = openETHBasedPosition(5e8, 15e8);
