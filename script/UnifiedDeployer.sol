@@ -47,6 +47,7 @@ struct AllContracts {
     ChainlinkOracle ethUsdOracle;
     ChainlinkOracle btcEthOracle;
     ChainlinkOracle wbtcUsdOracle;
+    ChainlinkOracle usdcUsdOracle;
     UniV3SwapAdapter uniV3SwapAdapter;
 }
 
@@ -106,6 +107,8 @@ contract UnifiedDeployer {
         allContracts.ethUsdOracle = new ChainlinkOracle(ETHUSDORACLE);
         allContracts.btcEthOracle = new ChainlinkOracle(BTCETHORACLE);
         allContracts.wbtcUsdOracle = new ChainlinkOracle(WBTCUSDORACLE);
+        allContracts.usdcUsdOracle = new ChainlinkOracle(USDCUSDORACLE);
+
     }
 
     function allowStrategiesWithDepositor() internal {
@@ -204,9 +207,10 @@ contract UnifiedDeployer {
         );
         OracleManager proxyOracleManager = OracleManager(addrOracleManager);
 
-        proxyOracleManager.setUSDOracle(WBTC, new ChainlinkOracle(WBTCUSDORACLE));
-        proxyOracleManager.setUSDOracle(WETH, new ChainlinkOracle(ETHUSDORACLE));
-        proxyOracleManager.setUSDOracle(USDC, new ChainlinkOracle(USDCUSDORACLE));
+        proxyOracleManager.setUSDOracle(WBTC, allContracts.wbtcUsdOracle);
+        proxyOracleManager.setUSDOracle(WETH, allContracts.ethUsdOracle);
+        proxyOracleManager.setUSDOracle(USDC, allContracts.usdcUsdOracle);
+        proxyOracleManager.setETHOracle(WBTC, allContracts.btcEthOracle);
 
         return addrOracleManager;
     }

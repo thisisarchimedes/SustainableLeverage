@@ -124,7 +124,7 @@ contract OpenPositionTest is BaseTest {
         assertAlmostEq(previewShareNumber, actualShareNumber, delta);
     }
 
-        function test_previewOpenPositionUSDCStrategy() external {
+    function test_previewOpenPositionUSDCStrategy() external {
 
         PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
             collateralAmount: 5e8,
