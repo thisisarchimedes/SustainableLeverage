@@ -42,6 +42,8 @@
 [] Consider moving PositionLedger and PositionToken under LeveragedStrategy
 [] Consider hiding OracleManager under LeveragedStrategy
 
+[] Search all files for TODOs
+
 # Comments
 
 - Liquidation buffer is same decimal as debt (WBTC - 8 decimals), and is represented as >1 number (1.1, 1.2, 1.3 etc)

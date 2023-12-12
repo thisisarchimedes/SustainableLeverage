@@ -20,7 +20,7 @@ contract ProtocolParameters is AccessControlUpgradeable {
 
     uint256 private exitFee = 50; // Fee (taken from profits) taken after returning all debt during exit by user in 10000 (For example: 50 is 0.5%)
     address private feeCollector; // Address that collects fees
-    uint8 private minPositionDurationInBlocks = 12; // Cool down period for user in blocks before allowing close position
+    uint8 private minPositionDurationInBlocks = 0; // TODO: Change back to 12 - Cool down period for user in blocks before allowing close position
 
     function initialize() external initializer {
         __AccessControl_init();
