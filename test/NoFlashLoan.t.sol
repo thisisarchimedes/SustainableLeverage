@@ -33,6 +33,9 @@ contract NoFlashLoanTest is BaseTest {
 
     function testCantOpenAndClosePositionAtTheSameBlock() external {
 
+        uint8 minBlockDuration = 50;
+        allContracts.protocolParameters.setMinPositionDurationInBlocks(minBlockDuration);
+
         uint256 collateralAmount = 5e8;
         uint256 borrowAmount = 15e8;
 
@@ -59,7 +62,7 @@ contract NoFlashLoanTest is BaseTest {
         uint256 nftId = openETHBasedPosition(collateralAmount, borrowAmount);
         assertEq(block.number, currentBlockNumber);
 
-        vm.roll(block.number + minBlockDuration);
+        vm.roll(block.number + minBlockDuration - 1);
         bytes memory payload = getWETHWBTCUniswapPayload();
         vm.expectRevert(ErrorsLeverageEngine.PositionRecentlyOpened.selector);
         allContracts.positionCloser.closePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
