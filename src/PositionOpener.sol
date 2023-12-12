@@ -190,6 +190,6 @@ contract PositionOpener is AccessControlUpgradeable {
             revert ErrorsLeverageEngine.ExceedBorrowLimit();
         }
 
-        return 123; //leveragedStrategy.getEstimateSharesForWBTCDeposit(params.strategy, params.collateralAmount + params.wbtcToBorrow);
+        return leveragedStrategy.getEstimateSharesForWBTCDeposit(params.strategy, params.collateralAmount + params.wbtcToBorrow);
     }
 }
