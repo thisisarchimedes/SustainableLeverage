@@ -125,8 +125,8 @@ contract PositionCloser is AccessControlUpgradeable {
             revert ErrorsLeverageEngine.PositionNotLive();
         }
 
-        if (isPositionOpenedTooRecently(nftId)) {
-            revert ErrorsLeverageEngine.PositionRecentlyOpened();
+        if (isMinPositionDurationPassed(nftId) == false) {
+            revert ErrorsLeverageEngine.PositionMustLiveForMinDuration();
         }
 
 
@@ -162,8 +162,8 @@ contract PositionCloser is AccessControlUpgradeable {
         );
     }
 
-    function isPositionOpenedTooRecently(uint256 nftId) internal view returns (bool) {
-        return block.number < positionLedger.getOpenBlock(nftId) + protocolParameters.getMinPositionDurationInBlocks();
+    function isMinPositionDurationPassed(uint256 nftId) internal view returns (bool) {
+        return block.number >= positionLedger.getOpenBlock(nftId) + protocolParameters.getMinPositionDurationInBlocks();
     }
 
     ///////////// Monitor functions /////////////

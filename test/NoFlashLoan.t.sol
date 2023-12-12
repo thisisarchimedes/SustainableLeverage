@@ -44,7 +44,7 @@ contract NoFlashLoanTest is BaseTest {
         assertEq(block.number, currentBlockNumber);
 
         bytes memory payload = getUSDCWBTCUniswapPayload();
-        vm.expectRevert(ErrorsLeverageEngine.PositionRecentlyOpened.selector);
+        vm.expectRevert(ErrorsLeverageEngine.PositionMustLiveForMinDuration.selector);
         allContracts.positionCloser.closePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
         
         assertEq(block.number, currentBlockNumber);
@@ -64,7 +64,7 @@ contract NoFlashLoanTest is BaseTest {
 
         vm.roll(block.number + minBlockDuration - 1);
         bytes memory payload = getWETHWBTCUniswapPayload();
-        vm.expectRevert(ErrorsLeverageEngine.PositionRecentlyOpened.selector);
+        vm.expectRevert(ErrorsLeverageEngine.PositionMustLiveForMinDuration.selector);
         allContracts.positionCloser.closePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
 
         if (allContracts.positionLedger.getPositionState(nftId) == PositionState.CLOSED) {
