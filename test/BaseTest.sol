@@ -62,7 +62,6 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
     }
 
     function openETHBasedPosition(uint256 collateralAmount, uint256 borrowAmount) internal returns (uint256 nftId) {
-
         deal(WBTC, address(this), collateralAmount);
         ERC20(WBTC).approve(address(allContracts.positionOpener), type(uint256).max);
 

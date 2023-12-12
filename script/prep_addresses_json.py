@@ -2,7 +2,7 @@ import json
 import os
 
 # Path to the deployments JSON and the output directory
-deployments_json_path = 'deployments/1-deployments.json'
+deployments_json_path = 'deployments/1337-deployments.json'
 output_directory = 'out/'
 
 # Read the deployments JSON
@@ -22,4 +22,3 @@ for deployment in deployments:
 # Write the updated JSON back to the file
 with open(deployments_json_path, 'w') as file:
     json.dump(deployments, file, indent=4)
-

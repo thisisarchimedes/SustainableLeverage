@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.21;
 
-import { PositionLedgerLib } from "../src/PositionLedgerLib.sol";
-import { LeverageEngine } from "../src/LeverageEngine.sol";
-import { PositionToken } from "../src/PositionToken.sol";
-import "../src/LeverageDepositor.sol";
+import { PositionOpener } from "src/PositionOpener.sol";
+import { PositionToken } from "src/PositionToken.sol";
+import "src/LeverageDepositor.sol";
 import { WBTCVault } from "src/WBTCVault.sol";
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import { SwapAdapter } from "../src/SwapAdapter.sol";
+import { SwapManager } from "src/SwapManager.sol";
 import { console2 } from "forge-std/console2.sol";
 import { Script } from "forge-std/Script.sol";
+import { UniV3SwapAdapter } from "src/ports/swap_adapters/UniV3SwapAdapter.sol";
 
-contract DeployContracts is Script {
+contract OpenPosition is Script {
     /* solhint-disable  */
-    LeverageEngine internal leverageEngine;
+    PositionOpener internal positionOpener;
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -26,21 +26,28 @@ contract DeployContracts is Script {
     address public constant FRAXBPALUSD_STRATEGY = 0xB888b8204Df31B54728e963ebA5465A95b695103;
 
     function run() public {
-        address broadcaster = vm.rememberKey(0xb7f3cdcc39c740a28a063f57af7583d3bea1b4473772f4a43721777680475740); // THIS
+        address broadcaster = vm.rememberKey(0xfb3e889306aafa69793a67e74c09e657eec07c4c552543db26f3158cf53c2a57); // THIS
             // IS DUMMY KEY
         vm.startBroadcast(broadcaster);
-        leverageEngine = LeverageEngine(0xCafC6f2E7aDA52De13B3553Cb4D4f9E25c7Ad335); // UPDATE THIS WITH LATEST ADDRESS
+        positionOpener = PositionOpener(0xe02A762aD1d7B3137ae1531746d0fF53Fbe3744F); // UPDATE THIS WITH LATEST ADDRESS
 
-        ERC20(WBTC).approve(address(leverageEngine), 1e8);
+        ERC20(WBTC).approve(address(positionOpener), type(uint256).max);
+
         bytes memory payload = abi.encode(
-            SwapAdapter.UniswapV3Data({
-                path: abi.encodePacked(WBTC, uint24(500), WETH, uint24(3000), USDC),
+            UniV3SwapAdapter.UniswapV3Data({
+                path: abi.encodePacked(WBTC, uint24(3000), WETH),
                 deadline: block.timestamp + 1000
             })
         );
-        leverageEngine.openPosition(
-            0.1e8, 0.1e8, FRAXBPALUSD_STRATEGY, 0, SwapAdapter.SwapRoute.UNISWAPV3, payload, address(0)
-        );
+
+        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+            collateralAmount: 0.1e8,
+            wbtcToBorrow: 0.1e8,
+            minStrategyShares: 0,
+            strategy: ETHPLUSETH_STRATEGY,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payload
+        });
 
         if (block.chainid == 1337) {
             bytes32 storageSlot = keccak256(abi.encode(address(broadcaster), 0));
