@@ -17,4 +17,5 @@ library ErrorsLeverageEngine {
     error InsufficientFunds();
     error PositionHasNoBalance();
     error SwapAdapterAlreadySet();
+    error PositionMustLiveForMinDuration();
 }

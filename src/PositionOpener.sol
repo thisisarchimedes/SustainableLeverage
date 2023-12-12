@@ -37,6 +37,7 @@ contract PositionOpener is AccessControlUpgradeable {
         uint256 minStrategyShares;
         SwapManager.SwapRoute swapRoute;
         bytes swapData;
+        address exchange;
     }
 
     uint256 internal constant BASE_DENOMINATOR = 10_000;
@@ -88,7 +89,8 @@ contract PositionOpener is AccessControlUpgradeable {
                 minStrategyShares: minStrategyShares,
                 strategy: strategy,
                 swapRoute: swapRoute,
-                swapData: swapData
+                swapData: swapData,
+                exchange: address(0)
             });
 
         nftId = this.openPosition(params);
@@ -169,7 +171,8 @@ contract PositionOpener is AccessControlUpgradeable {
         newEntry.strategyAddress = params.strategy;
         newEntry.strategyShares = sharesReceived;
         newEntry.wbtcDebtAmount = params.wbtcToBorrow;
-        newEntry.positionExpirationBlock = block.number + leveragedStrategy.getPositionLifetime(params.strategy);
+        newEntry.poistionOpenBlock = block.number;
+        newEntry.positionExpirationBlock = newEntry.poistionOpenBlock + leveragedStrategy.getPositionLifetime(params.strategy);
         newEntry.liquidationBuffer = leveragedStrategy.getLiquidationBuffer(params.strategy);
         newEntry.state = PositionState.LIVE;
         uint256 nftId = positionToken.mint(msg.sender);

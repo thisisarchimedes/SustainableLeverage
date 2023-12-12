@@ -20,6 +20,7 @@ contract ProtocolParameters is AccessControlUpgradeable {
 
     uint256 private exitFee = 50; // Fee (taken from profits) taken after returning all debt during exit by user in 10000 (For example: 50 is 0.5%)
     address private feeCollector; // Address that collects fees
+    uint8 private minPositionDurationInBlocks = 0; // TODO: Change back to 12 - Cool down period for user in blocks before allowing close position
 
     function initialize() external initializer {
         __AccessControl_init();
@@ -36,12 +37,22 @@ contract ProtocolParameters is AccessControlUpgradeable {
         emit EventsLeverageEngine.FeeCollectorUpdated(collector);
     }
 
-    function getExitFee() public view returns (uint256) {
+    function setMinPositionDurationInBlocks(uint8 blockCount) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
+        require(blockCount > 1, "Block count must be greater than 1");
+        require(blockCount < 6_400, "Block count must be less than ~1 day");
+        minPositionDurationInBlocks = blockCount;
+    }
+
+    function getExitFee() external view returns (uint256) {
         return exitFee;
     }
 
-    function getFeeCollector() public view returns (address) {
+    function getFeeCollector() external view returns (address) {
         return feeCollector;
+    }
+
+    function getMinPositionDurationInBlocks() external view returns (uint8) {
+        return minPositionDurationInBlocks;
     }
 
 }

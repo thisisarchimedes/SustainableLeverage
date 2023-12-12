@@ -25,7 +25,7 @@
 [X] Decouple the contracts initalization and have the same code running in Deploy and tests
 
 [X] setOracle should get 2 tokens also getOracle price should get two tokens + add getOracleDecimals
-[] add no immediate close position (force 50 block cool down)
+[X] add no immediate close position (force X block cool down)
 [] test_DetectPoolManipulation implement
 
 [] Test: external cannot call ADMIN, INTERNAL CONTRACT and MONITOR functions
@@ -41,6 +41,8 @@
 
 [] Consider moving PositionLedger and PositionToken under LeveragedStrategy
 [] Consider hiding OracleManager under LeveragedStrategy
+
+[] Search all files for TODOs
 
 # Comments
 

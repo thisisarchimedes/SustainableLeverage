@@ -34,6 +34,7 @@ import { UniV3SwapAdapter } from "src/ports/swap_adapters/UniV3SwapAdapter.sol";
 contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
     using SafeERC20 for IERC20;
 
+    uint256 constant public TWO_DAYS = 6_400 * 2;
     address feeCollector = makeAddr("feeCollector");
 
     function initFork() internal {
@@ -72,7 +73,8 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
             minStrategyShares: 0,
             strategy: ETHPLUSETH_STRATEGY,
             swapRoute: SwapManager.SwapRoute.UNISWAPV3,
-            swapData: payload
+            swapData: payload,
+            exchange: address(0)
         });
          
         return allContracts.positionOpener.openPosition(params);
@@ -178,8 +180,8 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
     }
 
     function closeETHBasedPosition(uint256 nftId) internal {
+        vm.roll(block.number + TWO_DAYS);
         bytes memory payload = getWETHWBTCUniswapPayload();
-
         allContracts.positionCloser.closePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
     }
 
@@ -206,7 +208,8 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
             minStrategyShares: 0,
             strategy: FRAXBPALUSD_STRATEGY,
             swapRoute: SwapManager.SwapRoute.UNISWAPV3,
-            swapData: payload
+            swapData: payload,
+            exchange: address(0)
         });
          
         return allContracts.positionOpener.openPosition(params);
@@ -221,6 +224,12 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
         );
 
         return payload;
+    }
+
+      function closeUSDCBasedPosition(uint256 nftId) internal {
+        vm.roll(block.number + TWO_DAYS);
+        bytes memory payload = getUSDCWBTCUniswapPayload();
+        allContracts.positionCloser.closePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
     }
 
     function getUSDCWBTCUniswapPayload() internal view returns (bytes memory) {
