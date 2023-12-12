@@ -2,7 +2,7 @@ import json
 import os
 
 # Path to the deployments JSON and the output directory
-deployments_json_path = 'deployments/1-deployments.json'
+deployments_json_path = 'deployments/1337-deployments.json'
 output_directory = 'out/'
 
 # Read the deployments JSON
