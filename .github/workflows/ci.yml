@@ -140,15 +140,10 @@ jobs:
 
       - name: "Updating AWS S3 bucket with the contract addresses"
         run: |
-          python script/prep_addresses_json.py
           aws s3 cp deployments/1337-deployments.json s3://smart-contract-backend-config/addresses/tenderly_fork_leverage_addresses.json --acl public-read
+          python script/prep_addresses_json.py
+          aws s3 cp deployments/1337-deployments.json s3://smart-contract-backend-config/abis/tenderly_fork_leverage_abis.json --acl public-read
           aws s3 cp deployments/demo_rpc.json s3://smart-contract-backend-config/tenderly_fork_rpc.json --acl public-read
-
-      - name: "Commit the deployment changes"
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: Updating deployment.json address file
-          push_options: --force
 
       - name: "Add deploy summary"
         run: |
