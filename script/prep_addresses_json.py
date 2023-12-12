@@ -22,4 +22,3 @@ for deployment in deployments:
 # Write the updated JSON back to the file
 with open(deployments_json_path, 'w') as file:
     json.dump(deployments, file, indent=4)
-
