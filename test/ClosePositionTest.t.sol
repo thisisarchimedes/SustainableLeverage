@@ -36,7 +36,7 @@ contract ClosePositionTest is BaseTest {
         
         allContracts.positionToken.transferFrom(address(this), positionReceiver, 0);
         
-        vm.roll(block.number + 2 days);
+        vm.roll(block.number + TWO_DAYS);
         vm.expectRevert(ErrorsLeverageEngine.NotOwner.selector);
         allContracts.positionCloser.closePosition(0, 0, SwapManager.SwapRoute.UNISWAPV3, "", address(0));
     }
@@ -50,7 +50,7 @@ contract ClosePositionTest is BaseTest {
                 deadline: block.timestamp + 1000
             })
         );
-        vm.roll(block.number + 2 days);
+        vm.roll(block.number + TWO_DAYS);
         vm.expectRevert(ErrorsLeverageEngine.NotEnoughTokensReceived.selector);
         allContracts.positionCloser.closePosition(0, 5e8, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
     }
@@ -64,7 +64,7 @@ contract ClosePositionTest is BaseTest {
                 deadline: block.timestamp + 1000
             })
         );
-        vm.roll(block.number + 2 days);
+        vm.roll(block.number + TWO_DAYS);
         allContracts.positionCloser.closePosition(0, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
         vm.expectRevert();
         allContracts.positionCloser.closePosition(0, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
@@ -84,7 +84,7 @@ contract ClosePositionTest is BaseTest {
 
         uint256 wbtcBalanceBeforeClose = wbtc.balanceOf(address(allContracts.wbtcVault));
 
-        vm.roll(block.number + 2 days);
+        vm.roll(block.number + TWO_DAYS);
         allContracts.positionCloser.closePosition(0, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
         uint256 wbtcBalanceAfterClose = wbtc.balanceOf(address(allContracts.wbtcVault));
         LedgerEntry memory position = allContracts.positionLedger.getPosition(0);

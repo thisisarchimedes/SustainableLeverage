@@ -39,7 +39,7 @@ contract ProtocolParameters is AccessControlUpgradeable {
 
     function setMinPositionDurationInBlocks(uint8 blockCount) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
         require(blockCount > 1, "Block count must be greater than 1");
-        require(blockCount < 1 days, "Block count must be less than 1 day");
+        require(blockCount < 6_400, "Block count must be less than ~1 day");
         minPositionDurationInBlocks = blockCount;
     }
 
