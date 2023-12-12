@@ -37,6 +37,7 @@ contract PositionOpener is AccessControlUpgradeable {
         uint256 minStrategyShares;
         SwapManager.SwapRoute swapRoute;
         bytes swapData;
+        address exchange;
     }
 
     uint256 internal constant BASE_DENOMINATOR = 10_000;
