@@ -153,5 +153,3 @@ jobs:
         run: |
           echo "## Deploy result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
-
-  
