@@ -89,7 +89,7 @@ jobs:
           echo "## Tests result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
-  deploy_to_test:
+  deploy_to_test_node:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: "ubuntu-latest"
     permissions: "write-all"
@@ -140,9 +140,9 @@ jobs:
 
       - name: "Updating AWS S3 bucket with the contract addresses"
         run: |
-          aws s3 cp deployments/1337-deployments.json s3://smart-contract-backend-config/addresses/test_fork_leverage_addresses.json --acl public-read
+          aws s3 cp deployments/deployments.json s3://smart-contract-backend-config/addresses/test_fork_leverage_addresses.json --acl public-read
           python script/prep_addresses_json.py
-          aws s3 cp deployments/1337-deployments.json s3://smart-contract-backend-config/abis/test_fork_leverage_abis.json --acl public-read
+          aws s3 cp deployments/deployments.json s3://smart-contract-backend-config/abis/test_fork_leverage_abis.json --acl public-read
           aws s3 cp deployments/demo_rpc.json s3://smart-contract-backend-config/test_fork_rpc.json --acl public-read
 
       - name: "Add deploy summary"
@@ -150,57 +150,4 @@ jobs:
           echo "## Deploy result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
-  deploy_to_demo:
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      runs-on: "ubuntu-latest"
-      permissions: "write-all"
-      steps:
-        - name: "Check out the repo"
-          uses: "actions/checkout@v4"
-          with:
-            submodules: "recursive"
   
-        - name: "Install Foundry"
-          uses: "foundry-rs/foundry-toolchain@v1"
-  
-        - name: "Prepare Python environment"
-          uses: actions/setup-python@v4
-          with:
-            python-version: "3.10"
-  
-        - name: Install dependencies
-          run: |
-            python -m pip install --upgrade pip
-            pip install -r requirements.txt
-  
-        - name: Display Python version
-          run: python -c "import sys; print(sys.version)"
-  
-        - name: "Prep access to S3 bucket"
-          uses: aws-actions/configure-aws-credentials@v4
-          with:
-            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            aws-region: us-east-1
-  
-        - name: "Deploy the contracts to Tenderly fork demo environment"
-          run: |
-            forge script script/DeployContracts.s.sol --fork-url  ${{ vars.DEMO_RPC }} --broadcast -vvvvv --slow --skip-simulation
-  
-        - name: Create JSON file
-          run: |
-            echo '{
-              "rpc": "${{ vars.DEMO_RPC }}"
-              }' > deployments/demo_rpc.json
-  
-        - name: "Updating AWS S3 bucket with the contract addresses"
-          run: |
-            aws s3 cp deployments/1337-deployments.json s3://smart-contract-backend-config/addresses/tenderly_fork_leverage_addresses.json --acl public-read
-            python script/prep_addresses_json.py
-            aws s3 cp deployments/1337-deployments.json s3://smart-contract-backend-config/abis/tenderly_fork_leverage_abis.json --acl public-read
-            aws s3 cp deployments/demo_rpc.json s3://smart-contract-backend-config/tenderly_fork_rpc.json --acl public-read
-  
-        - name: "Add deploy summary"
-          run: |
-            echo "## Deploy result" >> $GITHUB_STEP_SUMMARY
-            echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
