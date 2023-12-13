@@ -100,6 +100,8 @@ contract UnifiedDeployer {
 
         allowStrategiesWithDepositor();
 
+        setStrategyConfig();
+
         admin = msg.sender;
     }
 
@@ -115,6 +117,19 @@ contract UnifiedDeployer {
         allContracts.leverageDepositor.allowStrategyWithDepositor(ETHPLUSETH_STRATEGY);
         allContracts.leverageDepositor.allowStrategyWithDepositor(FRAXBPALUSD_STRATEGY);
     }
+
+    function setStrategyConfig() internal {
+        LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
+            quota: 10_000e8,
+            maximumMultiplier: 3e8,
+            positionLifetime: 1000,
+            liquidationBuffer: 1.25e8,
+            liquidationFee: 0.02e8
+        });
+        allContracts.leveragedStrategy.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
+        allContracts.leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
+    }
+
 
     function deployProxyAndContracts() internal {
         allContracts.proxyAdmin = new ProxyAdmin(address(this));
@@ -171,18 +186,7 @@ contract UnifiedDeployer {
             address(implleveragedStrategys),
             address(allContracts.proxyAdmin)
         );
-        LeveragedStrategy proxyleveragedStrategys = LeveragedStrategy(addrleveragedStrategy);
-
-        LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
-            quota: 100e8,
-            maximumMultiplier: 3e8,
-            positionLifetime: 1000,
-            liquidationBuffer: 1.25e8,
-            liquidationFee: 0.02e8
-        });
-        proxyleveragedStrategys.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
-        proxyleveragedStrategys.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
-
+    
         return addrleveragedStrategy;
     }
 
