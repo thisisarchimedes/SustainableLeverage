@@ -4,7 +4,7 @@ import sys
 
 
 def set_wbtc_balance_of_vault(storageSlot, wbtc_address, amount):
-    aws_fork_url = "http://ec2-54-211-119-50.compute-1.amazonaws.com:8545"
+    aws_fork_url = "http://ec2-54-209-173-28.compute-1.amazonaws.com:8545"
     requests.post(
         url=aws_fork_url,
         json={
