@@ -69,36 +69,7 @@ contract PositionOpener is AccessControlUpgradeable {
         positionLedger = PositionLedger(dependencies.positionLedger);
     }
 
-    // TODO: remove this one 
-    function openPosition(
-        uint256 collateralAmount,
-        uint256 wbtcToBorrow,
-        address strategy,
-        uint256 minStrategyShares,
-        SwapManager.SwapRoute swapRoute,
-        bytes calldata swapData,
-        address exchange
-    )
-        external
-        returns (uint256 nftId)
-    {
-
-        OpenPositionParams memory params = PositionOpener.OpenPositionParams({
-                collateralAmount: collateralAmount,
-                wbtcToBorrow: wbtcToBorrow,
-                minStrategyShares: minStrategyShares,
-                strategy: strategy,
-                swapRoute: swapRoute,
-                swapData: swapData,
-                exchange: address(0)
-            });
-
-        nftId = this.openPosition(params);
-
-        return nftId;
-         
-    }
-    function openPosition(OpenPositionParams calldata params) public returns (uint256) {
+    function openPosition(OpenPositionParams calldata params) external returns (uint256) {
 
         if (leveragedStrategy.isCollateralToBorrowRatioAllowed(params.strategy, params.collateralAmount, params.wbtcToBorrow) == false) {
             revert ErrorsLeverageEngine.ExceedBorrowLimit();
