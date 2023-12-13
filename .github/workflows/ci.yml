@@ -128,11 +128,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: "Update setupFork script with the correct FORK PRC URL"
+      - name: "Update setupFork script with the correct FORK RPC URL"
         run: |
-          sed -i 's|AWS_FORK_URL|"${{ vars.AWS_FORK_URL }}"|' script/setupFork.py
-
-          cat script/setupFork.py 
+          sed -i 's|THE_FORK_URL|"${{ vars.AWS_FORK_URL }}"|' script/setupFork.py
 
       - name: "Deploy the contracts to EC2 test Hardhat environment"
         run: |

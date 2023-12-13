@@ -4,9 +4,10 @@ import sys
 
 
 def set_wbtc_balance_of_vault(storageSlot, wbtc_address, amount):
-    aws_fork_url = AWS_FORK_URL
+    # The line below automatiaclly updates by Github Actions using sed (this script is called via Foundry and doesn't have env vars)
+    fork_url = THE_FORK_URL
     requests.post(
-        url=aws_fork_url,
+        url=fork_url,
         json={
             "jsonrpc": "2.0",
             "method": "hardhat_setStorageAt",
