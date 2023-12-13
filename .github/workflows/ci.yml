@@ -130,7 +130,7 @@ jobs:
 
       - name: "Update setupFork script with the correct FORK PRC URL"
         run: |
-          sed -i 's|AWS_FORK_URL|"${{ vars.AWS_FORK_URL }}"|' script/my_script.py
+          sed -i 's|AWS_FORK_URL|"${{ vars.AWS_FORK_URL }}"|' script/setupFork.py
 
           cat script/setupFork.py 
 
