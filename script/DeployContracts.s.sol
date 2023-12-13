@@ -25,7 +25,7 @@ contract DeployContracts is BaseScript, UnifiedDeployer {
         
         CreateContractJSON();
 
-        postDeployconfig();
+        postDeployConfig();
     }
 
     function CreateContractJSON() internal {
@@ -69,27 +69,33 @@ contract DeployContracts is BaseScript, UnifiedDeployer {
         _writeDeploymentsToJson();
     }
 
-    function postDeployconfig() internal {
-        if (block.chainid == 1337) {
-            LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
-                quota: 10_000e8,
-                maximumMultiplier: 3e8,
-                positionLifetime: 1000,
-                liquidationBuffer: 1.25e8,
-                liquidationFee: 0.02e8
-            });
+    function postDeployConfig() internal {
 
-            allContracts.leveragedStrategy.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
-            bytes32 storageSlot = keccak256(abi.encode(address(allContracts.wbtcVault), 0));
-            uint256 amount = 1_000_000e8;
-            string[] memory inputs = new string[](5);
-            inputs[0] = "python";
-            inputs[1] = "script/setupFork.py";
-            inputs[2] = vm.toString(storageSlot);
-            inputs[3] = vm.toString(WBTC);
-            inputs[4] = vm.toString(bytes32(amount));
+        LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
+            quota: 10_000e8,
+            maximumMultiplier: 3e8,
+            positionLifetime: 1000,
+            liquidationBuffer: 1.25e8,
+            liquidationFee: 0.02e8
+        });
+        allContracts.leveragedStrategy.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
 
-            vm.ffi(inputs);
-        }
+        setWBTCBalanceForAddress(dependencyAddresses.wbtcVault);
+        setWBTCBalanceForAddress(broadcaster);
     }
+
+    function setWBTCBalanceForAddress(address dest) internal {
+
+        bytes32 storageSlot = keccak256(abi.encode(address(dest), 0));
+        uint256 amount = 1_000_000e8;
+        string[] memory inputs = new string[](5);
+        inputs[0] = "python";
+        inputs[1] = "script/setupFork.py";
+        inputs[2] = vm.toString(storageSlot);
+        inputs[3] = vm.toString(WBTC);
+        inputs[4] = vm.toString(bytes32(amount));
+
+        vm.ffi(inputs);
+    }
+    
 }
