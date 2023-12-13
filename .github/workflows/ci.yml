@@ -128,6 +128,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      - name: "Update setupFork script with the correct AWS FORK URL"
+        run: |
+          sed -i '' 's|AWS_FORK_URL|"${{ vars.AWS_FORK_URL }}"|' script/setupFork.py
+          cat script/setupFork.py 
+
       - name: "Deploy the contracts to Tenderly fork demo environment"
         run: |
           forge script script/DeployContracts.s.sol --fork-url  ${{ vars.AWS_FORK_URL }} --broadcast -vvvvv --slow --skip-simulation
