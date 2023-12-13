@@ -17,12 +17,7 @@ contract NoFlashLoanTest is BaseTest {
     using ProtocolRoles for *;
 
     function setUp() public virtual {
-        string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
-        if (bytes(alchemyApiKey).length == 0) {
-            return;
-        }
-
-        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
+        initFork();
         initTestFramework();
 
         deal(WBTC, address(allContracts.wbtcVault), 10_000_000e8);
@@ -43,14 +38,21 @@ contract NoFlashLoanTest is BaseTest {
         uint256 nftId = openUSDCBasedPosition(collateralAmount, borrowAmount);
         assertEq(block.number, currentBlockNumber);
 
-        bytes memory payload = getUSDCWBTCUniswapPayload();
+        PositionCloser.ClosePositionParams memory params = PositionCloser.ClosePositionParams({
+            nftId: nftId,
+            minWBTC: 5e8,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: getUSDCWBTCUniswapPayload(),
+            exchange: address(0)
+        });
+
         vm.expectRevert(ErrorsLeverageEngine.PositionMustLiveForMinDuration.selector);
-        allContracts.positionCloser.closePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
+        allContracts.positionCloser.closePosition(params);
         
         assertEq(block.number, currentBlockNumber);
     }
 
-    function testCantClosePositionBeforeMinBlockDuration() external {
+    function testNotAllowedToClosePositionBeforeMinBlockDuration() external {
 
         uint8 minBlockDuration = 50;
         allContracts.protocolParameters.setMinPositionDurationInBlocks(minBlockDuration);
@@ -63,9 +65,17 @@ contract NoFlashLoanTest is BaseTest {
         assertEq(block.number, currentBlockNumber);
 
         vm.roll(block.number + minBlockDuration - 1);
-        bytes memory payload = getWETHWBTCUniswapPayload();
+
+        PositionCloser.ClosePositionParams memory params = PositionCloser.ClosePositionParams({
+            nftId: nftId,
+            minWBTC: 0,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: getWETHWBTCUniswapPayload(),
+            exchange: address(0)
+        });
+
         vm.expectRevert(ErrorsLeverageEngine.PositionMustLiveForMinDuration.selector);
-        allContracts.positionCloser.closePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
+        allContracts.positionCloser.closePosition(params);
 
         if (allContracts.positionLedger.getPositionState(nftId) == PositionState.CLOSED) {
             assertEq(true, false);
@@ -84,9 +94,16 @@ contract NoFlashLoanTest is BaseTest {
         uint256 nftId = openETHBasedPosition(collateralAmount, borrowAmount);
         assertEq(block.number, currentBlockNumber);
 
-        bytes memory payload = getWETHWBTCUniswapPayload();
+        PositionCloser.ClosePositionParams memory params = PositionCloser.ClosePositionParams({
+            nftId: nftId,
+            minWBTC: 0,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: getWETHWBTCUniswapPayload(),
+            exchange: address(0)
+        });
+
         vm.roll(block.number + minBlockDuration + 1);
-        allContracts.positionCloser.closePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
+        allContracts.positionCloser.closePosition(params);
 
         if (allContracts.positionLedger.getPositionState(nftId) != PositionState.CLOSED) {
             assertEq(true, false);

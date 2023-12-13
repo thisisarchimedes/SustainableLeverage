@@ -18,13 +18,7 @@ contract ExpiredVaultTest is BaseTest {
 
     /// @dev A function invoked before each test case is run.
     function setUp() public {
-        string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
-        if (bytes(alchemyApiKey).length == 0) {
-            return;
-        }
-
-        // Otherwise, run the test against the mainnet fork.
-        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
+        initFork();
         initTestFramework();
         deal(WBTC, address(allContracts.wbtcVault), 100e8);
         ERC20(WBTC).approve(address(allContracts.positionOpener), type(uint256).max);

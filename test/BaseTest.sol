@@ -44,7 +44,7 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
         }
 
         // Otherwise, run the test against the mainnet fork.
-        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
+        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_779_780 });
 
     }
 
@@ -182,7 +182,15 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
     function closeETHBasedPosition(uint256 nftId) internal {
         vm.roll(block.number + TWO_DAYS);
         bytes memory payload = getWETHWBTCUniswapPayload();
-        allContracts.positionCloser.closePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
+
+        PositionCloser.ClosePositionParams memory params = PositionCloser.ClosePositionParams({
+            nftId: nftId,
+            minWBTC: 0,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payload,
+            exchange: address(0)
+        });
+        allContracts.positionCloser.closePosition(params);
     }
 
     function getWETHWBTCUniswapPayload() internal view returns (bytes memory) {
@@ -229,7 +237,16 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
       function closeUSDCBasedPosition(uint256 nftId) internal {
         vm.roll(block.number + TWO_DAYS);
         bytes memory payload = getUSDCWBTCUniswapPayload();
-        allContracts.positionCloser.closePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
+
+
+        PositionCloser.ClosePositionParams memory params = PositionCloser.ClosePositionParams({
+            nftId: nftId,
+            minWBTC: 0,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payload,
+            exchange: address(0)
+        });
+        allContracts.positionCloser.closePosition(params);
     }
 
     function getUSDCWBTCUniswapPayload() internal view returns (bytes memory) {

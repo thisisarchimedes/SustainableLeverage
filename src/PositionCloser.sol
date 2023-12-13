@@ -4,24 +4,24 @@ pragma solidity >=0.8.21;
 import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./interfaces/IERC20Detailed.sol";
-import { IWBTCVault } from "./interfaces/IWBTCVault.sol";
-import { IExpiredVault } from "./interfaces/IExpiredVault.sol";
-import { ILeverageDepositor } from "./interfaces/ILeverageDepositor.sol";
-import { IOracle } from "./interfaces/IOracle.sol";
-import { PositionToken } from "./PositionToken.sol";
+import "src/interfaces/IERC20Detailed.sol";
+import { IWBTCVault } from "src/interfaces/IWBTCVault.sol";
+import { IExpiredVault } from "src/interfaces/IExpiredVault.sol";
+import { ILeverageDepositor } from "src/interfaces/ILeverageDepositor.sol";
+import { IOracle } from "src/interfaces/IOracle.sol";
+import { PositionToken } from "src/PositionToken.sol";
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
 import { IMultiPoolStrategy } from "src/interfaces/IMultiPoolStrategy.sol";
 import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
-import { ProtocolRoles } from "./libs/ProtocolRoles.sol";
-import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
-import { ErrorsLeverageEngine } from "./libs/ErrorsLeverageEngine.sol";
-import { EventsLeverageEngine } from "./libs/EventsLeverageEngine.sol";
-import { LeveragedStrategy } from "./LeveragedStrategy.sol";
-import { ProtocolParameters } from "./ProtocolParameters.sol";
+import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
+import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
+import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
+import { LeveragedStrategy } from "src/LeveragedStrategy.sol";
+import { ProtocolParameters } from "src/ProtocolParameters.sol";
 import { OracleManager } from "src/OracleManager.sol";
 import { PositionLedger, LedgerEntry, PositionState } from "src/PositionLedger.sol";
-import { SwapManager } from "./SwapManager.sol";
+import { SwapManager } from "src/SwapManager.sol";
 
 
 /// @title LeverageEngine Contract
@@ -34,6 +34,14 @@ contract PositionCloser is AccessControlUpgradeable {
     using ProtocolRoles for *;
     using ErrorsLeverageEngine for *;
     using EventsLeverageEngine for *;
+
+    struct ClosePositionParams {
+        uint256 nftId;
+        uint256 minWBTC;
+        SwapManager.SwapRoute swapRoute;
+        bytes swapData;
+        address exchange;
+    }
 
     uint256 internal constant BASE_DENOMINATOR = 10_000;
     uint8 internal constant WBTC_DECIMALS = 8;
@@ -100,22 +108,40 @@ contract PositionCloser is AccessControlUpgradeable {
 
     ///////////// User functions /////////////
 
-   
-    /// @notice Allows a user to close their leverage position.
-    /// @param nftId The ID of the NFT representing the position.
-    /// @param minWBTC Minimum amount of WBTC expected after position closure.
-    /// @param swapRoute Route to be used for swapping
-    /// @param swapData Swap data for the swap adapter
-    /// @param exchange Exchange to be used for swapping
-    function closePosition(
+   /*
+   function closePosition(
         uint256 nftId,
         uint256 minWBTC,
         SwapManager.SwapRoute swapRoute,
         bytes calldata swapData,
         address exchange
     )
-        external
-    {
+   */
+
+    function closePosition(ClosePositionParams calldata params) external {      
+
+        revertIfUserNotAllowedToClosePosition(params.nftId);
+    
+        uint256 strategyTokenAmountRecieved = unwindPosition(params.nftId);
+        uint256 wbtcReceived = swapStrategyTokenToWbtc(strategyTokenAmountRecieved, params);
+
+        uint256 wbtcDebtAmount = positionLedger.getDebtAmount(params.nftId); 
+        if (wbtcReceived < wbtcDebtAmount) {
+            revert ErrorsLeverageEngine.NotEnoughWBTC();
+        }
+
+        wbtcVault.repayDebt(params.nftId, wbtcDebtAmount);
+
+        uint256 exitFeeAmount = collectExitFeesAfterDebt(wbtcReceived - wbtcDebtAmount);
+        
+        uint256 finalUserBalance = wbtcReceived - wbtcDebtAmount - exitFeeAmount;
+        sendBalanceToUser(finalUserBalance, params.minWBTC);
+                
+        recordPositionClosed(params.nftId, finalUserBalance);
+    }
+
+
+    function revertIfUserNotAllowedToClosePosition(uint256 nftId) internal view {
 
         if (positionToken.ownerOf(nftId) != msg.sender) {
             revert ErrorsLeverageEngine.NotOwner();
@@ -128,43 +154,67 @@ contract PositionCloser is AccessControlUpgradeable {
         if (isMinPositionDurationPassed(nftId) == false) {
             revert ErrorsLeverageEngine.PositionMustLiveForMinDuration();
         }
-
-
-        LedgerEntry memory position = positionLedger.getPosition(nftId);
-
-
-        uint256 wbtcDebtAmount = positionLedger.getDebtAmount(nftId);
-        
-        uint256 wbtcReceived = _unwindPosition(position, swapRoute, swapData, exchange);
-
-        if (wbtcReceived < wbtcDebtAmount) {
-            revert ErrorsLeverageEngine.NotEnoughWBTC();
-        }
-        wbtcVault.repay(nftId, wbtcDebtAmount);
-
-        // exit fees
-        uint256 exitFee = protocolParameters.getExitFee();
-        uint256 exitFeeAmount = (wbtcReceived - wbtcDebtAmount) * exitFee / BASE_DENOMINATOR;        
-        wbtc.transfer(protocolParameters.getFeeCollector(), exitFeeAmount);
-
-        // Send the rest of WBTC to the user
-        uint256 wbtcLeft = wbtcReceived - wbtcDebtAmount - exitFeeAmount;
-        if (wbtcLeft < minWBTC) revert ErrorsLeverageEngine.NotEnoughTokensReceived();
-        wbtc.transfer(msg.sender, wbtcLeft);
-
-        positionLedger.setPositionState(nftId, PositionState.CLOSED);
-        
-        positionToken.burn(nftId);
-
-        // emit event
-        emit EventsLeverageEngine.PositionClosed(
-            nftId, msg.sender, position.strategyAddress, wbtcLeft, wbtcDebtAmount, exitFeeAmount
-        );
     }
 
     function isMinPositionDurationPassed(uint256 nftId) internal view returns (bool) {
         return block.number >= positionLedger.getOpenBlock(nftId) + protocolParameters.getMinPositionDurationInBlocks();
     }
+
+     function unwindPosition(uint256 nftId) internal returns (uint256) {
+
+        address strategyAddress = positionLedger.getStrategyAddress(nftId);
+        uint256 strategyShares = positionLedger.getStrategyShares(nftId);
+
+        return leverageDepositor.redeem(strategyAddress, strategyShares);
+    }
+
+    function swapStrategyTokenToWbtc(uint256 strategyTokenAmount, ClosePositionParams calldata params) internal returns (uint256) {
+
+        address strategyAddress = positionLedger.getStrategyAddress(params.nftId);
+        address strategyUnderlyingToken = leveragedStrategy.getStrategyValueAsset(strategyAddress); 
+        ISwapAdapter swapAdapter = swapManager.getSwapAdapterForRoute(params.swapRoute);
+
+        ISwapAdapter.SwapWbtcParams memory swapParams = ISwapAdapter.SwapWbtcParams({
+            otherToken: IERC20(strategyUnderlyingToken),
+            fromAmount: strategyTokenAmount,
+            payload: params.swapData,
+            recipient: address(this)
+        });
+      
+        IERC20(strategyUnderlyingToken).transfer(address(swapAdapter), strategyTokenAmount); 
+        return swapAdapter.swapToWbtc(swapParams);
+    }
+
+    function collectExitFeesAfterDebt(uint256 wbtcAmountAfterDebt) internal returns(uint256) {
+        
+        uint256 exitFee = protocolParameters.getExitFee();
+        uint256 exitFeeAmount = wbtcAmountAfterDebt * exitFee / BASE_DENOMINATOR;        
+        wbtc.transfer(protocolParameters.getFeeCollector(), exitFeeAmount);
+
+        return exitFeeAmount;
+    }
+
+    function sendBalanceToUser(uint256 wbtcLeft, uint256 minWbtc) internal {
+        
+        if (wbtcLeft < minWbtc) {
+            revert ErrorsLeverageEngine.NotEnoughTokensReceived();
+        }
+        wbtc.transfer(msg.sender, wbtcLeft);
+    }
+
+    function recordPositionClosed(uint256 nftId, uint256 finalUserBalance) internal {
+
+        emit EventsLeverageEngine.PositionClosed(
+            nftId, 
+            msg.sender, 
+            finalUserBalance, 
+            positionLedger.getDebtAmount(nftId)
+        );
+
+        positionLedger.setPositionState(nftId, PositionState.CLOSED);
+        positionToken.burn(nftId);
+    }
+
 
     ///////////// Monitor functions /////////////
 
@@ -209,7 +259,7 @@ contract PositionCloser is AccessControlUpgradeable {
         if (wbtcReceived < minWBTC) revert ErrorsLeverageEngine.NotEnoughTokensReceived();
 
         // Return WBTC debt to WBTC vault
-        wbtcVault.repay(nftId, position.wbtcDebtAmount);
+        wbtcVault.repayDebt(nftId, position.wbtcDebtAmount);
 
         if (wbtcReceived > position.wbtcDebtAmount) {
             uint256 wbtcLeft = wbtcReceived - position.wbtcDebtAmount;
@@ -262,8 +312,7 @@ contract PositionCloser is AccessControlUpgradeable {
         // Emit event
         // No exit fee is charged for expired positions
         emit EventsLeverageEngine.PositionClosed(
-            nftID, sender, position.strategyAddress, receivedAmount, position.wbtcDebtAmount, 0
-        );
+            nftID, sender, receivedAmount, position.wbtcDebtAmount);
     }
 
     ///////////// View functions /////////////
@@ -275,35 +324,7 @@ contract PositionCloser is AccessControlUpgradeable {
 
     ///////////// Internal functions /////////////
 
-    function _unwindPosition(
-        LedgerEntry memory position,
-        SwapManager.SwapRoute swapRoute,
-        bytes calldata swapData,
-        address exchange
-    )
-        internal
-        returns (uint256 wbtcReceived)
-    {
-        // Unwind the position
-        uint256 assetsReceived = leverageDepositor.redeem(position.strategyAddress, position.strategyShares);
-        address strategyAsset = IMultiPoolStrategy(position.strategyAddress).asset();
-        
-        // Swap the assets to WBTC
-        ISwapAdapter swapAdapter = swapManager.getSwapAdapterForRoute(swapRoute);
-        
-        ISwapAdapter.SwapWbtcParams memory swapParams = ISwapAdapter.SwapWbtcParams({
-            otherToken: IERC20(strategyAsset),
-            fromAmount: assetsReceived,
-            payload: swapData,
-            recipient: address(this)
-        });
-
-        IERC20(strategyAsset).transfer(address(swapAdapter), assetsReceived);
-        wbtcReceived = swapAdapter.swapToWbtc(swapParams);
-            
-    }
-
-
+   
 
     /**
      * @notice Get the token prices from oracles and check if the received token amount is enough
@@ -330,5 +351,33 @@ contract PositionCloser is AccessControlUpgradeable {
                     * (10 ** (targetTokenDecimals + targetTokenOracleDecimals)) / 10 ** WBTC_DECIMALS
             ) / targetTokenPrice
         );
+    }
+
+     function _unwindPosition(
+        LedgerEntry memory position,
+        SwapManager.SwapRoute swapRoute,
+        bytes calldata swapData,
+        address exchange
+    )
+        internal
+        returns (uint256 wbtcReceived)
+    {
+        // Unwind the position
+        uint256 assetsReceived = leverageDepositor.redeem(position.strategyAddress, position.strategyShares);
+        address strategyAsset = IMultiPoolStrategy(position.strategyAddress).asset();
+        
+        // Swap the assets to WBTC
+        ISwapAdapter swapAdapter = swapManager.getSwapAdapterForRoute(swapRoute);
+        
+        ISwapAdapter.SwapWbtcParams memory swapParams = ISwapAdapter.SwapWbtcParams({
+            otherToken: IERC20(strategyAsset),
+            fromAmount: assetsReceived,
+            payload: swapData,
+            recipient: address(this)
+        });
+
+        IERC20(strategyAsset).transfer(address(swapAdapter), assetsReceived);
+        wbtcReceived = swapAdapter.swapToWbtc(swapParams);
+            
     }
 }

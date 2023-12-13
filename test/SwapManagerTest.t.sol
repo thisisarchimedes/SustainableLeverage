@@ -15,12 +15,7 @@ contract SwapManagerTest is BaseTest {
     FakeWBTCUSDCSwapAdapter fakeWBTCUSDCAdapter;
 
     function setUp() public virtual {
-        string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
-        if (bytes(alchemyApiKey).length == 0) {
-            return;
-        }
-
-        vm.createSelectFork({ urlOrAlias: "mainnet" });
+        initFork();
         initTestFramework();
 
         uniswapV3Adapter = allContracts.swapManager.getSwapAdapterForRoute(SwapManager.SwapRoute.UNISWAPV3);

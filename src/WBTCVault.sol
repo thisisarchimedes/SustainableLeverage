@@ -22,7 +22,7 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
         wbtc.transfer(to, amount);
     }
 
-    function repay(uint256 nftId, uint256 amount) external {
+    function repayDebt(uint256 nftId, uint256 amount) external {
         wbtc.safeTransferFrom(msg.sender, address(this), amount);
         emit Repay(nftId, amount);
     }
