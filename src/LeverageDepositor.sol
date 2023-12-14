@@ -22,6 +22,7 @@ contract LeverageDepositor is ILeverageDepositor, AccessControl {
 
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionOpener);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionCloser);
+        _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionLiquidator);
     }
 
     function allowStrategyWithDepositor(address strategy) external onlyRole(ProtocolRoles.ADMIN_ROLE) {

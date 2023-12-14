@@ -38,7 +38,7 @@ contract NoFlashLoanTest is BaseTest {
         uint256 nftId = openUSDCBasedPosition(collateralAmount, borrowAmount);
         assertEq(block.number, currentBlockNumber);
 
-        PositionCloser.ClosePositionParams memory params = PositionCloser.ClosePositionParams({
+        ClosePositionParams memory params = ClosePositionParams({
             nftId: nftId,
             minWBTC: 5e8,
             swapRoute: SwapManager.SwapRoute.UNISWAPV3,
@@ -66,7 +66,7 @@ contract NoFlashLoanTest is BaseTest {
 
         vm.roll(block.number + minBlockDuration - 1);
 
-        PositionCloser.ClosePositionParams memory params = PositionCloser.ClosePositionParams({
+        ClosePositionParams memory params = ClosePositionParams({
             nftId: nftId,
             minWBTC: 0,
             swapRoute: SwapManager.SwapRoute.UNISWAPV3,
@@ -94,7 +94,7 @@ contract NoFlashLoanTest is BaseTest {
         uint256 nftId = openETHBasedPosition(collateralAmount, borrowAmount);
         assertEq(block.number, currentBlockNumber);
 
-        PositionCloser.ClosePositionParams memory params = PositionCloser.ClosePositionParams({
+        ClosePositionParams memory params = ClosePositionParams({
             nftId: nftId,
             minWBTC: 0,
             swapRoute: SwapManager.SwapRoute.UNISWAPV3,

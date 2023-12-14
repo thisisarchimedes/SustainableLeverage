@@ -13,6 +13,8 @@ import { SwapManager } from "src/SwapManager.sol";
 import { console2 } from "forge-std/console2.sol";
 import { Script } from "forge-std/Script.sol";
 import { UniV3SwapAdapter } from "src/ports/swap_adapters/UniV3SwapAdapter.sol";
+import { OpenPositionParams } from "src/libs/PositionCallParams.sol";
+
 
 contract OpenPosition is Script {
     /* solhint-disable  */
@@ -41,7 +43,7 @@ contract OpenPosition is Script {
             })
         );
 
-        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+        OpenPositionParams memory params = OpenPositionParams({
             collateralAmount: 0.1e8,
             wbtcToBorrow: 0.1e8,
             minStrategyShares: 0,

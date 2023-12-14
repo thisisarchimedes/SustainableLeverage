@@ -78,7 +78,7 @@ contract LeverageDepositorTest is BaseTest {
 
         bytes memory payload = getWBTCWETHUniswapPayload(); 
 
-        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+        OpenPositionParams memory params = OpenPositionParams({
             collateralAmount: collateralAmount,
             wbtcToBorrow: borrowAmount,
             minStrategyShares: 0,

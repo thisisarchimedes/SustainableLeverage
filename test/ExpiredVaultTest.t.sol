@@ -26,13 +26,13 @@ contract ExpiredVaultTest is BaseTest {
     }
 
     function testDeposit() public {
-        vm.startPrank(address(allContracts.positionCloser));
+        vm.startPrank(address(allContracts.positionLiquidator));
 
         // Arrange
         uint256 depositAmount = 1e8; // 1 WBTC for simplicity
 
         // Act
-        deal(address(wbtc), address(allContracts.positionCloser), 100e8);
+        deal(address(wbtc), address(allContracts.positionLiquidator), 100e8);
         allContracts.expiredVault.deposit(depositAmount);
 
         // Assert
@@ -88,8 +88,8 @@ contract ExpiredVaultTest is BaseTest {
         // Arrange
         uint256 nftId = openETHBasedPosition(10e8, 30e8);
 
-        deal(WBTC, address(allContracts.positionCloser), 100e8);
-        vm.startPrank(address(allContracts.positionCloser));
+        deal(WBTC, address(allContracts.positionLiquidator), 100e8);
+        vm.startPrank(address(allContracts.positionLiquidator));
         allContracts.expiredVault.deposit(1e8);
         vm.stopPrank();
 

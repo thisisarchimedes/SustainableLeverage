@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
+import { PRBTest } from "@prb/test/PRBTest.sol";
+import { console2 } from "forge-std/console2.sol";
+import { StdCheats } from "forge-std/StdCheats.sol";
+
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 
 import { PositionToken } from "src/PositionToken.sol";
@@ -15,9 +19,6 @@ import { FakeOracle } from "src/ports/oracles/FakeOracle.sol";
 import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
 import { FakeWBTCUSDCSwapAdapter } from "src/ports/swap_adapters/FakeWBTCUSDCSwapAdapter.sol";
 import { ChainlinkOracle } from "src/ports/oracles/ChainlinkOracle.sol";
-import { PRBTest } from "@prb/test/PRBTest.sol";
-import { console2 } from "forge-std/console2.sol";
-import { StdCheats } from "forge-std/StdCheats.sol";
 import { ExpiredVault } from "src/ExpiredVault.sol";
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { ProtocolParameters } from "src/ProtocolParameters.sol";
@@ -29,6 +30,8 @@ import { LeveragedStrategy } from "src/LeveragedStrategy.sol";
 import { SwapManager } from "src/SwapManager.sol";
 import { UnifiedDeployer, AllContracts } from "script/UnifiedDeployer.sol";
 import { UniV3SwapAdapter } from "src/ports/swap_adapters/UniV3SwapAdapter.sol";
+import { OpenPositionParams, ClosePositionParams } from "src/libs/PositionCallParams.sol";
+
 
 
 contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
@@ -67,7 +70,7 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
 
         bytes memory payload = getWBTCWETHUniswapPayload(); 
 
-        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+        OpenPositionParams memory params = OpenPositionParams({
             collateralAmount: collateralAmount,
             wbtcToBorrow: borrowAmount,
             minStrategyShares: 0,
@@ -117,11 +120,18 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
 
         {
             // Liquidate position
-            allContracts.positionCloser.setMonitor(address(this));
+            allContracts.positionLiquidator.setMonitor(address(this));
             uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
-            allContracts.positionCloser.liquidatePosition(
-                nftId, 0, SwapManager.SwapRoute.UNISWAPV3, getWBTCWETHUniswapPayload(), address(0)
-            );
+
+            ClosePositionParams memory params = ClosePositionParams({
+                nftId: nftId,
+                minWBTC: 0,
+                swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+                swapData: getWBTCWETHUniswapPayload(),
+                exchange: address(0)
+            });
+            allContracts.positionLiquidator.liquidatePosition(params);
+                
             uint256 wbtcVaultBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
             debtPaidBack = wbtcVaultBalanceAfter - wbtcVaultBalanceBefore;
         }
@@ -156,12 +166,19 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
         }
 
         {
-            // Liquidate position
-            allContracts.positionCloser.setMonitor(address(this));
+            allContracts.positionLiquidator.setMonitor(address(this));
             uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
-            allContracts.positionCloser.liquidatePosition(
-                nftId, 0, SwapManager.SwapRoute.UNISWAPV3, getUSDCWBTCUniswapPayload(), address(0)
-            );
+
+            // Liquidate position
+            ClosePositionParams memory params = ClosePositionParams({
+                nftId: nftId,
+                minWBTC: 0,
+                swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+                swapData: getUSDCWBTCUniswapPayload(),
+                exchange: address(0)
+            });
+            allContracts.positionLiquidator.liquidatePosition(params);
+
             uint256 wbtcVaultBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
             debtPaidBack = wbtcVaultBalanceAfter - wbtcVaultBalanceBefore;
         }
@@ -183,7 +200,7 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
         vm.roll(block.number + TWO_DAYS);
         bytes memory payload = getWETHWBTCUniswapPayload();
 
-        PositionCloser.ClosePositionParams memory params = PositionCloser.ClosePositionParams({
+        ClosePositionParams memory params = ClosePositionParams({
             nftId: nftId,
             minWBTC: 0,
             swapRoute: SwapManager.SwapRoute.UNISWAPV3,
@@ -210,7 +227,7 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
 
         bytes memory payload = getWBTCUSDCUniswapPayload();
 
-        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+        OpenPositionParams memory params = OpenPositionParams({
             collateralAmount: collateralAmount,
             wbtcToBorrow: borrowAmount,
             minStrategyShares: 0,
@@ -239,7 +256,7 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
         bytes memory payload = getUSDCWBTCUniswapPayload();
 
 
-        PositionCloser.ClosePositionParams memory params = PositionCloser.ClosePositionParams({
+        ClosePositionParams memory params = ClosePositionParams({
             nftId: nftId,
             minWBTC: 0,
             swapRoute: SwapManager.SwapRoute.UNISWAPV3,

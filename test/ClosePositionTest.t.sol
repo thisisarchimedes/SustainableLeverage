@@ -30,7 +30,7 @@ contract ClosePositionTest is BaseTest {
         
         allContracts.positionToken.transferFrom(address(this), positionReceiver, 0);
         
-        PositionCloser.ClosePositionParams memory params = PositionCloser.ClosePositionParams({
+        ClosePositionParams memory params = ClosePositionParams({
             nftId: 0,
             minWBTC: 0,
             swapRoute: SwapManager.SwapRoute.UNISWAPV3,
@@ -53,7 +53,7 @@ contract ClosePositionTest is BaseTest {
             })
         );
 
-        PositionCloser.ClosePositionParams memory params = PositionCloser.ClosePositionParams({
+        ClosePositionParams memory params = ClosePositionParams({
             nftId: 0,
             minWBTC: 5e8,
             swapRoute: SwapManager.SwapRoute.UNISWAPV3,
@@ -76,7 +76,7 @@ contract ClosePositionTest is BaseTest {
             })
         );
 
-        PositionCloser.ClosePositionParams memory params = PositionCloser.ClosePositionParams({
+        ClosePositionParams memory params = ClosePositionParams({
             nftId: 0,
             minWBTC: 0,
             swapRoute: SwapManager.SwapRoute.UNISWAPV3,
@@ -106,7 +106,7 @@ contract ClosePositionTest is BaseTest {
 
         vm.roll(block.number + TWO_DAYS);
 
-        PositionCloser.ClosePositionParams memory params = PositionCloser.ClosePositionParams({
+        ClosePositionParams memory params = ClosePositionParams({
             nftId: 0,
             minWBTC: 0,
             swapRoute: SwapManager.SwapRoute.UNISWAPV3,

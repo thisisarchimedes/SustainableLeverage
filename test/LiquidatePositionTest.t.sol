@@ -97,7 +97,7 @@ contract LiquidatePositionTest is BaseTest {
 
         uint256 nftId = openETHBasedPosition(collateralAmount, borrowAmount);
 
-        assertEq(allContracts.leveragedStrategy.isPositionLiquidatable(nftId), false);
+        assertEq(allContracts.leveragedStrategy.isPositionLiquidatableEstimation(nftId), false);
     }
 
     function testIsPositionLiquidatable() external {
@@ -106,14 +106,14 @@ contract LiquidatePositionTest is BaseTest {
 
         uint256 nftId = openETHBasedPosition(collateralAmount, borrowAmount);
 
-        assertEq(allContracts.leveragedStrategy.isPositionLiquidatable(nftId), false);
+        assertEq(allContracts.leveragedStrategy.isPositionLiquidatableEstimation(nftId), false);
 
         FakeOracle fakeETHUSDOracle = new FakeOracle();
         fakeETHUSDOracle.updateFakePrice(100e8);
         fakeETHUSDOracle.updateDecimals(8);
         allContracts.oracleManager.setUSDOracle(WETH, fakeETHUSDOracle);
 
-        assertEq(allContracts.leveragedStrategy.isPositionLiquidatable(nftId), true);
+        assertEq(allContracts.leveragedStrategy.isPositionLiquidatableEstimation(nftId), true);
     }
 
     function testIsPositionLiquidatableRevertsOnClosedPosition() external {
@@ -125,12 +125,12 @@ contract LiquidatePositionTest is BaseTest {
         closeETHBasedPosition(nftId);
 
         vm.expectRevert(ErrorsLeverageEngine.PositionNotLive.selector);
-        allContracts.leveragedStrategy.isPositionLiquidatable(nftId);
+        allContracts.leveragedStrategy.isPositionLiquidatableEstimation(nftId);
     }
 
     function testIsPositionLiquidatableRevertsOnNonExistingNFT() external {
         vm.expectRevert(ErrorsLeverageEngine.PositionNotLive.selector);
-        allContracts.leveragedStrategy.isPositionLiquidatable(999_999);
+        allContracts.leveragedStrategy.isPositionLiquidatableEstimation(999_999);
     }
 
     function testLiquditionRevertsIfPositionIsClosed() external {
@@ -143,10 +143,18 @@ contract LiquidatePositionTest is BaseTest {
 
         bytes memory payloadClose = getWETHWBTCUniswapPayload();
 
-        allContracts.positionCloser.setMonitor(address(this));
+        allContracts.positionLiquidator.setMonitor(address(this));
 
-        vm.expectRevert(ErrorsLeverageEngine.PositionNotLive.selector);
-        allContracts.positionCloser.liquidatePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payloadClose, address(0));
+        ClosePositionParams memory params = ClosePositionParams({
+            nftId: nftId,
+            minWBTC: 0,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payloadClose,
+            exchange: address(0)
+        });
+        
+        vm.expectRevert(bytes("ERC4626: redeem more than max"));
+        allContracts.positionLiquidator.liquidatePosition(params);
     }
 
     function testLiquidationOfETHBasedPosition() external {
@@ -296,8 +304,16 @@ contract LiquidatePositionTest is BaseTest {
 
         uint256 nftId = openETHBasedPosition(collateralAmount, borrowAmount);
         
+        ClosePositionParams memory params = ClosePositionParams({
+            nftId: nftId,
+            minWBTC: 0,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: getWBTCWETHUniswapPayload(),
+            exchange: address(0)
+        });
+
         vm.prank(address(0));
         vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, 0, ProtocolRoles.MONITOR_ROLE));
-        allContracts.positionCloser.liquidatePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, getWBTCWETHUniswapPayload(), address(0));
+        allContracts.positionLiquidator.liquidatePosition(params);
     }
 }

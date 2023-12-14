@@ -12,6 +12,7 @@ struct DependencyAddresses {
     address oracleManager;
     address positionOpener;
     address positionCloser;
+    address positionLiquidator;
     address positionLedger;
     address swapManager;
 }

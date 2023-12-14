@@ -47,6 +47,7 @@ contract PositionLedger is AccessControlUpgradeable {
     function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionOpener);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionCloser);
+        _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionLiquidator);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.expiredVault);
     }
 

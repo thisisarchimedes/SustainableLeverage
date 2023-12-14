@@ -23,7 +23,7 @@ contract OpenPositionTest is BaseTest {
     function test_ShouldRevertWithArithmeticOverflow() external {
 
         bytes memory payload = getWBTCWETHUniswapPayload();
-        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+        OpenPositionParams memory params = OpenPositionParams({
             collateralAmount: 5e18,
             wbtcToBorrow: 5e18,
             minStrategyShares: 0,
@@ -44,7 +44,7 @@ contract OpenPositionTest is BaseTest {
         uint256 wbtcToBorrow = collateralAmount * (multiplier + 1);
 
         bytes memory payload = getWBTCWETHUniswapPayload();
-        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+        OpenPositionParams memory params = OpenPositionParams({
             collateralAmount: collateralAmount,
             wbtcToBorrow: wbtcToBorrow,
             minStrategyShares: 0,
@@ -108,7 +108,7 @@ contract OpenPositionTest is BaseTest {
 
     function test_previewOpenPositionETHStrategy() external {
 
-        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+        OpenPositionParams memory params = OpenPositionParams({
             collateralAmount: 5e8,
             wbtcToBorrow: 15e8,
             minStrategyShares: 0,
@@ -128,7 +128,7 @@ contract OpenPositionTest is BaseTest {
 
     function test_previewOpenPositionUSDCStrategy() external {
 
-        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+        OpenPositionParams memory params = OpenPositionParams({
             collateralAmount: 5e8,
             wbtcToBorrow: 15e8,
             minStrategyShares: 0,

@@ -22,6 +22,7 @@ import { ProtocolParameters } from "src/ProtocolParameters.sol";
 import { PositionLedger, LedgerEntry, PositionState } from "src/PositionLedger.sol";
 import { PositionOpener } from "src/PositionOpener.sol";
 import { PositionCloser } from "src/PositionCloser.sol";
+import { PositionLiquidator} from "src/PositionLiquidator.sol";
 import { OracleManager } from "src/OracleManager.sol";
 import { LeveragedStrategy } from "src/LeveragedStrategy.sol";
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
@@ -42,6 +43,7 @@ struct AllContracts {
     PositionLedger positionLedger;
     PositionOpener positionOpener;
     PositionCloser positionCloser;
+    PositionLiquidator positionLiquidator;
     OracleManager oracleManager;
     SwapManager swapManager;
     ChainlinkOracle ethUsdOracle;
@@ -95,6 +97,7 @@ contract UnifiedDeployer {
         allContracts.positionLedger.setDependencies(dependencyAddresses);
         allContracts.positionOpener.setDependencies(dependencyAddresses);
         allContracts.positionCloser.setDependencies(dependencyAddresses);
+        allContracts.positionLiquidator.setDependencies(dependencyAddresses);
         allContracts.positionToken.setDependencies(dependencyAddresses);
         allContracts.leverageDepositor.setDependencies(dependencyAddresses);
 
@@ -161,6 +164,9 @@ contract UnifiedDeployer {
 
         dependencyAddresses.positionCloser = createProxiedPositionCloser();
         allContracts.positionCloser = PositionCloser(dependencyAddresses.positionCloser);
+
+        dependencyAddresses.positionLiquidator = createProxiedPositionLiquidator();
+        allContracts.positionLiquidator = PositionLiquidator(dependencyAddresses.positionLiquidator);
 
         dependencyAddresses.positionLedger = createProxiedPositionLedger();
         allContracts.positionLedger = PositionLedger(dependencyAddresses.positionLedger);
@@ -235,6 +241,15 @@ contract UnifiedDeployer {
         );
 
         return addrPositionCloser;
+    }
+
+    function createProxiedPositionLiquidator() internal returns (address) {
+        PositionLiquidator implPositionLiquidator = new PositionLiquidator();
+        address addrPositionLiquidator = createUpgradableContract(
+            implPositionLiquidator.initialize.selector, address(implPositionLiquidator), address(allContracts.proxyAdmin)
+        );
+
+        return addrPositionLiquidator;
     }
 
     function createProxiedPositionLedger() internal returns (address) {
