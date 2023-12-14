@@ -20,6 +20,7 @@ contract ExpiredVaultTest is BaseTest {
     function setUp() public {
         initFork();
         initTestFramework();
+
         deal(WBTC, address(allContracts.wbtcVault), 100e8);
         ERC20(WBTC).approve(address(allContracts.positionOpener), type(uint256).max);
         ERC20(WBTC).approve(address(allContracts.positionCloser), type(uint256).max);
