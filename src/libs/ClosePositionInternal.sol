@@ -4,20 +4,28 @@ pragma solidity >=0.8.21;
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "src/interfaces/IERC20Detailed.sol";
+
 import { ILeverageDepositor } from "src/interfaces/ILeverageDepositor.sol";
-import { PositionLedger } from "src/PositionLedger.sol";
-import { ClosePositionParams } from "src/libs/PositionCallParams.sol";
-import { LeveragedStrategy } from "src/LeveragedStrategy.sol";
-import { SwapManager } from "src/SwapManager.sol";
+import { IWBTCVault } from "src/interfaces/IWBTCVault.sol";
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
+
+import { PositionLedger } from "src/internal/PositionLedger.sol";
+import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
+import { SwapManager } from "src/internal/SwapManager.sol";
+import { ProtocolParameters } from "src/internal/ProtocolParameters.sol";
+import { OracleManager } from "src/internal/OracleManager.sol";
+
+import { ClosePositionParams } from "src/libs/PositionCallParams.sol";
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
-import { PositionToken } from "src/PositionToken.sol";
-import { IWBTCVault } from "src/interfaces/IWBTCVault.sol";
-import { ProtocolParameters } from "src/ProtocolParameters.sol";
-import { OracleManager } from "src/OracleManager.sol";
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
+
+import { PositionToken } from "src/user_facing/PositionToken.sol";
+
+
+
+
 
 
 contract ClosePositionInternal {

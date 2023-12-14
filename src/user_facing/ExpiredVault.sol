@@ -6,19 +6,17 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 import "src/interfaces/IExpiredVault.sol";
-import { ProtocolRoles } from "./libs/ProtocolRoles.sol";
-import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
-import { PositionToken } from "./PositionToken.sol";
-import { PositionLedger, PositionState } from "src/PositionLedger.sol";
-import { ErrorsLeverageEngine } from "./libs/ErrorsLeverageEngine.sol";
-import { EventsLeverageEngine } from "./libs/EventsLeverageEngine.sol";
 
-import { console2 } from "forge-std/console2.sol";
+import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
+import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
+import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
 
-/// @title ExpiredVault Contract
-/// @notice This contract holds the expired positions' funds and enables withdrawal of funds by users
-/// against the NFT representing their position.
-/// @dev This contract is upgradeable
+import { PositionToken } from "src/user_facing/PositionToken.sol";
+
+import { PositionLedger, PositionState } from "src/internal/PositionLedger.sol";
+
+
 contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
     using ProtocolRoles for *;

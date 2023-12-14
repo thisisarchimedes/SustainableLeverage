@@ -4,24 +4,29 @@ pragma solidity >=0.8.21;
 import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 
+import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
+
 import "src/interfaces/IERC20Detailed.sol";
 import { IWBTCVault } from "src/interfaces/IWBTCVault.sol";
 import { IExpiredVault } from "src/interfaces/IExpiredVault.sol";
 import { ILeverageDepositor } from "src/interfaces/ILeverageDepositor.sol";
 import { IOracle } from "src/interfaces/IOracle.sol";
-import { PositionToken } from "src/PositionToken.sol";
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
-import { SwapManager } from "src/SwapManager.sol";
-import { AggregatorV3Interface } from "./interfaces/AggregatorV3Interface.sol";
+
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
-import { LeveragedStrategy } from "src/LeveragedStrategy.sol";
-import { ProtocolParameters } from "src/ProtocolParameters.sol";
-import { OracleManager } from "src/OracleManager.sol";
-import { PositionLedger, LedgerEntry, PositionState } from "src/PositionLedger.sol";
 import { OpenPositionParams } from "src/libs/PositionCallParams.sol";
+
+import { PositionToken } from "src/user_facing/PositionToken.sol";
+
+import { SwapManager } from "src/internal/SwapManager.sol";
+
+import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
+import { ProtocolParameters } from "src/internal/ProtocolParameters.sol";
+import { OracleManager } from "src/internal/OracleManager.sol";
+import { PositionLedger, LedgerEntry, PositionState } from "src/internal/PositionLedger.sol";
 
 
 /// @title PositionManager Contract

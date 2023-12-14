@@ -2,11 +2,14 @@
 pragma solidity >=0.8.21;
 
 import { console2 } from "forge-std/console2.sol";
-import "src/interfaces/IERC20Detailed.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+import "src/interfaces/IERC20Detailed.sol";
+
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
 import { ISwapRouterUniV3 } from "src/interfaces/ISwapRouterUniV3.sol";
-import { SwapManager } from "src/SwapManager.sol";
+
+import { SwapManager } from "src/internal/SwapManager.sol";
 
 
 //TODO: Implement swap on different exchanges such as curvev2 pools and balancer

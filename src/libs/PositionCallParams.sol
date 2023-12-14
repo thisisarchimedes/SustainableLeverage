@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21;
 
-import { SwapManager } from "src/SwapManager.sol";
+import { SwapManager } from "src/internal/SwapManager.sol";
 
 struct OpenPositionParams {
     uint256 collateralAmount;

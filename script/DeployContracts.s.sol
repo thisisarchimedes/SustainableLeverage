@@ -1,21 +1,25 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21;
 
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import { console2 } from "forge-std/console2.sol";
 
+import { BaseScript } from "script/Base.s.sol";
 import { UnifiedDeployer } from "script/UnifiedDeployer.sol";
 
-import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
-import { BaseScript } from "./Base.s.sol";
-import { PositionToken } from "src/PositionToken.sol";
-import { LeverageDepositor } from "src/LeverageDepositor.sol";
-import { WBTCVault } from "src/WBTCVault.sol";
+import { PositionToken } from "src/user_facing/PositionToken.sol";
+
+import { LeverageDepositor } from "src/internal/LeverageDepositor.sol";
+import { WBTCVault } from "src/internal/WBTCVault.sol";
+import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
+
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
+
 import { ChainlinkOracle } from "src/ports/oracles/ChainlinkOracle.sol";
-import { LeveragedStrategy } from "src/LeveragedStrategy.sol";
+
 
 contract DeployContracts is BaseScript, UnifiedDeployer {
     

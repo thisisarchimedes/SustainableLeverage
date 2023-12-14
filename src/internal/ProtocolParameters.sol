@@ -3,12 +3,12 @@ pragma solidity >=0.8.21;
 
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import { ProtocolRoles } from "./libs/ProtocolRoles.sol";
-import { ErrorsLeverageEngine } from "./libs/ErrorsLeverageEngine.sol";
-import { EventsLeverageEngine } from "./libs/EventsLeverageEngine.sol";
-import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
+
+import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
+import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
+import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 
 /// @title StrategyManager Contract
 /// @notice Only supports WBTC as collateral and borrowing asset

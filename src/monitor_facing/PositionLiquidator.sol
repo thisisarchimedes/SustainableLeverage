@@ -6,19 +6,21 @@ import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "src/interfaces/IERC20Detailed.sol";
 
 import { ClosePositionInternal } from "src/libs/ClosePositionInternal.sol";
+import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
+import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
+import { ClosePositionParams } from "src/libs/PositionCallParams.sol";
+import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
+
 import { IExpiredVault } from "src/interfaces/IExpiredVault.sol";
 import { IOracle } from "src/interfaces/IOracle.sol";
 import { IMultiPoolStrategy } from "src/interfaces/IMultiPoolStrategy.sol";
 import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
-import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
-import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
-import { LeveragedStrategy } from "src/LeveragedStrategy.sol";
-import { ProtocolParameters } from "src/ProtocolParameters.sol";
-import { OracleManager } from "src/OracleManager.sol";
-import { PositionLedger, LedgerEntry, PositionState } from "src/PositionLedger.sol";
-import { ClosePositionParams } from "src/libs/PositionCallParams.sol";
-import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
-import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
+
+import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
+import { ProtocolParameters } from "src/internal/ProtocolParameters.sol";
+import { OracleManager } from "src/internal/OracleManager.sol";
+import { PositionLedger, LedgerEntry, PositionState } from "src/internal/PositionLedger.sol";
 
 
 contract PositionLiquidator is ClosePositionInternal, AccessControlUpgradeable {
