@@ -16,15 +16,10 @@ contract ClosePositionTest is BaseTest {
     address positionReceiver = makeAddr("receiver");
 
     /// @dev A function invoked before each test case is run.
-    function setUp() public virtual {
-        string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
-        if (bytes(alchemyApiKey).length == 0) {
-            return;
-        }
-
-        // Otherwise, run the test against the mainnet fork.
-        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
+    function setUp() public virtual {    
+        initFork();    
         initTestFramework();
+
         deal(WBTC, address(allContracts.wbtcVault), 100e8);
     }
 
