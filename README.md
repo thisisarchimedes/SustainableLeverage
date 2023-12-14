@@ -17,7 +17,7 @@ $ forge build
 Deploy to Anvil:
 
 ```sh
-$ forge script script/Deploy.s.sol --broadcast --fork-url http://localhost:8545
+$ forge script script/Deploy.s.sol --broadcast --fork-url http://localhost:8545 --slow
 ```
 
 ### Test
