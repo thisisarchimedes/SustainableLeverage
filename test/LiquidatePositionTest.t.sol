@@ -18,6 +18,7 @@ contract LiquidatePositionTest is BaseTest {
 
 
     function setUp() public virtual {
+
         initFork();
         initTestFramework();
 
@@ -25,7 +26,6 @@ contract LiquidatePositionTest is BaseTest {
         deal(WBTC, address(this), 10_000_000e8);
         ERC20(WBTC).approve(address(allContracts.positionOpener), type(uint256).max);
         ERC20(WBTC).approve(address(allContracts.positionCloser), type(uint256).max);
-
     }
 
     function testSetLiquidationBufferPerStrategyTo10And15PercentAbove() external {

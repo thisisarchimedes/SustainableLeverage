@@ -16,9 +16,10 @@ contract ClosePositionTest is BaseTest {
     address positionReceiver = makeAddr("receiver");
 
     /// @dev A function invoked before each test case is run.
-    function setUp() public virtual {
-        initFork();
+    function setUp() public virtual {    
+        initFork();    
         initTestFramework();
+
         deal(WBTC, address(allContracts.wbtcVault), 100e8);
     }
 

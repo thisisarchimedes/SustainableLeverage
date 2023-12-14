@@ -17,6 +17,7 @@ contract NoFlashLoanTest is BaseTest {
     using ProtocolRoles for *;
 
     function setUp() public virtual {
+
         initFork();
         initTestFramework();
 
