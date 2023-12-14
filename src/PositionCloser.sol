@@ -226,6 +226,11 @@ contract PositionCloser is AccessControlUpgradeable {
         }
 
         positionLedger.setPositionState(nftId, PositionState.LIQUIDATED);
+
+        // TODO fix event
+        emit EventsLeverageEngine.PositionLiquidated(nftId, address(0), position.wbtcDebtAmount, 0, 0);
+    
+
     }
 
     ///////////// Expired Vault functions /////////////
