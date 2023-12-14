@@ -17,12 +17,8 @@ contract NoFlashLoanTest is BaseTest {
     using ProtocolRoles for *;
 
     function setUp() public virtual {
-        string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));
-        if (bytes(alchemyApiKey).length == 0) {
-            return;
-        }
-
-        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_369_197 });
+       
+        initFork();
         initTestFramework();
 
         deal(WBTC, address(allContracts.wbtcVault), 10_000_000e8);

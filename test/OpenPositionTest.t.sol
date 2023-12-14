@@ -17,6 +17,7 @@ contract OpenPositionTest is BaseTest {
     function setUp() public virtual {
         initFork();
         initTestFramework();
+
         deal(WBTC, address(allContracts.wbtcVault), 1000e8);
     }
 
