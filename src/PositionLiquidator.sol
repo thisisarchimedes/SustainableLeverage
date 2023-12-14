@@ -83,9 +83,19 @@ contract PositionLiquidator is ClosePositionInternal, AccessControlUpgradeable {
         
         uint256 feePaid = collectLiquidationFee(params, leftoverWbtc);
 
-        setNftIdVaultBalance(nftId, leftoverWbtc - feePaid);
+        uint256 userClaimableAmount = leftoverWbtc - feePaid;
+        setNftIdVaultBalance(nftId, userClaimableAmount);
 
         positionLedger.setPositionState(nftId, PositionState.LIQUIDATED);
+
+        uint256 wbtcDebtPaid = wbtcReceived - leftoverWbtc;  
+        emit EventsLeverageEngine.PositionLiquidated(
+            nftId,
+            positionLedger.getStrategyAddress(nftId),
+            wbtcDebtPaid,
+            userClaimableAmount,
+            feePaid
+        );
     }
 
     function revertIfNotAllowedToLiquidate(ClosePositionParams calldata params, uint256 wbtcReceived) internal view {
