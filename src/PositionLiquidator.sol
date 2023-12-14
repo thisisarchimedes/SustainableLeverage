@@ -2,47 +2,28 @@
 pragma solidity >=0.8.21;
 
 import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "src/interfaces/IERC20Detailed.sol"
-;
-import { IWBTCVault } from "src/interfaces/IWBTCVault.sol";
+import "src/interfaces/IERC20Detailed.sol";
+
+import { ClosePositionInternal } from "src/libs/ClosePositionInternal.sol";
 import { IExpiredVault } from "src/interfaces/IExpiredVault.sol";
-import { ILeverageDepositor } from "src/interfaces/ILeverageDepositor.sol";
 import { IOracle } from "src/interfaces/IOracle.sol";
-import { PositionToken } from "src/PositionToken.sol";
 import { IMultiPoolStrategy } from "src/interfaces/IMultiPoolStrategy.sol";
 import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
-import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
-import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
 import { LeveragedStrategy } from "src/LeveragedStrategy.sol";
 import { ProtocolParameters } from "src/ProtocolParameters.sol";
 import { OracleManager } from "src/OracleManager.sol";
 import { PositionLedger, LedgerEntry, PositionState } from "src/PositionLedger.sol";
 import { ClosePositionParams } from "src/libs/PositionCallParams.sol";
-import { ClosePositionInternal } from "src/libs/ClosePositionInternal.sol";
-import { SwapManager } from "src/SwapManager.sol";
-
+import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
 
 
 contract PositionLiquidator is ClosePositionInternal, AccessControlUpgradeable {
-    using SafeERC20 for IERC20;
-    using ProtocolRoles for *;
-    using ErrorsLeverageEngine for *;
-    using EventsLeverageEngine for *;
 
-    uint8 internal constant WBTC_DECIMALS = 8;
-    IERC20 internal constant wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
-
-    address public monitor;
-
-    IWBTCVault internal wbtcVault;
-    PositionToken internal positionToken;
-    ProtocolParameters internal protocolParameters;
-    OracleManager internal oracleManager;
-
+    address internal monitor;
     address internal expiredVault;
 
     constructor() {
@@ -58,18 +39,9 @@ contract PositionLiquidator is ClosePositionInternal, AccessControlUpgradeable {
 
         setDependenciesInternal(dependencies);
 
-        leverageDepositor = ILeverageDepositor(dependencies.leverageDepositor);
-        positionToken = PositionToken(dependencies.positionToken);
-        swapManager = SwapManager(dependencies.swapManager);
-        wbtcVault = IWBTCVault(dependencies.wbtcVault);
-        leveragedStrategy = LeveragedStrategy(dependencies.leveragedStrategy);
-        protocolParameters = ProtocolParameters(dependencies.protocolParameters);
-        oracleManager = OracleManager(dependencies.oracleManager);
-        positionLedger = PositionLedger(dependencies.positionLedger);
-
         setExpiredVault(dependencies.expiredVault);
+       
         wbtc.approve(dependencies.expiredVault, type(uint256).max);
-
         wbtc.approve(dependencies.wbtcVault, type(uint256).max);
     }  
 

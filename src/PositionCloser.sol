@@ -5,8 +5,9 @@ import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "src/interfaces/IERC20Detailed.sol";
+
+import { ClosePositionInternal } from "src/libs/ClosePositionInternal.sol";
 import { IWBTCVault } from "src/interfaces/IWBTCVault.sol";
-import { IExpiredVault } from "src/interfaces/IExpiredVault.sol";
 import { ILeverageDepositor } from "src/interfaces/ILeverageDepositor.sol";
 import { IOracle } from "src/interfaces/IOracle.sol";
 import { PositionToken } from "src/PositionToken.sol";
@@ -25,31 +26,9 @@ import { SwapManager } from "src/SwapManager.sol";
 import { ClosePositionParams } from "src/libs/PositionCallParams.sol";
 
 
-/// @title LeverageEngine Contract
-/// @notice This contract facilitates the management of strategy configurations and admin parameters for the Leverage
-/// Engine.
-/// @notice Leverage Engine is upgradable
+contract PositionCloser is AccessControlUpgradeable, ClosePositionInternal {
 
-contract PositionCloser is AccessControlUpgradeable {
-    using SafeERC20 for IERC20;
-    using ProtocolRoles for *;
-    using ErrorsLeverageEngine for *;
-    using EventsLeverageEngine for *;
-
-    uint256 internal constant BASE_DENOMINATOR = 10_000;
-    uint8 internal constant WBTC_DECIMALS = 8;
-    IERC20 internal constant wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
-
-    IWBTCVault internal wbtcVault;
-    PositionToken internal positionToken;
-    ILeverageDepositor internal leverageDepositor;
-    SwapManager internal swapManager;
-    LeveragedStrategy internal leveragedStrategy;
-    ProtocolParameters internal protocolParameters;
-    OracleManager internal oracleManager;
-    PositionLedger internal positionLedger;
-
-    address internal expiredVault;
+    uint256 internal constant EXIT_FEE_BASE_DENOMINATOR = 10_000;
 
     constructor() {
         _disableInitializers();
@@ -61,14 +40,8 @@ contract PositionCloser is AccessControlUpgradeable {
     }
 
     function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
-        leverageDepositor = ILeverageDepositor(dependencies.leverageDepositor);
-        positionToken = PositionToken(dependencies.positionToken);
-        swapManager = SwapManager(dependencies.swapManager);
-        wbtcVault = IWBTCVault(dependencies.wbtcVault);
-        leveragedStrategy = LeveragedStrategy(dependencies.leveragedStrategy);
-        protocolParameters = ProtocolParameters(dependencies.protocolParameters);
-        oracleManager = OracleManager(dependencies.oracleManager);
-        positionLedger = PositionLedger(dependencies.positionLedger);
+        
+        setDependenciesInternal(dependencies);
 
         wbtc.approve(dependencies.wbtcVault, type(uint256).max);
     }  
@@ -113,37 +86,12 @@ contract PositionCloser is AccessControlUpgradeable {
 
     function isMinPositionDurationPassed(uint256 nftId) internal view returns (bool) {
         return block.number >= positionLedger.getOpenBlock(nftId) + protocolParameters.getMinPositionDurationInBlocks();
-    }
-
-     function unwindPosition(uint256 nftId) internal returns (uint256) {
-
-        address strategyAddress = positionLedger.getStrategyAddress(nftId);
-        uint256 strategyShares = positionLedger.getStrategyShares(nftId);
-
-        return leverageDepositor.redeem(strategyAddress, strategyShares);
-    }
-
-    function swapStrategyTokenToWbtc(uint256 strategyTokenAmount, ClosePositionParams calldata params) internal returns (uint256) {
-
-        address strategyAddress = positionLedger.getStrategyAddress(params.nftId);
-        address strategyUnderlyingToken = leveragedStrategy.getStrategyValueAsset(strategyAddress); 
-        ISwapAdapter swapAdapter = swapManager.getSwapAdapterForRoute(params.swapRoute);
-
-        ISwapAdapter.SwapWbtcParams memory swapParams = ISwapAdapter.SwapWbtcParams({
-            otherToken: IERC20(strategyUnderlyingToken),
-            fromAmount: strategyTokenAmount,
-            payload: params.swapData,
-            recipient: address(this)
-        });
-      
-        IERC20(strategyUnderlyingToken).transfer(address(swapAdapter), strategyTokenAmount); 
-        return swapAdapter.swapToWbtc(swapParams);
-    }
+    }   
 
     function collectExitFeesAfterDebt(uint256 wbtcAmountAfterDebt) internal returns(uint256) {
         
         uint256 exitFee = protocolParameters.getExitFee();
-        uint256 exitFeeAmount = wbtcAmountAfterDebt * exitFee / BASE_DENOMINATOR;        
+        uint256 exitFeeAmount = wbtcAmountAfterDebt * exitFee / EXIT_FEE_BASE_DENOMINATOR;        
         wbtc.transfer(protocolParameters.getFeeCollector(), exitFeeAmount);
 
         return exitFeeAmount;

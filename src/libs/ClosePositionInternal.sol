@@ -12,23 +12,46 @@ import { SwapManager } from "src/SwapManager.sol";
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
-
-
+import { PositionToken } from "src/PositionToken.sol";
+import { IWBTCVault } from "src/interfaces/IWBTCVault.sol";
+import { ProtocolParameters } from "src/ProtocolParameters.sol";
+import { OracleManager } from "src/OracleManager.sol";
+import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
 
 
 contract ClosePositionInternal {
 
     using ProtocolRoles for *;
+    using ErrorsLeverageEngine for *;
+    using EventsLeverageEngine for *;
 
+    uint8 internal constant WBTC_DECIMALS = 8;
+    IERC20 internal constant wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
 
     PositionLedger internal positionLedger;
     ILeverageDepositor internal leverageDepositor;
     LeveragedStrategy internal leveragedStrategy;
     SwapManager internal swapManager;
+    PositionToken internal positionToken;
+    IWBTCVault internal wbtcVault;
+    ProtocolParameters internal protocolParameters;
+    OracleManager internal oracleManager;
+
 
     function setDependenciesInternal(DependencyAddresses calldata dependencies) internal  {
         
         positionLedger = PositionLedger(dependencies.positionLedger);
+        positionToken = PositionToken(dependencies.positionToken);
+        swapManager = SwapManager(dependencies.swapManager);
+        
+        wbtcVault = IWBTCVault(dependencies.wbtcVault);
+        leveragedStrategy = LeveragedStrategy(dependencies.leveragedStrategy);
+        protocolParameters = ProtocolParameters(dependencies.protocolParameters);
+        
+        oracleManager = OracleManager(dependencies.oracleManager);
+        positionLedger = PositionLedger(dependencies.positionLedger);
+        leverageDepositor = ILeverageDepositor(dependencies.leverageDepositor);
     }  
 
     function unwindPosition(uint256 nftId) internal returns (uint256) {
