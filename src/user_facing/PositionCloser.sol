@@ -71,7 +71,6 @@ contract PositionCloser is AccessControlUpgradeable, ClosePositionInternal {
         recordPositionClosed(params.nftId, finalUserBalance);
     }
 
-
     function revertIfUserNotAllowedToClosePosition(uint256 nftId) internal view {
 
         if (positionToken.ownerOf(nftId) != msg.sender) {
