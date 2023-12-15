@@ -24,6 +24,7 @@ import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
 import { SwapManager } from "src/internal/SwapManager.sol";
 
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
+import { IOracle } from "src/interfaces/IOracle.sol";
 
 import { FakeOracle } from "src/ports/oracles/FakeOracle.sol";
 import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
@@ -139,49 +140,55 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
     }
 
     function liquidateUSDCPosition(uint256 nftId) internal returns (uint256 debtPaidBack) {
-        uint256 fakeBtcUsdPrice = 0;
+        
+        uint256 wtbcUsdPrice = allContracts.oracleManager.getLatestTokenPriceInUSD(WBTC);
 
-        {
-            // Get current eth price
-            uint256 wtbcUsdPrice = allContracts.oracleManager.getLatestTokenPriceInUSD(WBTC);
+        // Drop the eth price by ~30%
+        uint256 fakeBtcUsdPrice = (uint256(wtbcUsdPrice) * 1.3e8) / 1e8;
 
-            // Drop the eth price by 20%
-            fakeBtcUsdPrice = (uint256(wtbcUsdPrice) * 1.3e8) / 1e8;
 
-            FakeWBTCUSDCSwapAdapter fakeSwapAdapter = new FakeWBTCUSDCSwapAdapter();
-            deal(USDC, address(fakeSwapAdapter), 100_000e6);
-            deal(WBTC, address(fakeSwapAdapter), 1000e8);
+        ISwapAdapter fakeSwapAdapter = getFakeSwapAdapterWithSetPrice(fakeBtcUsdPrice);
+        allContracts.swapManager.setSwapAdapter(SwapManager.SwapRoute.UNISWAPV3, fakeSwapAdapter);
+        
+        IOracle fakeWBTCUSDOracle = getFakeOracleWithSetPrice(fakeBtcUsdPrice);
+        allContracts.oracleManager.setUSDOracle(WBTC, fakeWBTCUSDOracle);
+        
+        allContracts.positionLiquidator.setMonitor(address(this));
+        uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
 
-            fakeSwapAdapter.setWbtcToUsdcExchangeRate(fakeBtcUsdPrice);
-            fakeSwapAdapter.setUsdcToWbtcExchangeRate(1e16 / fakeBtcUsdPrice);
-            //allContracts.positionCloser.changeSwapAdapter(address(fakeSwapAdapter));
-            allContracts.swapManager.setSwapAdapter(SwapManager.SwapRoute.UNISWAPV3, fakeSwapAdapter);
-        }
+        // Liquidate position
+        ClosePositionParams memory params = ClosePositionParams({
+            nftId: nftId,
+            minWBTC: 0,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: getUSDCWBTCUniswapPayload(),
+            exchange: address(0)
+        });
+        allContracts.positionLiquidator.liquidatePosition(params);
 
-        {
-            FakeOracle fakeWBTCUSDOracle = new FakeOracle();
-            fakeWBTCUSDOracle.updateFakePrice(fakeBtcUsdPrice);
-            fakeWBTCUSDOracle.updateDecimals(8);
-            allContracts.oracleManager.setUSDOracle(WBTC, fakeWBTCUSDOracle);
-        }
+        uint256 wbtcVaultBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
+        debtPaidBack = wbtcVaultBalanceAfter - wbtcVaultBalanceBefore;
+    }
 
-        {
-            allContracts.positionLiquidator.setMonitor(address(this));
-            uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
+    function getFakeSwapAdapterWithSetPrice(uint256 fakeBtcUsdPrice) internal returns (ISwapAdapter) {
+        
+        FakeWBTCUSDCSwapAdapter fakeSwapAdapter = new FakeWBTCUSDCSwapAdapter();
+        deal(USDC, address(fakeSwapAdapter), 100_000e6);
+        deal(WBTC, address(fakeSwapAdapter), 1000e8);
 
-            // Liquidate position
-            ClosePositionParams memory params = ClosePositionParams({
-                nftId: nftId,
-                minWBTC: 0,
-                swapRoute: SwapManager.SwapRoute.UNISWAPV3,
-                swapData: getUSDCWBTCUniswapPayload(),
-                exchange: address(0)
-            });
-            allContracts.positionLiquidator.liquidatePosition(params);
+        fakeSwapAdapter.setWbtcToUsdcExchangeRate(fakeBtcUsdPrice);
+        fakeSwapAdapter.setUsdcToWbtcExchangeRate(1e16 / fakeBtcUsdPrice);
 
-            uint256 wbtcVaultBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
-            debtPaidBack = wbtcVaultBalanceAfter - wbtcVaultBalanceBefore;
-        }
+        return fakeSwapAdapter;
+    }
+
+    function getFakeOracleWithSetPrice(uint256 fakeBtcUsdPrice) internal returns (IOracle) {
+
+        FakeOracle fakeWBTCUSDOracle = new FakeOracle();
+        fakeWBTCUSDOracle.updateFakePrice(fakeBtcUsdPrice);
+        fakeWBTCUSDOracle.updateDecimals(8);
+
+        return fakeWBTCUSDOracle;
     }
 
     function getWBTCWETHUniswapPayload() internal view returns (bytes memory) {
