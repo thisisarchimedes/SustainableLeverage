@@ -1,40 +1,46 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
-import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
+import { PRBTest } from "@prb/test/PRBTest.sol";
+import { console2 } from "forge-std/console2.sol";
+import { StdCheats } from "forge-std/StdCheats.sol";
 
-import { PositionToken } from "src/PositionToken.sol";
-import "../src/LeverageDepositor.sol";
-import { WBTCVault } from "src/WBTCVault.sol";
+import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+
+import { PositionToken } from "src/user_facing/PositionToken.sol";
+import { PositionOpener } from "src/user_facing/PositionOpener.sol";
+import { PositionCloser } from "src/user_facing/PositionCloser.sol";
+
+import "src/internal/LeverageDepositor.sol";
+import { ExpiredVault } from "src/user_facing/ExpiredVault.sol";
+import { WBTCVault } from "src/internal/WBTCVault.sol";
+import { ProtocolParameters } from "src/internal/ProtocolParameters.sol";
+import { PositionLedger, LedgerEntry, PositionState } from "src/internal/PositionLedger.sol";
+import { OracleManager } from "src/internal/OracleManager.sol";
+import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
+import { SwapManager } from "src/internal/SwapManager.sol";
+
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
-import { ExpiredVault } from "src/ExpiredVault.sol";
+import { IOracle } from "src/interfaces/IOracle.sol";
+
 import { FakeOracle } from "src/ports/oracles/FakeOracle.sol";
 import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
 import { FakeWBTCUSDCSwapAdapter } from "src/ports/swap_adapters/FakeWBTCUSDCSwapAdapter.sol";
 import { ChainlinkOracle } from "src/ports/oracles/ChainlinkOracle.sol";
-import { PRBTest } from "@prb/test/PRBTest.sol";
-import { console2 } from "forge-std/console2.sol";
-import { StdCheats } from "forge-std/StdCheats.sol";
-import { ExpiredVault } from "src/ExpiredVault.sol";
-import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
-import { ProtocolParameters } from "src/ProtocolParameters.sol";
-import { PositionLedger, LedgerEntry, PositionState } from "src/PositionLedger.sol";
-import { PositionOpener } from "src/PositionOpener.sol";
-import { PositionCloser } from "src/PositionCloser.sol";
-import { OracleManager } from "src/OracleManager.sol";
-import { LeveragedStrategy } from "src/LeveragedStrategy.sol";
-import { SwapManager } from "src/SwapManager.sol";
-import { UnifiedDeployer, AllContracts } from "script/UnifiedDeployer.sol";
 import { UniV3SwapAdapter } from "src/ports/swap_adapters/UniV3SwapAdapter.sol";
 
+import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
+import { OpenPositionParams, ClosePositionParams } from "src/libs/PositionCallParams.sol";
+
+import { UnifiedDeployer, AllContracts } from "script/UnifiedDeployer.sol";
 
 contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
     using SafeERC20 for IERC20;
 
-    uint256 constant public TWO_DAYS = 6_400 * 2;
+    uint256 public constant TWO_DAYS = 6400 * 2;
     address feeCollector = makeAddr("feeCollector");
 
     function initFork() internal {
@@ -45,8 +51,6 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
 
         // Otherwise, run the test against the mainnet fork.
         vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 18_779_780 });
-
-        
     }
 
     function initTestFramework() internal {
@@ -66,9 +70,9 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
         deal(WBTC, address(this), collateralAmount);
         ERC20(WBTC).approve(address(allContracts.positionOpener), type(uint256).max);
 
-        bytes memory payload = getWBTCWETHUniswapPayload(); 
+        bytes memory payload = getWBTCWETHUniswapPayload();
 
-        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+        OpenPositionParams memory params = OpenPositionParams({
             collateralAmount: collateralAmount,
             wbtcToBorrow: borrowAmount,
             minStrategyShares: 0,
@@ -77,7 +81,7 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
             swapData: payload,
             exchange: address(0)
         });
-         
+
         return allContracts.positionOpener.openPosition(params);
     }
 
@@ -118,58 +122,76 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
 
         {
             // Liquidate position
-            allContracts.positionCloser.setMonitor(address(this));
+            allContracts.positionLiquidator.setMonitor(address(this));
             uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
-            allContracts.positionCloser.liquidatePosition(
-                nftId, 0, SwapManager.SwapRoute.UNISWAPV3, getWBTCWETHUniswapPayload(), address(0)
-            );
+
+            ClosePositionParams memory params = ClosePositionParams({
+                nftId: nftId,
+                minWBTC: 0,
+                swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+                swapData: getWBTCWETHUniswapPayload(),
+                exchange: address(0)
+            });
+            allContracts.positionLiquidator.liquidatePosition(params);
+
             uint256 wbtcVaultBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
             debtPaidBack = wbtcVaultBalanceAfter - wbtcVaultBalanceBefore;
         }
     }
 
     function liquidateUSDCPosition(uint256 nftId) internal returns (uint256 debtPaidBack) {
-        uint256 fakeBtcUsdPrice = 0;
+        
+        uint256 wtbcUsdPrice = allContracts.oracleManager.getLatestTokenPriceInUSD(WBTC);
 
-        {
-            // Get current eth price
-            uint256 wtbcUsdPrice = allContracts.oracleManager.getLatestTokenPriceInUSD(WBTC);
+        // Drop the eth price by ~30%
+        uint256 fakeBtcUsdPrice = (uint256(wtbcUsdPrice) * 1.3e8) / 1e8;
 
-            // Drop the eth price by 20%
-            fakeBtcUsdPrice = (uint256(wtbcUsdPrice) * 1.3e8) / 1e8;
 
-            FakeWBTCUSDCSwapAdapter fakeSwapAdapter = new FakeWBTCUSDCSwapAdapter();
-            deal(USDC, address(fakeSwapAdapter), 100_000e6);
-            deal(WBTC, address(fakeSwapAdapter), 1000e8);
+        ISwapAdapter fakeSwapAdapter = getFakeSwapAdapterWithSetPrice(fakeBtcUsdPrice);
+        allContracts.swapManager.setSwapAdapter(SwapManager.SwapRoute.UNISWAPV3, fakeSwapAdapter);
+        
+        IOracle fakeWBTCUSDOracle = getFakeOracleWithSetPrice(fakeBtcUsdPrice);
+        allContracts.oracleManager.setUSDOracle(WBTC, fakeWBTCUSDOracle);
+        
+        allContracts.positionLiquidator.setMonitor(address(this));
+        uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
 
-            fakeSwapAdapter.setWbtcToUsdcExchangeRate(fakeBtcUsdPrice);
-            fakeSwapAdapter.setUsdcToWbtcExchangeRate(1e16 / fakeBtcUsdPrice);
-            //allContracts.positionCloser.changeSwapAdapter(address(fakeSwapAdapter));
-            allContracts.swapManager.setSwapAdapter(SwapManager.SwapRoute.UNISWAPV3, fakeSwapAdapter);
+        // Liquidate position
+        ClosePositionParams memory params = ClosePositionParams({
+            nftId: nftId,
+            minWBTC: 0,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: getUSDCWBTCUniswapPayload(),
+            exchange: address(0)
+        });
+        allContracts.positionLiquidator.liquidatePosition(params);
 
-        }
+        uint256 wbtcVaultBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
+        debtPaidBack = wbtcVaultBalanceAfter - wbtcVaultBalanceBefore;
+    }
 
-        {
-            FakeOracle fakeWBTCUSDOracle = new FakeOracle();
-            fakeWBTCUSDOracle.updateFakePrice(fakeBtcUsdPrice);
-            fakeWBTCUSDOracle.updateDecimals(8);
-            allContracts.oracleManager.setUSDOracle(WBTC, fakeWBTCUSDOracle);
-        }
+    function getFakeSwapAdapterWithSetPrice(uint256 fakeBtcUsdPrice) internal returns (ISwapAdapter) {
+        
+        FakeWBTCUSDCSwapAdapter fakeSwapAdapter = new FakeWBTCUSDCSwapAdapter();
+        deal(USDC, address(fakeSwapAdapter), 100_000e6);
+        deal(WBTC, address(fakeSwapAdapter), 1000e8);
 
-        {
-            // Liquidate position
-            allContracts.positionCloser.setMonitor(address(this));
-            uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
-            allContracts.positionCloser.liquidatePosition(
-                nftId, 0, SwapManager.SwapRoute.UNISWAPV3, getUSDCWBTCUniswapPayload(), address(0)
-            );
-            uint256 wbtcVaultBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
-            debtPaidBack = wbtcVaultBalanceAfter - wbtcVaultBalanceBefore;
-        }
+        fakeSwapAdapter.setWbtcToUsdcExchangeRate(fakeBtcUsdPrice);
+        fakeSwapAdapter.setUsdcToWbtcExchangeRate(1e16 / fakeBtcUsdPrice);
+
+        return fakeSwapAdapter;
+    }
+
+    function getFakeOracleWithSetPrice(uint256 fakeBtcUsdPrice) internal returns (IOracle) {
+
+        FakeOracle fakeWBTCUSDOracle = new FakeOracle();
+        fakeWBTCUSDOracle.updateFakePrice(fakeBtcUsdPrice);
+        fakeWBTCUSDOracle.updateDecimals(8);
+
+        return fakeWBTCUSDOracle;
     }
 
     function getWBTCWETHUniswapPayload() internal view returns (bytes memory) {
-        
         bytes memory payload = abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WBTC, uint24(3000), WETH),
@@ -183,7 +205,15 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
     function closeETHBasedPosition(uint256 nftId) internal {
         vm.roll(block.number + TWO_DAYS);
         bytes memory payload = getWETHWBTCUniswapPayload();
-        allContracts.positionCloser.closePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
+
+        ClosePositionParams memory params = ClosePositionParams({
+            nftId: nftId,
+            minWBTC: 0,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payload,
+            exchange: address(0)
+        });
+        allContracts.positionCloser.closePosition(params);
     }
 
     function getWETHWBTCUniswapPayload() internal view returns (bytes memory) {
@@ -203,7 +233,7 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
 
         bytes memory payload = getWBTCUSDCUniswapPayload();
 
-        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+        OpenPositionParams memory params = OpenPositionParams({
             collateralAmount: collateralAmount,
             wbtcToBorrow: borrowAmount,
             minStrategyShares: 0,
@@ -212,7 +242,7 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
             swapData: payload,
             exchange: address(0)
         });
-         
+
         return allContracts.positionOpener.openPosition(params);
     }
 
@@ -227,10 +257,18 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
         return payload;
     }
 
-      function closeUSDCBasedPosition(uint256 nftId) internal {
+    function closeUSDCBasedPosition(uint256 nftId) internal {
         vm.roll(block.number + TWO_DAYS);
         bytes memory payload = getUSDCWBTCUniswapPayload();
-        allContracts.positionCloser.closePosition(nftId, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
+
+        ClosePositionParams memory params = ClosePositionParams({
+            nftId: nftId,
+            minWBTC: 0,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payload,
+            exchange: address(0)
+        });
+        allContracts.positionCloser.closePosition(params);
     }
 
     function getUSDCWBTCUniswapPayload() internal view returns (bytes memory) {

@@ -5,8 +5,8 @@ import "openzeppelin-contracts/access/AccessControl.sol";
 
 import { ERC721 } from "openzeppelin-contracts/token/ERC721/ERC721.sol";
 
-import { ProtocolRoles } from "./libs/ProtocolRoles.sol";
-import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
+import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
+import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 
 contract PositionToken is ERC721, AccessControl {
     using ProtocolRoles for *;

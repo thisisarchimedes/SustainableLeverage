@@ -4,11 +4,14 @@ pragma solidity >=0.8.21 <0.9.0;
 import "./BaseTest.sol";
 import { console2 } from "forge-std/console2.sol";
 
-import { ExpiredVault } from "../src/ExpiredVault.sol";
 import { ERC721 } from "openzeppelin-contracts/token/ERC721/ERC721.sol";
+
 import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
 import { FakeOracle } from "src/ports/oracles/FakeOracle.sol";
+
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+
+import { ExpiredVault } from "src/user_facing/ExpiredVault.sol";
 
 /// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
 /// https://book.getfoundry.sh/forge/writing-tests
@@ -27,13 +30,13 @@ contract ExpiredVaultTest is BaseTest {
     }
 
     function testDeposit() public {
-        vm.startPrank(address(allContracts.positionCloser));
+        vm.startPrank(address(allContracts.positionLiquidator));
 
         // Arrange
         uint256 depositAmount = 1e8; // 1 WBTC for simplicity
 
         // Act
-        deal(address(wbtc), address(allContracts.positionCloser), 100e8);
+        deal(address(wbtc), address(allContracts.positionLiquidator), 100e8);
         allContracts.expiredVault.deposit(depositAmount);
 
         // Assert
@@ -80,7 +83,7 @@ contract ExpiredVaultTest is BaseTest {
         uint256 nonExistingNftID = 999; // An NFT ID that doesn't exist
 
         // Expect a revert
-        
+
         vm.expectRevert();
         allContracts.expiredVault.claim(nonExistingNftID);
     }
@@ -89,8 +92,8 @@ contract ExpiredVaultTest is BaseTest {
         // Arrange
         uint256 nftId = openETHBasedPosition(10e8, 30e8);
 
-        deal(WBTC, address(allContracts.positionCloser), 100e8);
-        vm.startPrank(address(allContracts.positionCloser));
+        deal(WBTC, address(allContracts.positionLiquidator), 100e8);
+        vm.startPrank(address(allContracts.positionLiquidator));
         allContracts.expiredVault.deposit(1e8);
         vm.stopPrank();
 
@@ -123,7 +126,7 @@ contract ExpiredVaultTest is BaseTest {
         bytes memory initDataExpiredVault =
             abi.encodeWithSelector(ExpiredVault.initialize.selector, address(leverageEngine), WBTC);
         newExpiredVault = ExpiredVault(
-            address(new TransparentUpgradeableProxy(address(newExpiredVault),address(proxyAdmin),initDataExpiredVault))
+        address(new TransparentUpgradeableProxy(address(newExpiredVault),address(proxyAdmin),initDataExpiredVault))
         );
 
         // Reset

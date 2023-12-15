@@ -4,12 +4,14 @@ pragma solidity >=0.8.21;
 import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./interfaces/IERC20Detailed.sol";
-import { IOracle } from "./interfaces/IOracle.sol";
-import { ProtocolRoles } from "./libs/ProtocolRoles.sol";
-import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
-import { ErrorsLeverageEngine } from "./libs/ErrorsLeverageEngine.sol";
-import { EventsLeverageEngine } from "./libs/EventsLeverageEngine.sol";
+import "src/interfaces/IERC20Detailed.sol";
+
+import { IOracle } from "src/interfaces/IOracle.sol";
+
+import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
+import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
+import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
 
 /// @title OracleManager Contract
 /// @notice Manages oracles for token pricing in the Leverage Engine system.

@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21;
 
-import { IWBTCVault } from "./interfaces/IWBTCVault.sol";
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
+
+import { IWBTCVault } from "src/interfaces/IWBTCVault.sol";
 
 //TODO implement this contract. This is just skeleton for test purposes
 // TODO add access control
@@ -22,7 +23,7 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
         wbtc.transfer(to, amount);
     }
 
-    function repay(uint256 nftId, uint256 amount) external {
+    function repayDebt(uint256 nftId, uint256 amount) external {
         wbtc.safeTransferFrom(msg.sender, address(this), amount);
         emit Repay(nftId, amount);
     }

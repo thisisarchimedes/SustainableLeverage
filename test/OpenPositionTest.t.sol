@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
-import "./BaseTest.sol";
+import "test/BaseTest.sol";
+
 import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
+
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 
 /// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
@@ -24,7 +26,7 @@ contract OpenPositionTest is BaseTest {
     function test_ShouldRevertWithArithmeticOverflow() external {
 
         bytes memory payload = getWBTCWETHUniswapPayload();
-        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+        OpenPositionParams memory params = OpenPositionParams({
             collateralAmount: 5e18,
             wbtcToBorrow: 5e18,
             minStrategyShares: 0,
@@ -45,7 +47,7 @@ contract OpenPositionTest is BaseTest {
         uint256 wbtcToBorrow = collateralAmount * (multiplier + 1);
 
         bytes memory payload = getWBTCWETHUniswapPayload();
-        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+        OpenPositionParams memory params = OpenPositionParams({
             collateralAmount: collateralAmount,
             wbtcToBorrow: wbtcToBorrow,
             minStrategyShares: 0,
@@ -109,7 +111,7 @@ contract OpenPositionTest is BaseTest {
 
     function test_previewOpenPositionETHStrategy() external {
 
-        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+        OpenPositionParams memory params = OpenPositionParams({
             collateralAmount: 5e8,
             wbtcToBorrow: 15e8,
             minStrategyShares: 0,
@@ -129,7 +131,7 @@ contract OpenPositionTest is BaseTest {
 
     function test_previewOpenPositionUSDCStrategy() external {
 
-        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+        OpenPositionParams memory params = OpenPositionParams({
             collateralAmount: 5e8,
             wbtcToBorrow: 15e8,
             minStrategyShares: 0,

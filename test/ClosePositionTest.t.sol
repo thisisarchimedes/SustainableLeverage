@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
-import "./BaseTest.sol";
+import "test/BaseTest.sol";
 import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
 import { IERC721A } from "ERC721A/IERC721A.sol";
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
@@ -31,9 +31,17 @@ contract ClosePositionTest is BaseTest {
         
         allContracts.positionToken.transferFrom(address(this), positionReceiver, 0);
         
+        ClosePositionParams memory params = ClosePositionParams({
+            nftId: 0,
+            minWBTC: 0,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: "",
+            exchange: address(0)
+        });
+
         vm.roll(block.number + TWO_DAYS);
         vm.expectRevert(ErrorsLeverageEngine.NotOwner.selector);
-        allContracts.positionCloser.closePosition(0, 0, SwapManager.SwapRoute.UNISWAPV3, "", address(0));
+        allContracts.positionCloser.closePosition(params);
     }
 
     function test_ShouldRevertWithNotEnoughTokensReceived() external {
@@ -45,9 +53,18 @@ contract ClosePositionTest is BaseTest {
                 deadline: block.timestamp + 1000
             })
         );
+
+        ClosePositionParams memory params = ClosePositionParams({
+            nftId: 0,
+            minWBTC: 5e8,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payload,
+            exchange: address(0)
+        });
+
         vm.roll(block.number + TWO_DAYS);
         vm.expectRevert(ErrorsLeverageEngine.NotEnoughTokensReceived.selector);
-        allContracts.positionCloser.closePosition(0, 5e8, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
+        allContracts.positionCloser.closePosition(params);
     }
 
     function test_ShouldRevertIfPositionAlreadyClosed() external {
@@ -59,10 +76,19 @@ contract ClosePositionTest is BaseTest {
                 deadline: block.timestamp + 1000
             })
         );
+
+        ClosePositionParams memory params = ClosePositionParams({
+            nftId: 0,
+            minWBTC: 0,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payload,
+            exchange: address(0)
+        });
+
         vm.roll(block.number + TWO_DAYS);
-        allContracts.positionCloser.closePosition(0, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
+        allContracts.positionCloser.closePosition(params);
         vm.expectRevert();
-        allContracts.positionCloser.closePosition(0, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
+        allContracts.positionCloser.closePosition(params);
     }
 
     function test_ShouldClosePosition() external {
@@ -80,7 +106,16 @@ contract ClosePositionTest is BaseTest {
         uint256 wbtcBalanceBeforeClose = wbtc.balanceOf(address(allContracts.wbtcVault));
 
         vm.roll(block.number + TWO_DAYS);
-        allContracts.positionCloser.closePosition(0, 0, SwapManager.SwapRoute.UNISWAPV3, payload, address(0));
+
+        ClosePositionParams memory params = ClosePositionParams({
+            nftId: 0,
+            minWBTC: 0,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payload,
+            exchange: address(0)
+        });
+        allContracts.positionCloser.closePosition(params);
+        
         uint256 wbtcBalanceAfterClose = wbtc.balanceOf(address(allContracts.wbtcVault));
         LedgerEntry memory position = allContracts.positionLedger.getPosition(0);
         assertEq(uint8(position.state), uint8(PositionState.CLOSED));

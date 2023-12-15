@@ -1,33 +1,41 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
-import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
+import { PRBTest } from "@prb/test/PRBTest.sol";
+import { console2 } from "forge-std/console2.sol";
+import { StdCheats } from "forge-std/StdCheats.sol";
 
-import { PositionToken } from "src/PositionToken.sol";
-import "src/LeverageDepositor.sol";
-import { WBTCVault } from "src/WBTCVault.sol";
+import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+
+import { PositionToken } from "src/user_facing/PositionToken.sol";
+import { ExpiredVault } from "src/user_facing/ExpiredVault.sol";
+import { PositionOpener } from "src/user_facing/PositionOpener.sol";
+import { PositionCloser } from "src/user_facing/PositionCloser.sol";
+
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
-import { ExpiredVault } from "src/ExpiredVault.sol";
+
 import { FakeOracle } from "src/ports/oracles/FakeOracle.sol";
 import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
 import { FakeWBTCUSDCSwapAdapter } from "src/ports/swap_adapters/FakeWBTCUSDCSwapAdapter.sol";
 import { ChainlinkOracle } from "src/ports/oracles/ChainlinkOracle.sol";
-import { PRBTest } from "@prb/test/PRBTest.sol";
-import { console2 } from "forge-std/console2.sol";
-import { StdCheats } from "forge-std/StdCheats.sol";
-import { ProtocolParameters } from "src/ProtocolParameters.sol";
-import { PositionLedger, LedgerEntry, PositionState } from "src/PositionLedger.sol";
-import { PositionOpener } from "src/PositionOpener.sol";
-import { PositionCloser } from "src/PositionCloser.sol";
-import { OracleManager } from "src/OracleManager.sol";
-import { LeveragedStrategy } from "src/LeveragedStrategy.sol";
+import { UniV3SwapAdapter } from "src/ports/swap_adapters/UniV3SwapAdapter.sol";
+
+import "src/internal/LeverageDepositor.sol";
+import { WBTCVault } from "src/internal/WBTCVault.sol";
+import { ProtocolParameters } from "src/internal/ProtocolParameters.sol";
+import { PositionLedger, LedgerEntry, PositionState } from "src/internal/PositionLedger.sol";
+import { OracleManager } from "src/internal/OracleManager.sol";
+import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
+import { SwapManager } from "src/internal/SwapManager.sol";
+
+import { PositionLiquidator } from "src/monitor_facing/PositionLiquidator.sol";
+
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
-import { UniV3SwapAdapter } from "src/ports/swap_adapters/UniV3SwapAdapter.sol";
-import { SwapManager } from "src/SwapManager.sol";
+
 
 struct AllContracts {
     PositionToken positionToken;
@@ -42,6 +50,7 @@ struct AllContracts {
     PositionLedger positionLedger;
     PositionOpener positionOpener;
     PositionCloser positionCloser;
+    PositionLiquidator positionLiquidator;
     OracleManager oracleManager;
     SwapManager swapManager;
     ChainlinkOracle ethUsdOracle;
@@ -95,6 +104,7 @@ contract UnifiedDeployer {
         allContracts.positionLedger.setDependencies(dependencyAddresses);
         allContracts.positionOpener.setDependencies(dependencyAddresses);
         allContracts.positionCloser.setDependencies(dependencyAddresses);
+        allContracts.positionLiquidator.setDependencies(dependencyAddresses);
         allContracts.positionToken.setDependencies(dependencyAddresses);
         allContracts.leverageDepositor.setDependencies(dependencyAddresses);
 
@@ -110,7 +120,6 @@ contract UnifiedDeployer {
         allContracts.btcEthOracle = new ChainlinkOracle(BTCETHORACLE);
         allContracts.wbtcUsdOracle = new ChainlinkOracle(WBTCUSDORACLE);
         allContracts.usdcUsdOracle = new ChainlinkOracle(USDCUSDORACLE);
-
     }
 
     function allowStrategiesWithDepositor() internal {
@@ -129,7 +138,6 @@ contract UnifiedDeployer {
         allContracts.leveragedStrategy.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
         allContracts.leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
     }
-
 
     function deployProxyAndContracts() internal {
         allContracts.proxyAdmin = new ProxyAdmin(address(this));
@@ -162,6 +170,9 @@ contract UnifiedDeployer {
         dependencyAddresses.positionCloser = createProxiedPositionCloser();
         allContracts.positionCloser = PositionCloser(dependencyAddresses.positionCloser);
 
+        dependencyAddresses.positionLiquidator = createProxiedPositionLiquidator();
+        allContracts.positionLiquidator = PositionLiquidator(dependencyAddresses.positionLiquidator);
+
         dependencyAddresses.positionLedger = createProxiedPositionLedger();
         allContracts.positionLedger = PositionLedger(dependencyAddresses.positionLedger);
 
@@ -186,7 +197,7 @@ contract UnifiedDeployer {
             address(implleveragedStrategys),
             address(allContracts.proxyAdmin)
         );
-    
+
         return addrleveragedStrategy;
     }
 
@@ -235,6 +246,17 @@ contract UnifiedDeployer {
         );
 
         return addrPositionCloser;
+    }
+
+    function createProxiedPositionLiquidator() internal returns (address) {
+        PositionLiquidator implPositionLiquidator = new PositionLiquidator();
+        address addrPositionLiquidator = createUpgradableContract(
+            implPositionLiquidator.initialize.selector,
+            address(implPositionLiquidator),
+            address(allContracts.proxyAdmin)
+        );
+
+        return addrPositionLiquidator;
     }
 
     function createProxiedPositionLedger() internal returns (address) {

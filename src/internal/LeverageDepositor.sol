@@ -6,8 +6,9 @@ import "openzeppelin-contracts/access/AccessControl.sol";
 
 import { ILeverageDepositor } from "src/interfaces/ILeverageDepositor.sol";
 import { IMultiPoolStrategy } from "src/interfaces/IMultiPoolStrategy.sol";
+
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
-import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
+import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 
 // @notice: This contract holds strategy shares and deposit/withdraw tokens from strategy
 contract LeverageDepositor is ILeverageDepositor, AccessControl {
@@ -22,6 +23,7 @@ contract LeverageDepositor is ILeverageDepositor, AccessControl {
 
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionOpener);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionCloser);
+        _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionLiquidator);
     }
 
     function allowStrategyWithDepositor(address strategy) external onlyRole(ProtocolRoles.ADMIN_ROLE) {

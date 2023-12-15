@@ -4,7 +4,9 @@ pragma solidity >=0.8.21 <0.9.0;
 import "openzeppelin-contracts/access/AccessControl.sol";
 
 import "test/BaseTest.sol";
-import { PositionLedger } from "src/PositionLedger.sol";
+
+import { PositionLedger } from "src/internal/PositionLedger.sol";
+
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 
 /// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
@@ -79,7 +81,7 @@ contract LeverageDepositorTest is BaseTest {
 
         bytes memory payload = getWBTCWETHUniswapPayload(); 
 
-        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+        OpenPositionParams memory params = OpenPositionParams({
             collateralAmount: collateralAmount,
             wbtcToBorrow: borrowAmount,
             minStrategyShares: 0,

@@ -3,12 +3,14 @@ pragma solidity >=0.8.21;
 
 import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
-import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
-import { ErrorsLeverageEngine } from "./libs/ErrorsLeverageEngine.sol";
-import { EventsLeverageEngine } from "./libs/EventsLeverageEngine.sol";
-import { LeveragedStrategy } from "./LeveragedStrategy.sol";
-import { ProtocolParameters } from "./ProtocolParameters.sol";
-import { ProtocolRoles } from "./libs/ProtocolRoles.sol";
+import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
+import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
+import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
+
+import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
+import { ProtocolParameters } from "src/internal/ProtocolParameters.sol";
+
 
 enum PositionState {
     UNINITIALIZED,
@@ -47,6 +49,7 @@ contract PositionLedger is AccessControlUpgradeable {
     function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionOpener);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionCloser);
+        _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionLiquidator);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.expiredVault);
     }
 

@@ -1,18 +1,24 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.21;
 
-import { PositionOpener } from "src/PositionOpener.sol";
-import { LeveragedStrategy } from "src/LeveragedStrategy.sol";
-import { PositionToken } from "src/PositionToken.sol";
-import "src/LeverageDepositor.sol";
-import { WBTCVault } from "src/WBTCVault.sol";
+import { console2 } from "forge-std/console2.sol";
+import { Script } from "forge-std/Script.sol";
+
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import { SwapManager } from "src/SwapManager.sol";
-import { console2 } from "forge-std/console2.sol";
-import { Script } from "forge-std/Script.sol";
+
+import { PositionOpener } from "src/user_facing/PositionOpener.sol";
+import { PositionToken } from "src/user_facing/PositionToken.sol";
+
+import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
+import "src/internal/LeverageDepositor.sol";
+import { WBTCVault } from "src/internal/WBTCVault.sol";
+import { SwapManager } from "src/internal/SwapManager.sol";
+
 import { UniV3SwapAdapter } from "src/ports/swap_adapters/UniV3SwapAdapter.sol";
+import { OpenPositionParams } from "src/libs/PositionCallParams.sol";
+
 
 contract OpenPosition is Script {
     /* solhint-disable  */
@@ -41,7 +47,7 @@ contract OpenPosition is Script {
             })
         );
 
-        PositionOpener.OpenPositionParams memory params = PositionOpener.OpenPositionParams({
+        OpenPositionParams memory params = OpenPositionParams({
             collateralAmount: 0.1e8,
             wbtcToBorrow: 0.1e8,
             minStrategyShares: 0,

@@ -134,7 +134,7 @@ jobs:
 
       - name: "Deploy the contracts to EC2 test Hardhat environment"
         run: |
-          #forge script script/DeployContracts.s.sol --fork-url  ${{ vars.AWS_FORK_URL }} --broadcast -vvvvv --slow --skip-simulation
+          forge script script/DeployContracts.s.sol --fork-url  ${{ vars.AWS_FORK_URL }} --broadcast -vvvvv --slow --skip-simulation
 
       - name: Create JSON file
         run: |
@@ -144,10 +144,10 @@ jobs:
 
       - name: "Updating AWS S3 bucket with the contract addresses"
         run: |
-          #aws s3 cp deployments/deployments.json s3://smart-contract-backend-config/addresses/test_fork_leverage_addresses.json --acl public-read
-          #python script/prep_addresses_json.py
-          #aws s3 cp deployments/deployments.json s3://smart-contract-backend-config/abis/test_fork_leverage_abis.json --acl public-read
-          #aws s3 cp deployments/test_rpc.json s3://smart-contract-backend-config/test_fork_rpc.json --acl public-read
+          aws s3 cp deployments/deployments.json s3://smart-contract-backend-config/addresses/test_fork_leverage_addresses.json --acl public-read
+          python script/prep_addresses_json.py
+          aws s3 cp deployments/deployments.json s3://smart-contract-backend-config/abis/test_fork_leverage_abis.json --acl public-read
+          aws s3 cp deployments/test_rpc.json s3://smart-contract-backend-config/test_fork_rpc.json --acl public-read
 
       - name: "Add deploy summary"
         run: |

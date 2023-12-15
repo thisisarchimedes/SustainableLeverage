@@ -4,23 +4,30 @@ pragma solidity >=0.8.21;
 import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./interfaces/IERC20Detailed.sol";
-import { IWBTCVault } from "./interfaces/IWBTCVault.sol";
-import { IExpiredVault } from "./interfaces/IExpiredVault.sol";
-import { ILeverageDepositor } from "./interfaces/ILeverageDepositor.sol";
-import { IOracle } from "./interfaces/IOracle.sol";
-import { PositionToken } from "./PositionToken.sol";
+import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
+
+import "src/interfaces/IERC20Detailed.sol";
+import { IWBTCVault } from "src/interfaces/IWBTCVault.sol";
+import { IExpiredVault } from "src/interfaces/IExpiredVault.sol";
+import { ILeverageDepositor } from "src/interfaces/ILeverageDepositor.sol";
+import { IOracle } from "src/interfaces/IOracle.sol";
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
-import { SwapManager } from "./SwapManager.sol";
-import { AggregatorV3Interface } from "./interfaces/AggregatorV3Interface.sol";
-import { ProtocolRoles } from "./libs/ProtocolRoles.sol";
-import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
-import { ErrorsLeverageEngine } from "./libs/ErrorsLeverageEngine.sol";
-import { EventsLeverageEngine } from "./libs/EventsLeverageEngine.sol";
-import { LeveragedStrategy } from "./LeveragedStrategy.sol";
-import { ProtocolParameters } from "./ProtocolParameters.sol";
-import { OracleManager } from "./OracleManager.sol";
-import { PositionLedger, LedgerEntry, PositionState } from "./PositionLedger.sol";
+
+import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
+import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
+import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
+import { OpenPositionParams } from "src/libs/PositionCallParams.sol";
+
+import { PositionToken } from "src/user_facing/PositionToken.sol";
+
+import { SwapManager } from "src/internal/SwapManager.sol";
+
+import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
+import { ProtocolParameters } from "src/internal/ProtocolParameters.sol";
+import { OracleManager } from "src/internal/OracleManager.sol";
+import { PositionLedger, LedgerEntry, PositionState } from "src/internal/PositionLedger.sol";
+
 
 /// @title PositionManager Contract
 /// @notice Supports only WBTC tokens for now
@@ -29,16 +36,6 @@ contract PositionOpener is AccessControlUpgradeable {
     using ProtocolRoles for *;
     using ErrorsLeverageEngine for *;
     using EventsLeverageEngine for *;
-
-    struct OpenPositionParams {
-        uint256 collateralAmount;
-        uint256 wbtcToBorrow;
-        address strategy;
-        uint256 minStrategyShares;
-        SwapManager.SwapRoute swapRoute;
-        bytes swapData;
-        address exchange;
-    }
 
     uint256 internal constant BASE_DENOMINATOR = 10_000;
     uint8 internal constant WBTC_DECIMALS = 8;

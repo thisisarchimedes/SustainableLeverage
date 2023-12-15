@@ -3,16 +3,18 @@ pragma solidity >=0.8.21;
 
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IERC20Detailed } from "./interfaces/IERC20Detailed.sol";
-
 import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import { ProtocolRoles } from "./libs/ProtocolRoles.sol";
-import { ErrorsLeverageEngine } from "./libs/ErrorsLeverageEngine.sol";
-import { EventsLeverageEngine } from "./libs/EventsLeverageEngine.sol";
-import { DependencyAddresses } from "./libs/DependencyAddresses.sol";
-import { PositionLedger, PositionState } from "src/PositionLedger.sol";
-import { OracleManager } from "src/OracleManager.sol";
-import { IMultiPoolStrategy } from "./interfaces/IMultiPoolStrategy.sol";
+
+import { IERC20Detailed } from "src/interfaces/IERC20Detailed.sol";
+
+import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
+import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
+import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
+
+import { PositionLedger, PositionState } from "src/internal/PositionLedger.sol";
+import { OracleManager } from "src/internal/OracleManager.sol";
+import { IMultiPoolStrategy } from "src/interfaces/IMultiPoolStrategy.sol";
 
 /// @title StrategyManager Contract
 /// @notice Only supports WBTC as collateral and borrowing asset
@@ -128,8 +130,7 @@ contract LeveragedStrategy is AccessControlUpgradeable {
         return true;
     }
 
-    function isPositionLiquidatable(uint256 nftId) external view returns (bool) {
-
+    function isPositionLiquidatableEstimation(uint256 nftId) external view returns (bool) {
         if (positionLedger.getPositionState(nftId) != PositionState.LIVE) {
             revert ErrorsLeverageEngine.PositionNotLive();
         }
@@ -150,26 +151,17 @@ contract LeveragedStrategy is AccessControlUpgradeable {
     }
 
     function previewPositionValueInWBTC(uint256 nftId) public view returns (uint256) {
-        
         uint256 strategyShares = positionLedger.getStrategyShares(nftId);
-        address strategyAddress = positionLedger.getStrategyAddress(nftId);   
-        
-        uint256 strategyValueTokenEstimatedAmount =
-            IMultiPoolStrategy(strategyAddress).convertToAssets(strategyShares);
-        
+        address strategyAddress = positionLedger.getStrategyAddress(nftId);
+
+        uint256 strategyValueTokenEstimatedAmount = IMultiPoolStrategy(strategyAddress).convertToAssets(strategyShares);
+
         address strategyValueTokenAddress = IMultiPoolStrategy(strategyAddress).asset();
 
         return getWBTCValueFromTokenAmount(strategyValueTokenAddress, strategyValueTokenEstimatedAmount);
     }
 
-    function getWBTCValueFromTokenAmount(
-        address token,
-        uint256 amount
-    )
-        public
-        view
-        returns (uint256)
-    {
+    function getWBTCValueFromTokenAmount(address token, uint256 amount) public view returns (uint256) {
         uint256 tokenPriceInUSD = oracleManager.getLatestTokenPriceInUSD(token);
         uint256 wbtcPriceInUSD = oracleManager.getLatestTokenPriceInUSD(address(wbtc));
 
@@ -178,7 +170,7 @@ contract LeveragedStrategy is AccessControlUpgradeable {
         return adjustDecimalsToWBTCDecimals(token, tokenValueInWBTCUnadjustedDecimals);
     }
 
-  function adjustDecimalsToWBTCDecimals(
+    function adjustDecimalsToWBTCDecimals(
         address fromToken,
         uint256 amountUnadjustedDecimals
     )
@@ -201,14 +193,7 @@ contract LeveragedStrategy is AccessControlUpgradeable {
         }
     }
 
-    function getTokenValueFromWBTCAmount(
-        address token,
-        uint256 wbtcAmount
-    )
-        public
-        view
-        returns (uint256)
-    {
+    function getTokenValueFromWBTCAmount(address token, uint256 wbtcAmount) public view returns (uint256) {
         uint256 tokenPriceInUSD = oracleManager.getLatestTokenPriceInUSD(token);
         uint256 wbtcPriceInUSD = oracleManager.getLatestTokenPriceInUSD(address(wbtc));
 
@@ -217,7 +202,7 @@ contract LeveragedStrategy is AccessControlUpgradeable {
         return adjustDecimalsToTokenDecimals(token, tokenAmountUnadjustedDecimals);
     }
 
-      function adjustDecimalsToTokenDecimals(
+    function adjustDecimalsToTokenDecimals(
         address fromToken,
         uint256 amountUnadjustedDecimals
     )
@@ -238,16 +223,21 @@ contract LeveragedStrategy is AccessControlUpgradeable {
         }
     }
 
-
-    function getEstimateSharesForWBTCDeposit(address strategy, uint256 wbtcDepositAmount) external view returns (uint256) {
-
+    function getEstimateSharesForWBTCDeposit(
+        address strategy,
+        uint256 wbtcDepositAmount
+    )
+        external
+        view
+        returns (uint256)
+    {
         address token = getStrategyValueAsset(strategy);
 
         uint256 depositAmount = getTokenValueFromWBTCAmount(token, wbtcDepositAmount);
 
         return IMultiPoolStrategy(strategy).previewDeposit(depositAmount);
     }
-    
+
     function getStrategyValueAsset(address strategy) public view returns (address) {
         return IMultiPoolStrategy(strategy).asset();
     }
