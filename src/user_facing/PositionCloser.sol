@@ -28,9 +28,7 @@ import { OracleManager } from "src/internal/OracleManager.sol";
 import { PositionLedger, LedgerEntry, PositionState } from "src/internal/PositionLedger.sol";
 import { SwapManager } from "src/internal/SwapManager.sol";
 
-
 contract PositionCloser is AccessControlUpgradeable, ClosePositionInternal {
-
     uint256 internal constant EXIT_FEE_BASE_DENOMINATOR = 10_000;
 
     constructor() {
@@ -43,20 +41,22 @@ contract PositionCloser is AccessControlUpgradeable, ClosePositionInternal {
     }
 
     function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
-        
         setDependenciesInternal(dependencies);
 
         wbtc.approve(dependencies.wbtcVault, type(uint256).max);
-    }  
+    }
 
-    function closePosition(ClosePositionParams calldata params) external {      
-
+    function closePosition(ClosePositionParams calldata params) external {
         revertIfUserNotAllowedToClosePosition(params.nftId);
-    
+
         uint256 strategyTokenAmountRecieved = unwindPosition(params.nftId);
         uint256 wbtcReceived = swapStrategyTokenToWbtc(strategyTokenAmountRecieved, params);
 
-        uint256 wbtcDebtAmount = positionLedger.getDebtAmount(params.nftId); 
+        if (wbtcReceived < params.minWBTC) {
+            revert ErrorsLeverageEngine.NotEnoughTokensReceived();
+        }
+
+        uint256 wbtcDebtAmount = positionLedger.getDebtAmount(params.nftId);
         if (wbtcReceived < wbtcDebtAmount) {
             revert ErrorsLeverageEngine.NotEnoughWBTC();
         }
@@ -64,15 +64,14 @@ contract PositionCloser is AccessControlUpgradeable, ClosePositionInternal {
         wbtcVault.repayDebt(params.nftId, wbtcDebtAmount);
 
         uint256 exitFeeAmount = collectExitFeesAfterDebt(wbtcReceived - wbtcDebtAmount);
-        
+
         uint256 finalUserBalance = wbtcReceived - wbtcDebtAmount - exitFeeAmount;
         sendBalanceToUser(finalUserBalance, params.minWBTC);
-                
+
         recordPositionClosed(params.nftId, finalUserBalance);
     }
 
     function revertIfUserNotAllowedToClosePosition(uint256 nftId) internal view {
-
         if (positionToken.ownerOf(nftId) != msg.sender) {
             revert ErrorsLeverageEngine.NotOwner();
         }
@@ -88,19 +87,17 @@ contract PositionCloser is AccessControlUpgradeable, ClosePositionInternal {
 
     function isMinPositionDurationPassed(uint256 nftId) internal view returns (bool) {
         return block.number >= positionLedger.getOpenBlock(nftId) + protocolParameters.getMinPositionDurationInBlocks();
-    }   
+    }
 
-    function collectExitFeesAfterDebt(uint256 wbtcAmountAfterDebt) internal returns(uint256) {
-        
+    function collectExitFeesAfterDebt(uint256 wbtcAmountAfterDebt) internal returns (uint256) {
         uint256 exitFee = protocolParameters.getExitFee();
-        uint256 exitFeeAmount = wbtcAmountAfterDebt * exitFee / EXIT_FEE_BASE_DENOMINATOR;        
+        uint256 exitFeeAmount = wbtcAmountAfterDebt * exitFee / EXIT_FEE_BASE_DENOMINATOR;
         wbtc.transfer(protocolParameters.getFeeCollector(), exitFeeAmount);
 
         return exitFeeAmount;
     }
 
     function sendBalanceToUser(uint256 wbtcLeft, uint256 minWbtc) internal {
-        
         if (wbtcLeft < minWbtc) {
             revert ErrorsLeverageEngine.NotEnoughTokensReceived();
         }
@@ -108,12 +105,8 @@ contract PositionCloser is AccessControlUpgradeable, ClosePositionInternal {
     }
 
     function recordPositionClosed(uint256 nftId, uint256 finalUserBalance) internal {
-
         emit EventsLeverageEngine.PositionClosed(
-            nftId, 
-            msg.sender, 
-            finalUserBalance, 
-            positionLedger.getDebtAmount(nftId)
+            nftId, msg.sender, finalUserBalance, positionLedger.getDebtAmount(nftId)
         );
 
         positionLedger.setPositionState(nftId, PositionState.CLOSED);
