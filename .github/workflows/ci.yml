@@ -7,6 +7,8 @@ env:
   DEPLOYER_ADDRESS: ${{ secrets.DEPLOYER_ADDRESS }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  API_KEY_TENDERLY: ${{ secrets.API_KEY_TENDERLY }}
+  TENDERLY_VERIFIER_URL: ${{ secrets.TENDERLY_VERIFIER_URL }}
   FOUNDRY_PROFILE: "ci"
 
 on:
@@ -29,6 +31,10 @@ jobs:
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
 
+      - name: "updating foundry.toml so we can run verify against Tenderly"
+        run: |
+          python foundry_toml_prep.py
+
       - name: "Build the contracts"
         run: "forge build --skip script"
 
@@ -42,6 +48,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: "updating foundry.toml so we can run verify against Tenderly"
+        run: |
+          python foundry_toml_prep.py
 
       - name: Run Slither
         uses: crytic/slither-action@v0.3.0
@@ -72,6 +82,10 @@ jobs:
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
 
+      - name: "updating foundry.toml so we can run verify against Tenderly"
+        run: |
+          python foundry_toml_prep.py
+
       - name: "Show the Foundry config"
         run: "forge config"
 
@@ -101,6 +115,10 @@ jobs:
 
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
+      
+      - name: "updating foundry.toml so we can run verify against Tenderly"
+        run: |
+          python foundry_toml_prep.py
 
       - name: "Set deployer balance on the fork"
         run: |
@@ -192,9 +210,14 @@ jobs:
         run: |
           sed -i 's|THE_FORK_URL|"${{ vars.DEMO_RPC }}"|' script/setupFork.py 
 
+      - name: "updating foundry.toml so we can run verify against Tenderly"
+        run: |
+          python foundry_toml_prep.py
+
       - name: "Deploy the contracts to Tenderly fork demo environment"
         run: |
-          forge script script/DeployContracts.s.sol --fork-url  ${{ vars.DEMO_RPC }} --broadcast -vvvvv --slow --skip-simulation
+          forge script script/DeployContracts.s.sol --fork-url  ${{ vars.DEMO_RPC }} --broadcast --slow --skip-simulation --etherscan-api-key ${{ secrets.API_KEY_TENDERLY }} --verify --verifier-url="${{ secrets.TENDERLY_VERIFIER_URL}}" --chain-id 1337
+          
 
       - name: Create JSON file
         run: |
