@@ -31,6 +31,10 @@ jobs:
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
 
+      - name: "updating foundry.toml so we can run verify against Tenderly"
+        run: |
+          python foundry_toml_prep.py
+
       - name: "Build the contracts"
         run: "forge build --skip script"
 
@@ -44,6 +48,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: "updating foundry.toml so we can run verify against Tenderly"
+        run: |
+          python foundry_toml_prep.py
 
       - name: Run Slither
         uses: crytic/slither-action@v0.3.0
@@ -74,6 +82,10 @@ jobs:
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
 
+      - name: "updating foundry.toml so we can run verify against Tenderly"
+        run: |
+          python foundry_toml_prep.py
+
       - name: "Show the Foundry config"
         run: "forge config"
 
@@ -103,6 +115,10 @@ jobs:
 
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
+      
+      - name: "updating foundry.toml so we can run verify against Tenderly"
+        run: |
+          python foundry_toml_prep.py
 
       - name: "Set deployer balance on the fork"
         run: |
