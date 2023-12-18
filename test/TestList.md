@@ -18,6 +18,7 @@
 [] Detect when the total value of the position is less than debt during liquidation
 [] Check that when we don't have a position the position state is correct
 [] liquidate position if it is eligible for liquidation (ETH value asset position) - NOT enough WBTC in position to cover debt
+[] test that we enforce minBTC to avoid sandwitch
 
 # Refactor list:
 
