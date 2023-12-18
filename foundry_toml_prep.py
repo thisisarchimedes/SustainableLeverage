@@ -10,8 +10,8 @@ tenderly_key = os.getenv("API_KEY_TENDERLY", "default_value_if_not_set")
 # Replace 'TENDERLY_KEY' in the etherscan section with the environment variable
 updated_config_lines = []
 for line in config_lines:
-    if 'key=API_KEY_TENDERLY' in line:
-        updated_config_lines.append(line.replace('API_KEY_TENDERLY', f'"{tenderly_key}"'))
+    if 'key="abc123abc123abc123abc123abc123ab"' in line:
+        updated_config_lines.append(line.replace('"abc123abc123abc123abc123abc123ab"', f'"{tenderly_key}"'))
     else:
         updated_config_lines.append(line)
 
