@@ -64,6 +64,9 @@ contract DeployContracts is BaseScript, UnifiedDeployer {
         deployedContracts.push(dependencyAddresses.positionCloser);
         deployedContractsNames.push("PositionCloser");
 
+        deployedContracts.push(dependencyAddresses.positionLiquidator);
+        deployedContractsNames.push("PositionLiquidator");
+
         deployedContracts.push(dependencyAddresses.positionLedger);
         deployedContractsNames.push("PositionLedger");
 

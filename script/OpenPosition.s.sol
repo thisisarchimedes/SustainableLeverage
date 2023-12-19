@@ -19,7 +19,6 @@ import { SwapManager } from "src/internal/SwapManager.sol";
 import { UniV3SwapAdapter } from "src/ports/swap_adapters/UniV3SwapAdapter.sol";
 import { OpenPositionParams } from "src/libs/PositionCallParams.sol";
 
-
 contract OpenPosition is Script {
     /* solhint-disable  */
     PositionOpener internal positionOpener;
@@ -36,7 +35,7 @@ contract OpenPosition is Script {
         address broadcaster = vm.rememberKey(0xfb3e889306aafa69793a67e74c09e657eec07c4c552543db26f3158cf53c2a57); // THIS
             // IS DUMMY KEY
         vm.startBroadcast(broadcaster);
-        positionOpener = PositionOpener(0x4009141515614E2E7025aB2fDb840DD39B22C4a1); // UPDATE THIS WITH LATEST ADDRESS
+        positionOpener = PositionOpener(0x83c48f09766Ada3f24C742c7A2C2d92dCbe4e73E); // UPDATE THIS WITH LATEST ADDRESS
 
         ERC20(WBTC).approve(address(positionOpener), type(uint256).max);
 
