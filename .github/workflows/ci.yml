@@ -31,10 +31,6 @@ jobs:
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
 
-      - name: "updating foundry.toml so we can run verify against Tenderly"
-        run: |
-          python foundry_toml_prep.py
-
       - name: "Build the contracts"
         run: "forge build --skip script"
 
@@ -48,10 +44,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: "updating foundry.toml so we can run verify against Tenderly"
-        run: |
-          python foundry_toml_prep.py
 
       - name: Run Slither
         uses: crytic/slither-action@v0.3.0
@@ -81,10 +73,6 @@ jobs:
 
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
-
-      - name: "updating foundry.toml so we can run verify against Tenderly"
-        run: |
-          python foundry_toml_prep.py
 
       - name: "Show the Foundry config"
         run: "forge config"
@@ -116,10 +104,6 @@ jobs:
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
       
-      - name: "updating foundry.toml so we can run verify against Tenderly"
-        run: |
-          python foundry_toml_prep.py
-
       - name: "Set deployer balance on the fork"
         run: |
           curl -X POST -H "Content-Type:application/json" --data \
@@ -172,7 +156,7 @@ jobs:
           echo "## Deploy result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
-  deploy_to_tenderly_demo_node:
+  deploy_to_demo_node:
     needs: ["deploy_to_ec2_hardhat_test_node"]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: "ubuntu-latest"
@@ -209,10 +193,6 @@ jobs:
       - name: "Update setupFork script with the correct fork RPC URL"
         run: |
           sed -i 's|THE_FORK_URL|"${{ vars.DEMO_RPC }}"|' script/setupFork.py 
-
-      - name: "updating foundry.toml so we can run verify against Tenderly"
-        run: |
-          python foundry_toml_prep.py
 
       - name: "Deploy the contracts to Tenderly fork demo environment"
         run: |

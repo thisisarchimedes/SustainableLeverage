@@ -24,7 +24,6 @@
   verbosity = 4
 
 [etherscan]
-mainnet1337 = { key="rCdYzY8aqbfZfJ9rGUnNejQGP232K5p9" , chain=1337, url="https://api.tenderly.co/api/v1/account/ArchimedesFinance/project/cicd/etherscan/verify/fork/e7270bef-7d0e-47f6-b2f0-d400256e64a3"}
 
 [fmt]
   bracket_spacing = true
