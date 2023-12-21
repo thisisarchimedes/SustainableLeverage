@@ -104,7 +104,7 @@ jobs:
       - name: "Set deployer balance on the fork"
         run: |
           curl -X POST -H "Content-Type:application/json" --data \
-          '{"jsonrpc":"2.0","method":"hardhat_setBalance","params":["'"${{ secrets.DEPLOYER_ADDRESS }}"'","0x75557863725914323419136"],"id":67}' \
+          '{"jsonrpc":"2.0","method":"hardhat_setBalance","params":["'"${{ vars.DEPLOYER_ADDRESS }}"'","0x75557863725914323419136"],"id":67}' \
           "${{ vars.STABLE_RPC }}"
 
       - name: "Prepare Python environment"
@@ -146,7 +146,7 @@ jobs:
           aws s3 cp deployments/deployments.json s3://smart-contract-backend-config/addresses/stable_leverage_addresses.json --acl public-read
           python script/prep_addresses_json.py
           aws s3 cp deployments/deployments.json s3://smart-contract-backend-config/abis/stable_leverage_abis.json --acl public-read
-          aws s3 cp deployments/test_rpc.json s3://smart-contract-backend-config/stable_rpc.json --acl public-read
+          aws s3 cp deployments/stable_rpc.json s3://smart-contract-backend-config/stable_rpc.json --acl public-read
 
       - name: "Add deploy summary"
         run: |
