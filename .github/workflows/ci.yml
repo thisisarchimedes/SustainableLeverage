@@ -97,6 +97,8 @@ jobs:
           
           end_time=$(date +%s)
           echo "DURATION=$((end-start))" >> $GITHUB_ENV
+          echo "start=$start"
+          echo "end=$end_time"
           echo "Time taken to run the script: $DURATION seconds"
           
       - name: "Report DevOps Metrics"
