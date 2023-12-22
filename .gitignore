@@ -18,3 +18,5 @@ broadcast/*
 broadcast/*/31337/
 
 pyenv
+
+venv

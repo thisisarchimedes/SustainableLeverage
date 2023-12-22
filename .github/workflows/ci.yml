@@ -6,6 +6,7 @@ env:
   DEPLOYER_ADDRESS: ${{ vars.DEPLOYER_ADDRESS }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  NEW_RELIC_API_KEY: ${{ secrets.NEW_RELIC_API_KEY }}
   FOUNDRY_PROFILE: "ci"
 
 on:
@@ -51,8 +52,7 @@ jobs:
           slither-args:
             --checklist --detect
             msg-value-loop,delegatecall-loop,controlled-delegatecall,controlled-array-length,arbitrary-send-erc20-permit,weak-prng,reentrancy-eth,abiencoderv2-array,arbitrary-send-erc20,array-by-reference,encode-packed-collision,incorrect-shift,multiple-constructors,name-reused,protected-vars,public-mappings-nested,rtlo,shadowing-state,suicidal,uninitialized-state,uninitialized-storage,unprotected-upgrade
-            --filter-paths "lib|pseudo|test|script|openzeppelin*|forge-std*" --markdown-root ${{ github.server_url
-            }}/${{ github.repository }}/blob/${{ github.sha }}/
+            --filter-paths "lib|pseudo|test|script|openzeppelin*|forge-std*" --markdown-root ${{ github.server_url}}/${{ github.repository }}/blob/${{ github.sha }}/
 
       - name: "Add build summary"
         run: |
@@ -68,6 +68,16 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: "Prepare Python environment"
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r devops/requirements.txt
+
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
 
@@ -81,7 +91,20 @@ jobs:
           )" >> $GITHUB_ENV
 
       - name: "Run the tests"
-        run: "forge test"
+        run: |
+          start=$(date +%s)
+          
+          forge test
+          
+          end=$(date +%s)
+          duration=$((end-start))
+          echo "DURATION=$duration" >> $GITHUB_ENV
+          echo "Time taken to run the script: $duration seconds"
+                
+      - name: "Report DevOps Metrics"
+        run: |
+          echo "Time taken to run the script: ${{ env.DURATION }} seconds"
+          python devops/src/report_new_relic.py ${{ github.repository }} "PR Test" "true" ${{ env.DURATION }}
 
       - name: "Add test summary"
         run: |
