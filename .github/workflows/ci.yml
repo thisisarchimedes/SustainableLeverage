@@ -51,8 +51,7 @@ jobs:
           slither-args:
             --checklist --detect
             msg-value-loop,delegatecall-loop,controlled-delegatecall,controlled-array-length,arbitrary-send-erc20-permit,weak-prng,reentrancy-eth,abiencoderv2-array,arbitrary-send-erc20,array-by-reference,encode-packed-collision,incorrect-shift,multiple-constructors,name-reused,protected-vars,public-mappings-nested,rtlo,shadowing-state,suicidal,uninitialized-state,uninitialized-storage,unprotected-upgrade
-            --filter-paths "lib|pseudo|test|script|openzeppelin*|forge-std*" --markdown-root ${{ github.server_url
-            }}/${{ github.repository }}/blob/${{ github.sha }}/
+            --filter-paths "lib|pseudo|test|script|openzeppelin*|forge-std*" --markdown-root ${{ github.server_url}}/${{ github.repository }}/blob/${{ github.sha }}/
 
       - name: "Add build summary"
         run: |
@@ -68,6 +67,11 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: "Prepare Python environment"
+          uses: actions/setup-python@v4
+          with:
+            python-version: "3.10"
+
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
 
@@ -81,7 +85,16 @@ jobs:
           )" >> $GITHUB_ENV
 
       - name: "Run the tests"
-        run: "forge test"
+        run: |
+          start=$(date +%s)
+          
+          forge test
+          
+          end_time=$(date +%s)
+          duration=$((end_time-start_time))
+
+          python devops/report_new_relic.py ${{ github.repository }} "Test" "true" $duration
+
 
       - name: "Add test summary"
         run: |
