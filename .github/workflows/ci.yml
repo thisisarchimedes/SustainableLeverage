@@ -96,10 +96,13 @@ jobs:
           forge test
           
           end_time=$(date +%s)
-          duration=$((end_time-start_time))
-
-          python devops/report_new_relic.py ${{ github.repository }} "Test" "true" $duration
-
+          echo "DURATION=$((end-start))" >> $GITHUB_ENV
+          echo "Time taken to run the script: $DURATION seconds"
+          
+      - name: "Report DevOps Metrics"
+        run: |
+          echo "Time taken to run the script: ${{ env.DURATION }} seconds"
+          python devops/report_new_relic.py ${{ github.repository }} "Test" "true" ${{ env.DURATION }}
 
       - name: "Add test summary"
         run: |
