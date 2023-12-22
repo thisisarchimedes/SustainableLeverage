@@ -103,6 +103,9 @@ jobs:
                 
       - name: "Report DevOps Metrics"
         run: |
+          ls -l
+          ls DevOps
+          ls DevOps/src
           echo "Time taken to run the script: ${{ env.DURATION }} seconds"
           python DevOps/src/report_new_relic.py ${{ github.repository }} "PR Test" "true" ${{ env.DURATION }}
 
