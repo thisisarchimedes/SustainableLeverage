@@ -104,7 +104,7 @@ jobs:
       - name: "Report DevOps Metrics"
         run: |
           echo "Time taken to run the script: ${{ env.DURATION }} seconds"
-          python devops/report_new_relic.py ${{ github.repository }} "PR Test" "true" ${{ env.DURATION }}
+          python DevOps/src/report_new_relic.py ${{ github.repository }} "PR Test" "true" ${{ env.DURATION }}
 
       - name: "Add test summary"
         run: |
