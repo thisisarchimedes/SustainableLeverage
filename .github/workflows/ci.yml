@@ -99,14 +99,12 @@ jobs:
           end=$(date +%s)
           duration=$((end-start))
           echo "DURATION=$duration" >> $GITHUB_ENV
-          echo "start=$start"
-          echo "end=$end"
           echo "Time taken to run the script: $duration seconds"
                 
       - name: "Report DevOps Metrics"
         run: |
           echo "Time taken to run the script: ${{ env.DURATION }} seconds"
-          python devops/report_new_relic.py ${{ github.repository }} "Test" "true" ${{ env.DURATION }}
+          python devops/report_new_relic.py ${{ github.repository }} "PR Test" "true" ${{ env.DURATION }}
 
       - name: "Add test summary"
         run: |
