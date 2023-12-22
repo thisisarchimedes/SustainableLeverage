@@ -26,7 +26,9 @@ def send_devops_event_to_new_relic(event_msg: dict):
         "info": event_msg,
     }
 
-    requests.post(endpoint, headers=headers, data=json.dumps(data))
+    res = requests.post(endpoint, headers=headers, data=json.dumps(data))
+    print(res.status_code)
+    print(res.text)
 
 def create_event_msg(repo_name: str, action: str, test_pass: bool, test_time_seconds: float) -> dict:
 
