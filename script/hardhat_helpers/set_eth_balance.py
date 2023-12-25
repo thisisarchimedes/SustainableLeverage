@@ -4,7 +4,7 @@ import sys
 
 
 def set_eth_balance_of_address(address, amount):
-    fork_url = "http://ec2-34-199-255-185.compute-1.amazonaws.com:8545" #THE_FORK_URL
+    fork_url = THE_FORK_URL
     requests.post(
         url=fork_url,
         json={
