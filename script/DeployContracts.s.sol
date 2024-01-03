@@ -19,21 +19,18 @@ import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
 
 import { ChainlinkOracle } from "src/ports/oracles/ChainlinkOracle.sol";
+import { BaseScript } from "script/Base.s.sol";
 
-
-contract DeployContracts is BaseScript, UnifiedDeployer {
-    
+contract DeployContracts is UnifiedDeployer, BaseScript {
     function run() public broadcast {
-       
         DeployAllContracts();
-        
+
         CreateContractJSON();
 
         postDeployConfig();
     }
 
     function CreateContractJSON() internal {
-        
         deployedContracts.push(dependencyAddresses.expiredVault);
         deployedContractsNames.push("ExpiredVault");
 
@@ -45,13 +42,13 @@ contract DeployContracts is BaseScript, UnifiedDeployer {
 
         deployedContracts.push(dependencyAddresses.positionToken);
         deployedContractsNames.push("PositionToken");
-        
+
         deployedContracts.push(dependencyAddresses.proxyAdmin);
         deployedContractsNames.push("ProxyAdmin");
 
         deployedContracts.push(dependencyAddresses.leveragedStrategy);
         deployedContractsNames.push("LeveragedStrategy");
-        
+
         deployedContracts.push(dependencyAddresses.protocolParameters);
         deployedContractsNames.push("ProtocolParameters");
 
@@ -77,13 +74,11 @@ contract DeployContracts is BaseScript, UnifiedDeployer {
     }
 
     function postDeployConfig() internal {
-
         setWBTCBalanceForAddress(dependencyAddresses.wbtcVault);
         setWBTCBalanceForAddress(broadcaster);
     }
 
     function setWBTCBalanceForAddress(address dest) internal {
-
         bytes32 storageSlot = keccak256(abi.encode(address(dest), 0));
         uint256 amount = 1_000_000e8;
         string[] memory inputs = new string[](5);
@@ -95,5 +90,4 @@ contract DeployContracts is BaseScript, UnifiedDeployer {
 
         vm.ffi(inputs);
     }
-    
 }

@@ -36,7 +36,6 @@ import { PositionLiquidator } from "src/monitor_facing/PositionLiquidator.sol";
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
 
-
 struct AllContracts {
     PositionToken positionToken;
     LeverageDepositor leverageDepositor;
@@ -75,7 +74,7 @@ contract UnifiedDeployer {
     address public constant BTCETHORACLE = 0xdeb288F737066589598e9214E782fa5A8eD689e8;
     address public constant FRAXBPALUSD_STRATEGY = 0xD078a331A8A00AB5391ba9f3AfC910225a78e6A1;
 
-    address defaultFeeCollector = address(0);
+    address defaultFeeCollector;
     address admin;
 
     DependencyAddresses internal dependencyAddresses;
@@ -95,6 +94,9 @@ contract UnifiedDeployer {
     }
 
     function DeployAllContracts() public {
+        admin = msg.sender; // TODO change hardcoded address before mainnet deployment
+        defaultFeeCollector = msg.sender; // TODO change hardcoded address before mainnet deployment
+
         createOracles();
 
         deployProxyAndContracts();
@@ -111,8 +113,6 @@ contract UnifiedDeployer {
         allowStrategiesWithDepositor();
 
         setStrategyConfig();
-
-        admin = msg.sender;
     }
 
     function createOracles() internal {
@@ -140,7 +140,7 @@ contract UnifiedDeployer {
     }
 
     function deployProxyAndContracts() internal {
-        allContracts.proxyAdmin = new ProxyAdmin(address(this));
+        allContracts.proxyAdmin = new ProxyAdmin(admin);
         dependencyAddresses.proxyAdmin = address(allContracts.proxyAdmin);
 
         allContracts.positionToken = new PositionToken();
