@@ -3,21 +3,24 @@ import os
 import sys
 
 
-def reset_node():
+def get_block_number():
     fork_url = "http://localhost:8545" #THE_FORK_URL
-    requests.post(
+    res = requests.post(
         url=fork_url,
         json={
             "jsonrpc": "2.0",
-            "method": "hardhat_reset",
+            "method": "eth_blockNumber",
             "params": [],
             "id": 67,
         },
     )
 
+    return res.json()["result"]
+
 
 def main():
-    return reset_node()
+    print(get_block_number())
+
 
 
 __name__ == "__main__" and main()

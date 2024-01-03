@@ -4,7 +4,8 @@ import sys
 
 
 def set_eth_balance_of_address(address, amount):
-    fork_url = THE_FORK_URL
+    fork_url = "http://localhost:8545" #THE_FORK_URL
+   
     requests.post(
         url=fork_url,
         json={
