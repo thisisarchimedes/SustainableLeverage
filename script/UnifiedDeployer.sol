@@ -35,7 +35,6 @@ import { PositionLiquidator } from "src/monitor_facing/PositionLiquidator.sol";
 
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
-import { BaseScript } from "script/Base.s.sol";
 
 struct AllContracts {
     PositionToken positionToken;
@@ -60,7 +59,7 @@ struct AllContracts {
     UniV3SwapAdapter uniV3SwapAdapter;
 }
 
-contract UnifiedDeployer is BaseScript {
+contract UnifiedDeployer {
     using SafeERC20 for IERC20;
     using ProtocolRoles for *;
 
@@ -95,8 +94,8 @@ contract UnifiedDeployer is BaseScript {
     }
 
     function DeployAllContracts() public {
-        admin = broadcaster;
-        defaultFeeCollector = broadcaster;
+        admin = msg.sender; // TODO change hardcoded address before mainnet deployment
+        defaultFeeCollector = msg.sender; // TODO change hardcoded address before mainnet deployment
 
         createOracles();
 

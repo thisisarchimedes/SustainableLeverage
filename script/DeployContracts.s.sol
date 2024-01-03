@@ -19,8 +19,9 @@ import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
 
 import { ChainlinkOracle } from "src/ports/oracles/ChainlinkOracle.sol";
+import { BaseScript } from "script/Base.s.sol";
 
-contract DeployContracts is UnifiedDeployer {
+contract DeployContracts is UnifiedDeployer, BaseScript {
     function run() public broadcast {
         DeployAllContracts();
 
