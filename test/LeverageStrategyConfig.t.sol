@@ -11,7 +11,7 @@ contract LeverageStrategyConfig is BaseTest {
         initTestFramework();
     }
 
-    function test_MaxMultiplierIsGreaterThanOne() external {
+    function testMaxMultiplierIsGreaterThanOne() external {
 
         // quick check that we initialized the test suit correctly
 
@@ -22,7 +22,7 @@ contract LeverageStrategyConfig is BaseTest {
         assertGt(multiplier2, 1);
     }
 
-    function test_LiquidationBufferIsGreaterThanOne() external {
+    function testLiquidationBufferIsGreaterThanOne() external {
 
         // quick check that we initialized the test suit correctly
 
@@ -31,5 +31,16 @@ contract LeverageStrategyConfig is BaseTest {
 
         uint256 buffer2 = allContracts.leveragedStrategy.getLiquidationBuffer(FRAXBPALUSD_STRATEGY);
         assertGt(buffer2, 1);
+    }
+
+    function testPositionLifeTimeIsGreaterThanOne() external {
+
+        // quick check that we initialized the test suit correctly
+
+        uint256 lifetime1 = allContracts.leveragedStrategy.getPositionLifetime(ETHPLUSETH_STRATEGY);
+        assertGt(lifetime1, 1);
+
+        uint256 lifetime2 = allContracts.leveragedStrategy.getPositionLifetime(FRAXBPALUSD_STRATEGY);
+        assertGt(lifetime2, 1);
     }
 }
