@@ -42,5 +42,6 @@ contract LeverageStrategyConfig is BaseTest {
 
         uint256 lifetime2 = allContracts.leveragedStrategy.getPositionLifetime(FRAXBPALUSD_STRATEGY);
         assertGt(lifetime2, 1);
+        
     }
 }
