@@ -11,7 +11,6 @@ import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
 import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
 import { ProtocolParameters } from "src/internal/ProtocolParameters.sol";
 
-
 enum PositionState {
     UNINITIALIZED,
     LIVE,
@@ -50,6 +49,8 @@ contract PositionLedger is AccessControlUpgradeable {
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionOpener);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionCloser);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionLiquidator);
+        
+        _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionExpirator);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.expiredVault);
     }
 
@@ -108,6 +109,14 @@ contract PositionLedger is AccessControlUpgradeable {
 
     function getOpenBlock(uint256 nftID) external view returns (uint256) {
         return entries[nftID].poistionOpenBlock;
+    }
+
+    function getExpirationBlock(uint256 nftID) public view returns (uint256) {
+        return entries[nftID].positionExpirationBlock;
+    }
+
+    function isPositionEligibleForExpiration(uint256 nftID) external view returns (bool) {
+        return getExpirationBlock(nftID) < block.number;
     }
 
     function setClaimableAmount(

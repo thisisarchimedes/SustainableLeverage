@@ -2,7 +2,6 @@
 pragma solidity >=0.8.21;
 
 library ErrorsLeverageEngine {
-
     error ExceedBorrowLimit();
     error LessThanMinimumShares();
     error OracleNotSet();
@@ -18,4 +17,5 @@ library ErrorsLeverageEngine {
     error PositionHasNoBalance();
     error SwapAdapterAlreadySet();
     error PositionMustLiveForMinDuration();
+    error NotEligibleForExpiration();
 }

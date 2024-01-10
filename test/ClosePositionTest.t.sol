@@ -121,4 +121,27 @@ contract ClosePositionTest is BaseTest {
         assertEq(uint8(position.state), uint8(PositionState.CLOSED));
         assertEq(wbtcBalanceAfterClose - wbtcBalanceBeforeClose, position.wbtcDebtAmount);
     }
+
+    function test_ShouldPreviewClosePosition() external {
+        _openPosition();
+        console2.logUint(1);
+        address ownerOfNft = positionToken.ownerOf(0);
+        console2.logUint(2);
+        assertEq(ownerOfNft, address(this), "Should be owner");
+        console2.logUint(3);
+        bytes memory payload = abi.encode(
+            SwapAdapter.UniswapV3Data({
+                path: abi.encodePacked(WETH, uint24(3000), WBTC),
+                deadline: block.timestamp + 1000
+            })
+        );
+
+        console2.logUint(4);
+
+        uint256 amount = leverageEngine.previewClosePosition(0, SwapAdapter.SwapRoute.UNISWAPV3, payload);
+        console2.logUint(5);
+        console2.logUint(amount);
+        PositionLedgerLib.LedgerEntry memory position = leverageEngine.getPosition(0);
+        assertEq(amount, position.wbtcDebtAmount);
+    }
 }

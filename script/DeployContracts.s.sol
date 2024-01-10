@@ -1,50 +1,71 @@
-// SPDX-License-Identifier: CC BY-NC-ND 4.0
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.21;
 
-import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
+import { BaseScript } from "./Base.s.sol";
+import { PositionLedgerLib } from "../src/PositionLedgerLib.sol";
+import { LeverageEngine } from "../src/LeverageEngine.sol";
+import { PositionToken } from "../src/PositionToken.sol";
+import "../src/LeverageDepositor.sol";
+import { WBTCVault } from "src/WBTCVault.sol";
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
+import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-
+import { SwapAdapter } from "../src/SwapAdapter.sol";
 import { console2 } from "forge-std/console2.sol";
 
-import { BaseScript } from "script/Base.s.sol";
-import { UnifiedDeployer } from "script/UnifiedDeployer.sol";
+contract DeployContracts is BaseScript {
+    LeverageEngine internal leverageEngine;
+    PositionToken internal positionToken;
+    LeverageDepositor internal leverageDepositor;
+    WBTCVault internal wbtcVault;
+    ProxyAdmin internal proxyAdmin;
+    TransparentUpgradeableProxy internal proxy;
+    SwapAdapter internal swapAdapter;
+    address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
+    address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public constant ETHPLUSETH_STRATEGY = 0xf3E920f099B19Ce604d672F0e87AAce490558fCA;
+    address public constant WBTCUSDORACLE = 0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c;
+    address public constant ETHUSDORACLE = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+    address public constant USDCUSDORACLE = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
+    address public constant FRAXBPALUSD_STRATEGY = 0xB888b8204Df31B54728e963ebA5465A95b695103;
 
-import { PositionToken } from "src/user_facing/PositionToken.sol";
-
-import { LeverageDepositor } from "src/internal/LeverageDepositor.sol";
-import { WBTCVault } from "src/internal/WBTCVault.sol";
-import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
-
-import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
-
-import { ChainlinkOracle } from "src/ports/oracles/ChainlinkOracle.sol";
-import { BaseScript } from "script/Base.s.sol";
-
-contract DeployContracts is UnifiedDeployer, BaseScript {
     function run() public broadcast {
-        DeployAllContracts();
-
-        CreateContractJSON();
-
-        postDeployConfig();
-    }
-
-    function CreateContractJSON() internal {
-        deployedContracts.push(dependencyAddresses.expiredVault);
-        deployedContractsNames.push("ExpiredVault");
-
-        deployedContracts.push(dependencyAddresses.leverageDepositor);
-        deployedContractsNames.push("LeverageDepositor");
-
-        deployedContracts.push(dependencyAddresses.wbtcVault);
-        deployedContractsNames.push("wbtcVault");
-
-        deployedContracts.push(dependencyAddresses.positionToken);
-        deployedContractsNames.push("PositionToken");
-
-        deployedContracts.push(dependencyAddresses.proxyAdmin);
+        proxyAdmin = new ProxyAdmin(address(this));
+        deployedContracts.push(address(proxyAdmin));
         deployedContractsNames.push("ProxyAdmin");
+<<<<<<< Updated upstream
+        positionToken = new PositionToken();
+        deployedContracts.push(address(positionToken));
+        deployedContractsNames.push("PositionToken");
+        leverageDepositor = new LeverageDepositor(WBTC,WETH);
+        deployedContracts.push(address(leverageDepositor));
+        deployedContractsNames.push("LeverageDepositor");
+        wbtcVault = new WBTCVault(WBTC);
+        deployedContracts.push(address(wbtcVault));
+        deployedContractsNames.push("WBTCVault");
+        leverageEngine = new LeverageEngine();
+        deployedContracts.push(address(leverageEngine));
+        deployedContractsNames.push("LeverageEngineImplementation");
+        swapAdapter = new SwapAdapter(WBTC, address(leverageDepositor));
+        deployedContracts.push(address(swapAdapter));
+        deployedContractsNames.push("SwapAdapter");
+        bytes memory initData = abi.encodeWithSelector(
+            LeverageEngine.initialize.selector,
+            address(wbtcVault),
+            address(leverageDepositor),
+            address(positionToken),
+            address(swapAdapter),
+            broadcaster
+        );
+        proxy = new TransparentUpgradeableProxy(address(leverageEngine), address(proxyAdmin), initData);
+        deployedContracts.push(address(proxy));
+        deployedContractsNames.push("LeverageEngine");
+        leverageEngine = LeverageEngine(address(proxy));
+        leverageEngine.setOracle(WBTC, WBTCUSDORACLE);
+        leverageEngine.setOracle(WETH, ETHUSDORACLE);
+        leverageEngine.setOracle(USDC, USDCUSDORACLE);
+=======
 
         deployedContracts.push(dependencyAddresses.leveragedStrategy);
         deployedContractsNames.push("LeveragedStrategy");
@@ -64,30 +85,29 @@ contract DeployContracts is UnifiedDeployer, BaseScript {
         deployedContracts.push(dependencyAddresses.positionLiquidator);
         deployedContractsNames.push("PositionLiquidator");
 
+        deployedContracts.push(dependencyAddresses.positionExpirator);
+        deployedContractsNames.push("positionExpirator");
+
         deployedContracts.push(dependencyAddresses.positionLedger);
         deployedContractsNames.push("PositionLedger");
 
         deployedContracts.push(dependencyAddresses.swapManager);
         deployedContractsNames.push("SwapManager");
 
+>>>>>>> Stashed changes
         _writeDeploymentsToJson();
-    }
+        if (block.chainid == 1337) {
+            leverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY, 10_000e8, 1000, 3e8, 1.25e8);
+            bytes32 storageSlot = keccak256(abi.encode(address(wbtcVault), 0));
+            uint256 amount = 1_000_000e8;
+            string[] memory inputs = new string[](5);
+            inputs[0] = "python";
+            inputs[1] = "script/setupFork.py";
+            inputs[2] = vm.toString(storageSlot);
+            inputs[3] = vm.toString(WBTC);
+            inputs[4] = vm.toString(bytes32(amount));
 
-    function postDeployConfig() internal {
-        setWBTCBalanceForAddress(dependencyAddresses.wbtcVault);
-        setWBTCBalanceForAddress(broadcaster);
-    }
-
-    function setWBTCBalanceForAddress(address dest) internal {
-        bytes32 storageSlot = keccak256(abi.encode(address(dest), 0));
-        uint256 amount = 1_000_000e8;
-        string[] memory inputs = new string[](5);
-        inputs[0] = "python";
-        inputs[1] = "script/setupFork.py";
-        inputs[2] = vm.toString(storageSlot);
-        inputs[3] = vm.toString(WBTC);
-        inputs[4] = vm.toString(bytes32(amount));
-
-        vm.ffi(inputs);
+            vm.ffi(inputs);
+        }
     }
 }

@@ -20,6 +20,18 @@
 [] liquidate position if it is eligible for liquidation (ETH value asset position) - NOT enough WBTC in position to cover debt
 [] test that we enforce minBTC to avoid sandwitch
 
+[X] Set the expiration time
+[X] If we change expiration parameter it dont affect existing positions
+
+[X] A position can be expired
+[X] Call expire to non eligible position and it does not expire
+[X] Cant expire a closed position
+[X] Cannot expire if not called from monitor
+[X] Change position state to expired
+
+[X] if a position is expired we send the WBTC to expired vault
+[] 
+
 # Refactor list:
 
 [X] Clean up SwapAdapter replace it with SwapManager
@@ -44,6 +56,9 @@
 [] Consider hiding OracleManager under LeveragedStrategy
 
 [] Search all files for TODOs
+
+[] change NftId and nftID and other forms to one form
+
 
 # Comments
 
