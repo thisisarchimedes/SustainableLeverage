@@ -34,6 +34,7 @@ contract DeployContracts is BaseScript {
         proxyAdmin = new ProxyAdmin(address(this));
         deployedContracts.push(address(proxyAdmin));
         deployedContractsNames.push("ProxyAdmin");
+<<<<<<< Updated upstream
         positionToken = new PositionToken();
         deployedContracts.push(address(positionToken));
         deployedContractsNames.push("PositionToken");
@@ -64,6 +65,36 @@ contract DeployContracts is BaseScript {
         leverageEngine.setOracle(WBTC, WBTCUSDORACLE);
         leverageEngine.setOracle(WETH, ETHUSDORACLE);
         leverageEngine.setOracle(USDC, USDCUSDORACLE);
+=======
+
+        deployedContracts.push(dependencyAddresses.leveragedStrategy);
+        deployedContractsNames.push("LeveragedStrategy");
+
+        deployedContracts.push(dependencyAddresses.protocolParameters);
+        deployedContractsNames.push("ProtocolParameters");
+
+        deployedContracts.push(dependencyAddresses.oracleManager);
+        deployedContractsNames.push("OracleManager");
+
+        deployedContracts.push(dependencyAddresses.positionOpener);
+        deployedContractsNames.push("PositionOpener");
+
+        deployedContracts.push(dependencyAddresses.positionCloser);
+        deployedContractsNames.push("PositionCloser");
+
+        deployedContracts.push(dependencyAddresses.positionLiquidator);
+        deployedContractsNames.push("PositionLiquidator");
+
+        deployedContracts.push(dependencyAddresses.positionExpirator);
+        deployedContractsNames.push("positionExpirator");
+
+        deployedContracts.push(dependencyAddresses.positionLedger);
+        deployedContractsNames.push("PositionLedger");
+
+        deployedContracts.push(dependencyAddresses.swapManager);
+        deployedContractsNames.push("SwapManager");
+
+>>>>>>> Stashed changes
         _writeDeploymentsToJson();
         if (block.chainid == 1337) {
             leverageEngine.setStrategyConfig(FRAXBPALUSD_STRATEGY, 10_000e8, 1000, 3e8, 1.25e8);

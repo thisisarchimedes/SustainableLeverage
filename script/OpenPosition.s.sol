@@ -29,7 +29,13 @@ contract DeployContracts is Script {
         address broadcaster = vm.rememberKey(0xb7f3cdcc39c740a28a063f57af7583d3bea1b4473772f4a43721777680475740); // THIS
             // IS DUMMY KEY
         vm.startBroadcast(broadcaster);
+<<<<<<< Updated upstream
         leverageEngine = LeverageEngine(0x1828EF596A7DAf37Eb4bbB78f8a369d8a364875f); // UPDATE THIS WITH LATEST ADDRESS
+=======
+        positionOpener = PositionOpener(0xf4507848A8526f5B5cD8b8b02c0Bf2475D19F6FC); // UPDATE THIS WITH LATEST ADDRESS
+
+        ERC20(WBTC).approve(address(positionOpener), type(uint256).max);
+>>>>>>> Stashed changes
 
         ERC20(WBTC).approve(address(leverageEngine), 1e8);
         bytes memory payload = abi.encode(
