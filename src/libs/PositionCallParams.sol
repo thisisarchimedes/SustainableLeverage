@@ -4,7 +4,7 @@ pragma solidity >=0.8.21;
 import { SwapManager } from "src/internal/SwapManager.sol";
 
 struct OpenPositionParams {
-    uint256 collateralAmount;
+    uint256 collateralAmount; // WBTC
     uint256 wbtcToBorrow;
     address strategy;
     uint256 minStrategyShares;
