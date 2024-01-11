@@ -49,7 +49,6 @@ contract PositionLedger is AccessControlUpgradeable {
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionOpener);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionCloser);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionLiquidator);
-        
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionExpirator);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.expiredVault);
     }

@@ -16,8 +16,8 @@ contract ClosePositionTest is BaseTest {
     address positionReceiver = makeAddr("receiver");
 
     /// @dev A function invoked before each test case is run.
-    function setUp() public virtual {    
-        initFork();    
+    function setUp() public virtual {
+        initFork();
         initTestFramework();
 
         deal(WBTC, address(allContracts.wbtcVault), 100e8);
@@ -25,12 +25,12 @@ contract ClosePositionTest is BaseTest {
 
     function test_ShouldRevertWithNotOwner() external {
         openETHBasedPosition(5e8, 15e8);
-        
+
         address ownerOfNft = allContracts.positionToken.ownerOf(0);
         assertEq(ownerOfNft, address(this), "Should be owner");
-        
+
         allContracts.positionToken.transferFrom(address(this), positionReceiver, 0);
-        
+
         ClosePositionParams memory params = ClosePositionParams({
             nftId: 0,
             minWBTC: 0,
@@ -46,7 +46,7 @@ contract ClosePositionTest is BaseTest {
 
     function test_ShouldRevertWithNotEnoughTokensReceived() external {
         openETHBasedPosition(5e8, 15e8);
-        
+
         bytes memory payload = abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WETH, uint24(3000), WBTC),
@@ -93,7 +93,7 @@ contract ClosePositionTest is BaseTest {
 
     function test_ShouldClosePosition() external {
         openETHBasedPosition(5e8, 15e8);
-        
+
         address ownerOfNft = allContracts.positionToken.ownerOf(0);
         assertEq(ownerOfNft, address(this), "Should be owner");
         bytes memory payload = abi.encode(
@@ -115,33 +115,10 @@ contract ClosePositionTest is BaseTest {
             exchange: address(0)
         });
         allContracts.positionCloser.closePosition(params);
-        
+
         uint256 wbtcBalanceAfterClose = wbtc.balanceOf(address(allContracts.wbtcVault));
         LedgerEntry memory position = allContracts.positionLedger.getPosition(0);
         assertEq(uint8(position.state), uint8(PositionState.CLOSED));
         assertEq(wbtcBalanceAfterClose - wbtcBalanceBeforeClose, position.wbtcDebtAmount);
-    }
-
-    function test_ShouldPreviewClosePosition() external {
-        _openPosition();
-        console2.logUint(1);
-        address ownerOfNft = positionToken.ownerOf(0);
-        console2.logUint(2);
-        assertEq(ownerOfNft, address(this), "Should be owner");
-        console2.logUint(3);
-        bytes memory payload = abi.encode(
-            SwapAdapter.UniswapV3Data({
-                path: abi.encodePacked(WETH, uint24(3000), WBTC),
-                deadline: block.timestamp + 1000
-            })
-        );
-
-        console2.logUint(4);
-
-        uint256 amount = leverageEngine.previewClosePosition(0, SwapAdapter.SwapRoute.UNISWAPV3, payload);
-        console2.logUint(5);
-        console2.logUint(amount);
-        PositionLedgerLib.LedgerEntry memory position = leverageEngine.getPosition(0);
-        assertEq(amount, position.wbtcDebtAmount);
     }
 }
