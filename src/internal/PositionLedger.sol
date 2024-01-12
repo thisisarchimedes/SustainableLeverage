@@ -131,4 +131,3 @@ contract PositionLedger is AccessControlUpgradeable {
         entries[nftID].claimableAmount = 0;
     }
 }
-

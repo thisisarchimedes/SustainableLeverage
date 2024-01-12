@@ -32,7 +32,7 @@ python report_devops_event.py <Repo name> <Event> --metadata <Metadata>
 ```
 
 - _Repo name_: The name of the repo that the event is related to or ALL if the event is not related to a specific repo.
-- _Event_: The event name (script is doing validation on the event name) - 'push', 'deploy', 'test pass'.
+- _Event_: The event name (script is doing validation on the event name) - 'push', 'deploy', 'test_pass'.
 - _Metadata_: Optional. A string with additional data about the event.
 
 3. Verify we got the event in NewRelic
@@ -96,7 +96,7 @@ _Event structure:_
 {
     "Time": Event timestamp,
     "Repo": Repo name,
-    "Event": push/deploy/test pass,
+    "Event": push/deploy/test_pass,
     "Metadata": <Optional>
 }
 ```
@@ -113,7 +113,7 @@ Example:
 Supported events
 - push
 - deploy
-- test pass
+- test_pass
 - calc_deployment_freq (internal event - calculated by the BE and sent to logs and DB - not part of CICD script)
 
 ### Files and Directories
