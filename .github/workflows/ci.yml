@@ -106,6 +106,8 @@ jobs:
           echo "Time taken to run the script: ${{ env.DURATION }} seconds"
           python devops/src/report_new_relic.py ${{ github.repository }} "PR Test" "true" ${{ env.DURATION }}
 
+          python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "test pass" --metadata "{duration: ${{ env.DURATION }}"
+
       - name: "Add test summary"
         run: |
           echo "## Tests result" >> $GITHUB_STEP_SUMMARY
@@ -231,6 +233,10 @@ jobs:
           python script/prep_addresses_json.py
           aws s3 cp deployments/deployments.json s3://smart-contract-backend-config/abis/demo_leverage_abis.json --acl public-read
           aws s3 cp deployments/demo_rpc.json s3://smart-contract-backend-config/demo_rpc.json --acl public-read
+
+      - name: "Report on deploy event"
+        run: |
+          python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "deploy" 
 
 
       - name: "Add deploy summary"
