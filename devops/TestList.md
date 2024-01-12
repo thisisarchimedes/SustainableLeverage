@@ -18,7 +18,7 @@
 [X] Get check authentication
 [X] Get payload and validate payload correctness
 [X] Get payload and store it in the DB
-[X] Get "test pass" event and apply addition logic (record to DB)
+[X] Get "test_pass" event and apply addition logic (record to DB)
 [X] Get "push" event and apply addition logic (record to DB)
 [X] Add "calc_deploy_frequency" event (with ALL as repo name) and write to DB
 [X] Get "deploy" event and apply addition logic (calculate frequencey for all repos and record to DB)
