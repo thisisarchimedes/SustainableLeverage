@@ -25,7 +25,9 @@ def send_devops_event_to_new_relic(event_msg: dict):
         "message": MESSAGE + event_msg["repo"],
         "info": event_msg,
     }
-
+    print(f"Sending data to New Relic: {data}")
+    print(f"Sending headers to New Relic: {headers}")
+    
     res = requests.post(endpoint, headers=headers, data=json.dumps(data))
     print(res.status_code)
     print(res.text)
