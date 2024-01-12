@@ -13,6 +13,7 @@ A service that accepts DevOps events (like: push to Github, Deploy etc..), store
     - [Components](#components)
     - [Files and Directories](#files-and-directories)
     - [Deploy the backend](#deploy-the-backend)
+- [Tests](#tests)
     
 
 ## Quick Start
@@ -22,7 +23,7 @@ A service that accepts DevOps events (like: push to Github, Deploy etc..), store
 1. Define environment variable
 ```bash
 export API_DEVOPS_EVENT_CATCHER="http://127.0.0.1:8000/process-event" # The URL of the backend service
-export SECRET_TOKEN="..." # The secret token that is used to authenticate with the backend service
+export DEVOPS_EVENTS_SECRET_TOKEN="..." # The secret token that is used to authenticate with the backend service
 ```
 
 2. Call the script with the relevant parameters
@@ -57,7 +58,7 @@ aws configure
 3. Define environment variable
 
 ```bash
-SECRET_TOKEN=""
+DEVOPS_EVENTS_SECRET_TOKEN=""
 LOGGER_API_KEY=""
 DEVOPS_DB_NAME="DORAStats"
 DEVOPS_TABLE_NAME="DORARawEventsTest"
@@ -135,7 +136,7 @@ Supported events
 
 .env file content:
 ```bash
-SECRET_TOKEN=""
+DEVOPS_EVENTS_SECRET_TOKEN=""
 LOGGER_API_KEY=""
 DEVOPS_DB_NAME="DORAStats"
 DEVOPS_TABLE_NAME="DORARawEventsTest"
@@ -157,4 +158,11 @@ We currently use: DevOps.pem (check our internal Notion).
 terraform init
 terraform plan
 terraform apply
+```
+
+## Tests
+
+We are using pytest for testins. See `test/` directory for tests.
+```bash
+python -m pytest test/ -s
 ```
