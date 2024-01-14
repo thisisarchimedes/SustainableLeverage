@@ -11,9 +11,7 @@ import "src/internal/LeveragedStrategy.sol";
 import "src/internal/ProtocolParameters.sol";
 import "src/internal/PositionLedger.sol";
 
-contract PositionExpirator is
-    PositionManagementBase // Extend from PositionManagementBase
-{
+contract PositionExpirator is PositionManagementBase {
     function expirePosition(
         uint256 nftID,
         ClosePositionParams calldata params

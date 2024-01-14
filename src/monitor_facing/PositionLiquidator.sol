@@ -11,7 +11,7 @@ import "src/internal/ProtocolParameters.sol";
 import "src/internal/PositionLedger.sol";
 
 contract PositionLiquidator is
-    PositionManagementBase // Extend from PositionManagementBase
+    PositionManagementBase 
 {
     function liquidatePosition(ClosePositionParams calldata params) external onlyRole(ProtocolRoles.MONITOR_ROLE) {
         uint256 nftId = params.nftId;
