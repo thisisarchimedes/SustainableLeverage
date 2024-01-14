@@ -14,11 +14,9 @@ import "src/internal/PositionLedger.sol";
 contract ExpirationTest is BaseTest {
     using ErrorsLeverageEngine for *;
 
-    /* solhint-disable  */
     address positionReceiver = makeAddr("receiver");
 
-    /// @dev A function invoked before each test case is run.
-    function setUp() public virtual {
+    function setUp() public {
         initFork();
         initTestFramework();
 
@@ -27,26 +25,42 @@ contract ExpirationTest is BaseTest {
         allContracts.positionExpirator.setMonitor(address(this));
     }
 
-    function testSetExpirationBlock() public {
-        // get the startegy
-        LeveragedStrategy.StrategyConfig memory strategyConfigBefore =
+    // Helper function to update strategy config
+    function updateStrategyConfig(uint256 newBlockNumber) internal {
+        LeveragedStrategy.StrategyConfig memory strategyConfig =
             allContracts.leveragedStrategy.getStrategyConfig(ETHPLUSETH_STRATEGY);
+        strategyConfig.positionLifetime = newBlockNumber;
+        allContracts.leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
+    }
 
-        // call set setStrategyConfig with a future block
-        uint256 newBlockNumber = strategyConfigBefore.positionLifetime + 10;
+    // Helper function to open an ETH-based position
+    function openEthPosition() internal returns (uint256) {
+        return openETHBasedPosition(10e8, 1e8);
+    }
 
-        allContracts.leveragedStrategy.setStrategyConfig(
-            ETHPLUSETH_STRATEGY,
-            LeveragedStrategy.StrategyConfig({
-                quota: strategyConfigBefore.quota,
-                positionLifetime: newBlockNumber,
-                maximumMultiplier: strategyConfigBefore.maximumMultiplier,
-                liquidationBuffer: strategyConfigBefore.liquidationBuffer,
-                liquidationFee: strategyConfigBefore.liquidationFee
-            })
-        );
+    // Helper function for expectRevert and expire position
+    function expectRevertAndExpire(uint256 nftID, bytes4 selector) internal {
+        ClosePositionParams memory params = getClosePositionParams(nftID);
+        vm.expectRevert(selector);
+        allContracts.positionExpirator.expirePosition(nftID, params);
+    }
 
-        //check expiration == future block
+    function getClosePositionParams(uint256 nftID) internal view returns (ClosePositionParams memory) {
+        bytes memory payloadClose = getWETHWBTCUniswapPayload();
+        return ClosePositionParams({
+            nftId: nftID,
+            minWBTC: 0,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payloadClose,
+            exchange: address(0)
+        });
+    }
+
+    function testSetExpirationBlock() public {
+        uint256 newBlockNumber =
+            allContracts.leveragedStrategy.getStrategyConfig(ETHPLUSETH_STRATEGY).positionLifetime + 10;
+        updateStrategyConfig(newBlockNumber);
+
         LeveragedStrategy.StrategyConfig memory strategyConfigAfter =
             allContracts.leveragedStrategy.getStrategyConfig(ETHPLUSETH_STRATEGY);
 
@@ -54,26 +68,12 @@ contract ExpirationTest is BaseTest {
     }
 
     function testChangeExpirationBlockDontAffectLivePositions() public {
-        uint256 nftId = openETHBasedPosition(10e8, 1e8);
-
+        uint256 nftId = openEthPosition();
         uint256 expirationBlockBefore = allContracts.positionLedger.getExpirationBlock(nftId);
 
-        LeveragedStrategy.StrategyConfig memory strategyConfigBefore =
-            allContracts.leveragedStrategy.getStrategyConfig(ETHPLUSETH_STRATEGY);
-
-        // call set setStrategyConfig with a future block
-        uint256 newBlockNumber = strategyConfigBefore.positionLifetime + 10;
-
-        allContracts.leveragedStrategy.setStrategyConfig(
-            ETHPLUSETH_STRATEGY,
-            LeveragedStrategy.StrategyConfig({
-                quota: strategyConfigBefore.quota,
-                positionLifetime: newBlockNumber,
-                maximumMultiplier: strategyConfigBefore.maximumMultiplier,
-                liquidationBuffer: strategyConfigBefore.liquidationBuffer,
-                liquidationFee: strategyConfigBefore.liquidationFee
-            })
-        );
+        uint256 newBlockNumber =
+            allContracts.leveragedStrategy.getStrategyConfig(ETHPLUSETH_STRATEGY).positionLifetime + 10;
+        updateStrategyConfig(newBlockNumber);
 
         uint256 expirationBlockAfter = allContracts.positionLedger.getExpirationBlock(nftId);
 
@@ -81,11 +81,10 @@ contract ExpirationTest is BaseTest {
     }
 
     function testPositionCanBeExpired() public {
-        uint256 nftID = openETHBasedPosition(10e8, 1e8);
+        uint256 nftID = openEthPosition();
         bool isEligibleForExpiration = allContracts.positionLedger.isPositionEligibleForExpiration(nftID);
         assertEq(isEligibleForExpiration, false);
 
-        // run forward to a future block
         uint256 expirationBlock = allContracts.positionLedger.getExpirationBlock(nftID);
         vm.roll(expirationBlock + 1);
 
@@ -94,124 +93,52 @@ contract ExpirationTest is BaseTest {
     }
 
     function testCantExpireNotEligiblePosition() public {
-        // create a position
-        uint256 nftID = openETHBasedPosition(10e8, 1e8);
-
-        //catch a revert
-        vm.expectRevert(ErrorsLeverageEngine.NotEligibleForExpiration.selector);
-
-        bytes memory payloadClose = getWETHWBTCUniswapPayload();
-
-        ClosePositionParams memory params = ClosePositionParams({
-            nftId: nftID,
-            minWBTC: 0,
-            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
-            swapData: payloadClose,
-            exchange: address(0)
-        });
-
-        //try to expire
-        allContracts.positionExpirator.expirePosition(nftID, params);
+        uint256 nftID = openEthPosition();
+        expectRevertAndExpire(nftID, ErrorsLeverageEngine.NotEligibleForExpiration.selector);
     }
 
     function testCantExpireClosedPosition() public {
-        uint256 nftID = openETHBasedPosition(10e8, 1e8);
-
+        uint256 nftID = openEthPosition();
         closeETHBasedPosition(nftID);
-
-        //catch a revert
-        vm.expectRevert(ErrorsLeverageEngine.PositionNotLive.selector);
-
-        bytes memory payloadClose = getWETHWBTCUniswapPayload();
-
-        ClosePositionParams memory params = ClosePositionParams({
-            nftId: nftID,
-            minWBTC: 0,
-            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
-            swapData: payloadClose,
-            exchange: address(0)
-        });
-
-        //try to expire
-        allContracts.positionExpirator.expirePosition(nftID, params);
+        expectRevertAndExpire(nftID, ErrorsLeverageEngine.PositionNotLive.selector);
     }
 
     function testCantExpireNotFromMonitor() public {
-        uint256 nftID = openETHBasedPosition(10e8, 1e8);
-
+        uint256 nftID = openEthPosition();
         vm.prank(address(0));
 
+        ClosePositionParams memory params = getClosePositionParams(nftID);
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector, 0, ProtocolRoles.MONITOR_ROLE
             )
         );
-
-        bytes memory payloadClose = getWETHWBTCUniswapPayload();
-
-        ClosePositionParams memory params = ClosePositionParams({
-            nftId: nftID,
-            minWBTC: 0,
-            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
-            swapData: payloadClose,
-            exchange: address(0)
-        });
-
         allContracts.positionExpirator.expirePosition(nftID, params);
     }
 
     function testPositionStateExpiredAfterExpiration() public {
-        uint256 nftID = openETHBasedPosition(10e8, 1e8);
-
-        // run forward to a future block
+        uint256 nftID = openEthPosition();
         uint256 expirationBlock = allContracts.positionLedger.getExpirationBlock(nftID);
         vm.roll(expirationBlock + 1);
 
-        bytes memory payloadClose = getWETHWBTCUniswapPayload();
-
-        ClosePositionParams memory params = ClosePositionParams({
-            nftId: nftID,
-            minWBTC: 0,
-            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
-            swapData: payloadClose,
-            exchange: address(0)
-        });
-
-        //try to expire
+        ClosePositionParams memory params = getClosePositionParams(nftID);
         allContracts.positionExpirator.expirePosition(nftID, params);
 
-        //get position state
         PositionState state = allContracts.positionLedger.getPositionState(nftID);
-
         assert(state == PositionState.EXPIRED);
     }
 
     function testPositionUnwindOnExpiration() public {
-        uint256 nftID = openETHBasedPosition(10e8, 1e8);
-
-        // run forward to a future block
+        uint256 nftID = openEthPosition();
         uint256 expirationBlock = allContracts.positionLedger.getExpirationBlock(nftID);
         vm.roll(expirationBlock + 1);
 
-        //get vault balance
         uint256 wbtcBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
 
-        bytes memory payloadClose = getWETHWBTCUniswapPayload();
-
-        ClosePositionParams memory params = ClosePositionParams({
-            nftId: nftID,
-            minWBTC: 0,
-            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
-            swapData: payloadClose,
-            exchange: address(0)
-        });
-
-        //try to expire
+        ClosePositionParams memory params = getClosePositionParams(nftID);
         allContracts.positionExpirator.expirePosition(nftID, params);
 
-        //get vault balance
         uint256 wbtcBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
-
         assert(wbtcBalanceAfter > wbtcBalanceBefore);
     }
 }

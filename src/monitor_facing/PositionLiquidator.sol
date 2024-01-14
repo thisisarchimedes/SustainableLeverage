@@ -10,9 +10,7 @@ import "src/internal/LeveragedStrategy.sol";
 import "src/internal/ProtocolParameters.sol";
 import "src/internal/PositionLedger.sol";
 
-contract PositionLiquidator is
-    PositionManagementBase 
-{
+contract PositionLiquidator is PositionManagementBase {
     function liquidatePosition(ClosePositionParams calldata params) external onlyRole(ProtocolRoles.MONITOR_ROLE) {
         uint256 nftId = params.nftId;
         uint256 strategyTokenAmountRecieved = unwindPosition(nftId);
