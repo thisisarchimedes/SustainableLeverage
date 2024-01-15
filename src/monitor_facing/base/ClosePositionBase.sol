@@ -7,7 +7,7 @@ import "src/libs/ProtocolRoles.sol";
 import "src/libs/DependencyAddresses.sol";
 import "src/internal/PositionLedger.sol";
 
-contract PositionManagementBase is ClosePositionInternal, AccessControlUpgradeable {
+contract ClosePositiontBase is ClosePositionInternal, AccessControlUpgradeable {
     address internal monitor;
     address internal expiredVault;
 
