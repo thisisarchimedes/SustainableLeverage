@@ -31,7 +31,8 @@ contract DeployContracts is Script {
         bytes memory payload = abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(USDC, uint24(3000), WETH, uint24(500), WBTC),
-                deadline: block.timestamp + 1000
+                deadline: block.timestamp + 1000,
+                amountOutMin: 1
             })
         );
         ClosePositionParams memory params = ClosePositionParams({

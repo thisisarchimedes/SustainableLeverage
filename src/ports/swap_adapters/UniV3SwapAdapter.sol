@@ -20,6 +20,7 @@ contract UniV3SwapAdapter is ISwapAdapter, AccessControlUpgradeable {
      struct UniswapV3Data {
         bytes path;
         uint256 deadline;
+        uint256 amountOutMin;
     }
 
     constructor() {
@@ -61,13 +62,14 @@ contract UniV3SwapAdapter is ISwapAdapter, AccessControlUpgradeable {
         UniswapV3Data memory data = abi.decode(payload, (UniswapV3Data));
 
         fromToken.approve(UNISWAPV3_ROUTER, fromAmount);
+        
         ISwapRouterUniV3(UNISWAPV3_ROUTER).exactInput(
             ISwapRouterUniV3.ExactInputParams({
                 path: data.path,
                 recipient: recipient,
                 deadline: data.deadline,
                 amountIn: fromAmount,
-                amountOutMinimum: 1
+                amountOutMinimum: data.amountOutMin
             })
         );
     }

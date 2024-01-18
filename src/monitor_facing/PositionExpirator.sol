@@ -37,30 +37,4 @@ contract PositionExpirator is ClosePositiontBase {
         // Change state of position to expired
         positionLedger.setPositionState(nftID, PositionState.EXPIRED);
     }
-
-    function previewExpirePosition(
-        uint256[] memory nftIDs,
-        address strategy
-    )
-        external
-        view
-        returns (uint256 estimatedWBTC)
-    {
-        uint256 totalShares = 0;
-
-        // Iterate over all NFT IDs to aggregate the total shares
-        for (uint256 i = 0; i < nftIDs.length; i++) {
-            LedgerEntry memory position = positionLedger.getPosition(nftIDs[i]);
-
-            // Verify each position
-            require(position.state == PositionState.LIVE, "Position not LIVE or already processed");
-            require(block.number >= position.positionExpirationBlock, "Position not expired");
-            require(position.strategyAddress == strategy, "Position does not belong to the strategy");
-
-            totalShares = totalShares += position.strategyShares;
-        }
-
-        // Here, we assume the strategy has a function to give us an estimate of the WBTC for the shares
-        estimatedWBTC = strategy.previewRedeem(totalShares);
-    }
 }

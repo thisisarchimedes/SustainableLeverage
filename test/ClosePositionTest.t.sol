@@ -50,7 +50,8 @@ contract ClosePositionTest is BaseTest {
         bytes memory payload = abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WETH, uint24(3000), WBTC),
-                deadline: block.timestamp + 1000
+                deadline: block.timestamp + 1000,
+                amountOutMin: 1
             })
         );
 
@@ -73,7 +74,8 @@ contract ClosePositionTest is BaseTest {
         bytes memory payload = abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WETH, uint24(3000), WBTC),
-                deadline: block.timestamp + 1000
+                deadline: block.timestamp + 1000,
+                amountOutMin: 1
             })
         );
 
@@ -99,7 +101,8 @@ contract ClosePositionTest is BaseTest {
         bytes memory payload = abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WETH, uint24(3000), WBTC),
-                deadline: block.timestamp + 1000
+                deadline: block.timestamp + 1000,
+                amountOutMin: 1
             })
         );
 

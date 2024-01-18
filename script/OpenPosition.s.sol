@@ -35,14 +35,15 @@ contract OpenPosition is Script {
         address broadcaster = vm.rememberKey(0xfb3e889306aafa69793a67e74c09e657eec07c4c552543db26f3158cf53c2a57); // THIS
             // IS DUMMY KEY
         vm.startBroadcast(broadcaster);
-        positionOpener = PositionOpener(0x83c48f09766Ada3f24C742c7A2C2d92dCbe4e73E); // UPDATE THIS WITH LATEST ADDRESS
+        positionOpener = PositionOpener(0xf4507848A8526f5B5cD8b8b02c0Bf2475D19F6FC); // UPDATE THIS WITH LATEST ADDRESS
 
         ERC20(WBTC).approve(address(positionOpener), type(uint256).max);
 
         bytes memory payload = abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WBTC, uint24(3000), USDC),
-                deadline: block.timestamp + 1000
+                deadline: block.timestamp + 1000,
+                amountOutMin: 1
             })
         );
 
