@@ -8,6 +8,8 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   NEW_RELIC_API_KEY: ${{ secrets.NEW_RELIC_API_KEY }}
   FOUNDRY_PROFILE: "ci"
+  API_DEVOPS_EVENT_CATCHER: ${{ secrets.API_DEVOPS_EVENT_CATCHER }}
+  DEVOPS_EVENTS_SECRET_TOKEN: ${{ secrets.DEVOPS_EVENTS_SECRET_TOKEN }}
 
 on:
   workflow_dispatch:
@@ -105,6 +107,10 @@ jobs:
         run: |
           echo "Time taken to run the script: ${{ env.DURATION }} seconds"
           python devops/src/report_new_relic.py ${{ github.repository }} "PR Test" "true" ${{ env.DURATION }}
+
+          pip install python-dotenv
+          pip install requests
+          python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "test_pass" --metadata '{"duration": ${{ env.DURATION }}}'
 
       - name: "Add test summary"
         run: |
@@ -231,6 +237,11 @@ jobs:
           python script/prep_addresses_json.py
           aws s3 cp deployments/deployments.json s3://smart-contract-backend-config/abis/demo_leverage_abis.json --acl public-read
           aws s3 cp deployments/demo_rpc.json s3://smart-contract-backend-config/demo_rpc.json --acl public-read
+
+      - name: "Report on deploy event"
+        run: |
+          pip install -r devops/metrics/src/cicd_script/requirements.txt
+          python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "deploy" 
 
 
       - name: "Add deploy summary"

@@ -6,10 +6,7 @@
     "name": "Paul Razvan Berg",
     "url": "https://github.com/PaulRBerg"
   },
-  "devDependencies": {
-    "prettier": "^3.1.0",
-    "solhint": "^4.0.0"
-  },
+  "private": true,
   "keywords": [
     "blockchain",
     "ethereum",
@@ -19,7 +16,6 @@
     "solidity",
     "template"
   ],
-  "private": true,
   "scripts": {
     "clean": "rm -rf cache out",
     "build": "forge build",
@@ -30,5 +26,9 @@
     "test": "forge test",
     "test:coverage": "forge coverage",
     "test:coverage:report": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage"
+  },
+  "devDependencies": {
+    "prettier": "^3.1.0",
+    "solhint": "^4.0.0"
   }
 }
