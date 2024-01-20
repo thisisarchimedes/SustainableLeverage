@@ -252,7 +252,11 @@ jobs:
           pip install -r devops/metrics/src/cicd_script/requirements.txt
           python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "deploy" 
 
-
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
+          
       - name: "Add deploy summary"
         run: |
           echo "## Deploy result" >> $GITHUB_STEP_SUMMARY
