@@ -72,4 +72,4 @@ jobs:
           
           pip install python-dotenv
           pip install requests          
-          python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "test_run" '{"pass": ${{ env.TEST_PASS }}, "time": ${{ env.DURATION }}}'
+          python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "test_run" --metadata '{"pass": ${{ env.TEST_PASS }}, "time": ${{ env.DURATION }}}'
