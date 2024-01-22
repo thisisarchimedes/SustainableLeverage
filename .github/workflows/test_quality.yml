@@ -66,10 +66,16 @@ jobs:
             echo "TEST_PASS=false" >> $GITHUB_ENV
           fi
 
+      - name: Calculating test coverage
+        run: |
+          forge coverage > tmp_report
+          coverage=grep "Total" tmp_report | awk '{print $(NF-2)}'  
+          echo "COVERAGE=$coverage" >> $GITHUB_ENV
+
       - name: Report test run time
         run: |
           echo "Time taken to run the tests: ${{ env.DURATION }} seconds"
           
           pip install python-dotenv
           pip install requests          
-          python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "test_run" --metadata '{"pass": ${{ env.TEST_PASS }}, "time": ${{ env.DURATION }}}'
+          python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "test_run" --metadata '{"pass": ${{ env.TEST_PASS }}, "time": ${{ env.DURATION }}, "coverage": ${{ env.COVERAGE }}}' 
