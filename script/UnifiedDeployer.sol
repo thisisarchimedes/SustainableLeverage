@@ -32,6 +32,7 @@ import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
 import { SwapManager } from "src/internal/SwapManager.sol";
 
 import { PositionLiquidator } from "src/monitor_facing/PositionLiquidator.sol";
+import { PositionExpirator } from "src/monitor_facing/PositionExpirator.sol";
 
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
@@ -50,6 +51,7 @@ struct AllContracts {
     PositionOpener positionOpener;
     PositionCloser positionCloser;
     PositionLiquidator positionLiquidator;
+    PositionExpirator positionExpirator;
     OracleManager oracleManager;
     SwapManager swapManager;
     ChainlinkOracle ethUsdOracle;
@@ -107,6 +109,7 @@ contract UnifiedDeployer {
         allContracts.positionOpener.setDependencies(dependencyAddresses);
         allContracts.positionCloser.setDependencies(dependencyAddresses);
         allContracts.positionLiquidator.setDependencies(dependencyAddresses);
+        allContracts.positionExpirator.setDependencies(dependencyAddresses);
         allContracts.positionToken.setDependencies(dependencyAddresses);
         allContracts.leverageDepositor.setDependencies(dependencyAddresses);
 
@@ -175,6 +178,9 @@ contract UnifiedDeployer {
 
         dependencyAddresses.positionLedger = createProxiedPositionLedger();
         allContracts.positionLedger = PositionLedger(dependencyAddresses.positionLedger);
+
+        dependencyAddresses.positionExpirator = createProxiedPositionExpirator();
+        allContracts.positionExpirator = PositionExpirator(dependencyAddresses.positionExpirator);
 
         dependencyAddresses.swapManager = createProxiedSwapManager();
         allContracts.swapManager = SwapManager(dependencyAddresses.swapManager);
@@ -257,6 +263,16 @@ contract UnifiedDeployer {
         );
 
         return addrPositionLiquidator;
+    }
+
+    function createProxiedPositionExpirator() internal returns (address) {
+        PositionExpirator implPositionExpirator = new PositionExpirator();
+
+        address addrPositionExpirator = createUpgradableContract(
+            implPositionExpirator.initialize.selector, address(implPositionExpirator), address(allContracts.proxyAdmin)
+        );
+
+        return addrPositionExpirator;
     }
 
     function createProxiedPositionLedger() internal returns (address) {

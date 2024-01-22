@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.21;
 
-pragma solidity >=0.8.21;
-
 import { console2 } from "forge-std/console2.sol";
 import { Script } from "forge-std/Script.sol";
 
@@ -29,14 +27,15 @@ contract DeployContracts is Script {
 
     function run() public {
         address broadcaster = vm.rememberKey(0xfb3e889306aafa69793a67e74c09e657eec07c4c552543db26f3158cf53c2a57); // THIS
-            // IS DUMMY KEY
+        // IS DUMMY KEY
         vm.startBroadcast(broadcaster);
         positionCloser = PositionCloser(0x1d6C8A1B29FAF897A54202e537d8eE4065071CcB); // UPDATE THIS WITH LATEST ADDRESS
 
         bytes memory payload = abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(USDC, uint24(3000), WETH, uint24(500), WBTC),
-                deadline: block.timestamp + 100000000000000
+                deadline: block.timestamp + 100_000_000_000_000,
+                amountOutMin: 1
             })
         );
 

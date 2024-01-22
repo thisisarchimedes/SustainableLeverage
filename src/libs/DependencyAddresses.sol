@@ -13,6 +13,7 @@ struct DependencyAddresses {
     address positionOpener;
     address positionCloser;
     address positionLiquidator;
+    address positionExpirator;
     address positionLedger;
     address swapManager;
 }

@@ -13,17 +13,16 @@ import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 // @notice: This contract holds strategy shares and deposit/withdraw tokens from strategy
 contract LeverageDepositor is ILeverageDepositor, AccessControl {
     using ProtocolRoles for *;
-   
+
     constructor() {
-        
         _grantRole(ProtocolRoles.ADMIN_ROLE, msg.sender);
     }
 
     function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
-
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionOpener);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionCloser);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionLiquidator);
+        _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionExpirator);
     }
 
     function allowStrategyWithDepositor(address strategy) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
@@ -34,15 +33,27 @@ contract LeverageDepositor is ILeverageDepositor, AccessControl {
         IERC20(IMultiPoolStrategy(strategy).asset()).approve(strategy, 0);
     }
 
-    function deposit(address strategy, uint256 amount) external onlyRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE) returns (uint256)
+    function deposit(
+        address strategy,
+        uint256 amount
+    )
+        external
+        onlyRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE)
+        returns (uint256)
     {
         require(amount > 0, "Amount should be greater than 0");
-        
+
         return IMultiPoolStrategy(strategy).deposit(amount, address(this));
     }
 
-    function redeem(address strategy, uint256 shares) external onlyRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE) returns (uint256) {
-        
+    function redeem(
+        address strategy,
+        uint256 shares
+    )
+        external
+        onlyRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE)
+        returns (uint256)
+    {
         require(shares > 0, "Shares should be greater than 0");
 
         return IMultiPoolStrategy(strategy).redeem(shares, msg.sender, address(this), 0);

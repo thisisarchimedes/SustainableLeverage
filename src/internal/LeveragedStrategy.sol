@@ -70,6 +70,10 @@ contract LeveragedStrategy is AccessControlUpgradeable {
         );
     }
 
+    function getStrategyConfig(address strategy) public view returns (StrategyConfig memory) {
+        return strategyConfig[strategy];
+    }
+
     function removeStrategy(address strategy) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
         strategyConfig[strategy].quota = 0;
 

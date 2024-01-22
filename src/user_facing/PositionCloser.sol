@@ -52,10 +52,6 @@ contract PositionCloser is AccessControlUpgradeable, ClosePositionInternal {
         uint256 strategyTokenAmountRecieved = unwindPosition(params.nftId);
         uint256 wbtcReceived = swapStrategyTokenToWbtc(strategyTokenAmountRecieved, params);
 
-        if (wbtcReceived < params.minWBTC) {
-            revert ErrorsLeverageEngine.NotEnoughTokensReceived();
-        }
-
         uint256 wbtcDebtAmount = positionLedger.getDebtAmount(params.nftId);
         if (wbtcReceived < wbtcDebtAmount) {
             revert ErrorsLeverageEngine.NotEnoughWBTC();

@@ -36,7 +36,7 @@ contract SwapManagerTest is BaseTest {
         uint256 wbtcToUsdcExchangeRate = 10_000 * (10 ** ERC20(USDC).decimals());
         fakeWBTCUSDCAdapter.setWbtcToUsdcExchangeRate(wbtcToUsdcExchangeRate);
 
-        swapWbtcToUsdcOnFake(wbtcAmountToSwap);                
+        swapWbtcToUsdcOnFake(wbtcAmountToSwap);
 
         uint256 wbtcBalanceAfter = IERC20(WBTC).balanceOf(address(this));
         uint256 usdcBalanceAfter = IERC20(USDC).balanceOf(address(this));
@@ -90,7 +90,8 @@ contract SwapManagerTest is BaseTest {
         return abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WBTC, uint24(3000), USDC),
-                deadline: block.timestamp + 100_000
+                deadline: block.timestamp + 100_000,
+                amountOutMin: 1
             })
         );
     }
@@ -128,7 +129,8 @@ contract SwapManagerTest is BaseTest {
         return abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(USDC, uint24(3000), WBTC),
-                deadline: block.timestamp + 100_000
+                deadline: block.timestamp + 100_000,
+                amountOutMin: 1
             })
         );
     }
@@ -138,18 +140,18 @@ contract SwapManagerTest is BaseTest {
         deal(WBTC, address(this), wbtcAmountToSwap);
 
         uint256 usdcBalanceBefore = IERC20(USDC).balanceOf(address(this));
-        swapWbtcToUsdcOnUniswapV3(wbtcAmountToSwap);         
+        swapWbtcToUsdcOnUniswapV3(wbtcAmountToSwap);
         uint256 usdcBalanceAfter = IERC20(USDC).balanceOf(address(this));
 
         uint256 expectedUsdcAmount = getOracleWbtcAmountUsdcValue(wbtcAmountToSwap);
 
-        uint256 delta = expectedUsdcAmount * 2_500 / 100_000;
+        uint256 delta = expectedUsdcAmount * 2500 / 100_000;
         assertAlmostEq(expectedUsdcAmount, usdcBalanceAfter - usdcBalanceBefore, delta);
     }
 
-    function getOracleWbtcAmountUsdcValue(uint256 wbtcAmount) internal view returns(uint256) { 
-
-        uint256 totalDecimals = allContracts.oracleManager.getUSDOracleDecimals(WBTC) + ERC20(WBTC).decimals() - ERC20(USDC).decimals();
+    function getOracleWbtcAmountUsdcValue(uint256 wbtcAmount) internal view returns (uint256) {
+        uint256 totalDecimals =
+            allContracts.oracleManager.getUSDOracleDecimals(WBTC) + ERC20(WBTC).decimals() - ERC20(USDC).decimals();
         return allContracts.oracleManager.getLatestTokenPriceInUSD(WBTC) * wbtcAmount / 10 ** (totalDecimals);
     }
 
@@ -163,13 +165,13 @@ contract SwapManagerTest is BaseTest {
 
         uint256 expectedWbtcAmount = getOracleUsdcAmountWbtcValue(usdcAmountToSwap);
 
-        uint256 delta = expectedWbtcAmount * 2_500 / 100_000;
+        uint256 delta = expectedWbtcAmount * 2500 / 100_000;
         assertAlmostEq(expectedWbtcAmount, wbtcBalanceAfter - wbtcBalanceBefore, delta);
     }
 
-    function getOracleUsdcAmountWbtcValue(uint256 usdcAmount) internal view returns(uint256) { 
-
-        uint256 totalDecimals = allContracts.oracleManager.getUSDOracleDecimals(WBTC) + ERC20(WBTC).decimals() - ERC20(USDC).decimals();
+    function getOracleUsdcAmountWbtcValue(uint256 usdcAmount) internal view returns (uint256) {
+        uint256 totalDecimals =
+            allContracts.oracleManager.getUSDOracleDecimals(WBTC) + ERC20(WBTC).decimals() - ERC20(USDC).decimals();
         return (usdcAmount * 10 ** totalDecimals) / allContracts.oracleManager.getLatestTokenPriceInUSD(WBTC);
     }
 

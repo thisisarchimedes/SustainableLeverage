@@ -140,19 +140,17 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
     }
 
     function liquidateUSDCPosition(uint256 nftId) internal returns (uint256 debtPaidBack) {
-        
         uint256 wtbcUsdPrice = allContracts.oracleManager.getLatestTokenPriceInUSD(WBTC);
 
         // Drop the eth price by ~30%
         uint256 fakeBtcUsdPrice = (uint256(wtbcUsdPrice) * 1.3e8) / 1e8;
 
-
         ISwapAdapter fakeSwapAdapter = getFakeSwapAdapterWithSetPrice(fakeBtcUsdPrice);
         allContracts.swapManager.setSwapAdapter(SwapManager.SwapRoute.UNISWAPV3, fakeSwapAdapter);
-        
+
         IOracle fakeWBTCUSDOracle = getFakeOracleWithSetPrice(fakeBtcUsdPrice);
         allContracts.oracleManager.setUSDOracle(WBTC, fakeWBTCUSDOracle);
-        
+
         allContracts.positionLiquidator.setMonitor(address(this));
         uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
 
@@ -171,7 +169,6 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
     }
 
     function getFakeSwapAdapterWithSetPrice(uint256 fakeBtcUsdPrice) internal returns (ISwapAdapter) {
-        
         FakeWBTCUSDCSwapAdapter fakeSwapAdapter = new FakeWBTCUSDCSwapAdapter();
         deal(USDC, address(fakeSwapAdapter), 100_000e6);
         deal(WBTC, address(fakeSwapAdapter), 1000e8);
@@ -183,7 +180,6 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
     }
 
     function getFakeOracleWithSetPrice(uint256 fakeBtcUsdPrice) internal returns (IOracle) {
-
         FakeOracle fakeWBTCUSDOracle = new FakeOracle();
         fakeWBTCUSDOracle.updateFakePrice(fakeBtcUsdPrice);
         fakeWBTCUSDOracle.updateDecimals(8);
@@ -195,7 +191,8 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
         bytes memory payload = abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WBTC, uint24(3000), WETH),
-                deadline: block.timestamp + 1000
+                deadline: block.timestamp + 1000,
+                amountOutMin: 1
             })
         );
 
@@ -220,7 +217,8 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
         bytes memory payload = abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WETH, uint24(3000), WBTC),
-                deadline: block.timestamp + 1000
+                deadline: block.timestamp + 1000,
+                amountOutMin: 1
             })
         );
 
@@ -250,7 +248,8 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
         bytes memory payload = abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(WBTC, uint24(500), WETH, uint24(3000), USDC),
-                deadline: block.timestamp + 1000
+                deadline: block.timestamp + 1000,
+                amountOutMin: 1
             })
         );
 
@@ -275,7 +274,8 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
         bytes memory payload = abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
                 path: abi.encodePacked(USDC, uint24(3000), WETH, uint24(500), WBTC),
-                deadline: block.timestamp + 1000
+                deadline: block.timestamp + 1000,
+                amountOutMin: 1
             })
         );
 
