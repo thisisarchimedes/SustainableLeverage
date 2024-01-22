@@ -70,7 +70,7 @@ jobs:
         run: |
           forge coverage > tmp_report
           coverage=grep "Total" tmp_report | awk '{print $(NF-2)}'  
-          echo "COVERAGE=$coverage" >> $GITHUB_ENV
+          echo "COVERAGE_FUNC=$coverage" >> $GITHUB_ENV
 
       - name: Report test run time
         run: |
@@ -78,4 +78,4 @@ jobs:
           
           pip install python-dotenv
           pip install requests          
-          python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "test_run" --metadata '{"pass": ${{ env.TEST_PASS }}, "time": ${{ env.DURATION }}, "coverage": ${{ env.COVERAGE }}}' 
+          python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "test_run" --metadata '{"pass": ${{ env.TEST_PASS }}, "time": ${{ env.DURATION }}, "coverage_functions": ${{ env.COVERAGE_FUNC }}}' 
