@@ -69,8 +69,7 @@ jobs:
       - name: Calculating test coverage
         run: |
           forge coverage > tmp_report
-          coverage=grep "Total" tmp_report | awk '{print $(NF-2)}'  
-          echo "COVERAGE_FUNC=$coverage" >> $GITHUB_ENV
+          echo "COVERAGE_FUNC=`grep "Total" tmp_report | awk '{print $(NF-2)}'`" >> $GITHUB_ENV
 
       - name: Report test run time
         run: |
