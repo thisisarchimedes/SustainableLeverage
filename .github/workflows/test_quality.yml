@@ -3,6 +3,7 @@ name: Run Tests Quality Check
 on:
   schedule:
     - cron: '0 0 * * *'
+  workflow_dispatch:
 
 env:
   API_DEVOPS_EVENT_CATCHER: ${{ vars.API_DEVOPS_EVENT_CATCHER }}
