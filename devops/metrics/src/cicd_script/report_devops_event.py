@@ -4,7 +4,7 @@ import json
 import requests
 from dotenv import load_dotenv
 
-EVENT_TYPES = ['push', 'deploy', 'test_pass']
+EVENT_TYPES = ['push', 'deploy', 'test_pass', 'test_run']
 
 
 class DevOpsEventReporter:

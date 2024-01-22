@@ -2,9 +2,7 @@ from datetime import datetime, timedelta, date, time
 import pandas as pd
 
 class DORADeployFrequencyCalculator():
-    def __init__(self):
-        pass
-
+    
     def get_deployment_frequency(self, daily_deploy_volume: pd.DataFrame, start_date: date, end_date: date) -> float:
         """
             daily_deploy_volume: DataFrame with columns 'Day' (date of the day) and 'DeployCount' (integer value of how many deploys we had this day)

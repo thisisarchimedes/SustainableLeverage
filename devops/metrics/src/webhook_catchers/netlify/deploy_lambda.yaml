@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Netlify Webhook Processor
+
+Resources:
+  NetlifyWebhookFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      Handler: webhook_catcher_netlify.lambda_handler
+      Runtime: python3.11
+      CodeUri: .
+      Description: A Lambda function that processes Netlify webhooks.
+      MemorySize: 128
+      Timeout: 30
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:DevOpsSecretStore-*'
+      Events:
+        WebhookApi:
+          Type: Api
+          Properties:
+            Path: /netlify-hook
+            Method: post
+
+Outputs:
+  WebhookApi:
+    Description: "API Gateway endpoint URL for Netlify webhook function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/netlify-hook/"
