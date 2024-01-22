@@ -45,7 +45,7 @@ jobs:
         run: |
           start=$(date +%s)
           
-          forge test
+          forge test -vvvv
           
           end=$(date +%s)
           duration=$((end-start))
