@@ -4,7 +4,6 @@ pragma solidity >=0.8.21;
 import { IOracle } from "src/interfaces/IOracle.sol";
 
 library EventsLeverageEngine {
-    
     event StrategyConfigUpdated(
         address indexed strategy,
         uint256 quota,
@@ -32,12 +31,7 @@ library EventsLeverageEngine {
         uint256 positionExpireBlock,
         uint256 sharesReceived
     );
-    event PositionClosed(
-        uint256 indexed nftId,
-        address indexed user,
-        uint256 receivedAmount,
-        uint256 wbtcDebtAmount
-    );
+    event PositionClosed(uint256 indexed nftId, address indexed user, uint256 receivedAmount, uint256 wbtcDebtAmount);
     event PositionLiquidated(
         uint256 indexed nftId,
         address indexed strategy,
@@ -46,7 +40,8 @@ library EventsLeverageEngine {
         uint256 liquidationFee
     );
 
+    event PositionExpired(uint256 indexed nftId, address indexed user, uint256 receivedAmount, uint256 wbtcDebtAmount);
+
     event Deposit(address indexed depositor, uint256 amount);
     event Claim(address indexed claimer, uint256 indexed nftId, uint256 amount);
-
 }
