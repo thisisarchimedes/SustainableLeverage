@@ -36,5 +36,27 @@ class TestIntegrationProcessEvent():
         }
         
         entry_point_local(event_payload)
+
+    def test_process_event_test_pass(self):
+            
+        event_payload = {
+            'Time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'Repo': 'test_repo',
+            'Event': 'test_pass',
+            'Metadata': '{"time": 50}'
+        }
+            
+        entry_point_local(event_payload)
+
+    def test_process_event_test_run(self):
+            
+        event_payload = {
+            'Time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'Repo': 'test_repo',
+            'Event': 'test_run',
+            'Metadata': '{"pass": true, "time": 50}'
+        }
+            
+        entry_point_local(event_payload)
         
         

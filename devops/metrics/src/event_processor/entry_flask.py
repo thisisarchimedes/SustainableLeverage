@@ -59,7 +59,7 @@ def _get_auth_token(headers) -> str:
     auth_token = headers.get('X-Secret-Token')
     return auth_token
 
-def _get_response(msg: Optional[str]) -> dict:
+def _get_response(msg: Optional[str]) -> any:
     
     if (msg is None) or (DEBUG == False):
         response = jsonify('Request processed successfully')

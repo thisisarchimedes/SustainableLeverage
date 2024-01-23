@@ -1,0 +1,56 @@
+name: Run Tests Quality Check
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+
+env:
+  API_DEVOPS_EVENT_CATCHER: ${{ vars.API_DEVOPS_EVENT_CATCHER }}
+  DEVOPS_EVENTS_SECRET_TOKEN: ${{ secrets.DEVOPS_EVENTS_SECRET_TOKEN }}
+
+jobs:
+  test_quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+  
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "latest"
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Run Test Suite
+        id: test_suite
+        continue-on-error: true
+        run: |
+          echo "TEST_START=$(date +%s)" >> $GITHUB_ENV  
+
+          yarn test
+
+          end=$(date +%s)
+          duration=$((end-${{ env.TEST_START }}))
+
+          echo "DURATION=$duration" >> $GITHUB_ENV
+          echo "Time taken to run the tests: $duration seconds"
+
+          echo "::set-output name=passed::$?"
+
+      - name: Set Test Result Env Variable
+        run: |
+          if [ ${{ steps.test_suite.outputs.passed }} -eq 0 ]; then
+            echo "TEST_PASS=true" >> $GITHUB_ENV
+          else
+            echo "TEST_PASS=false" >> $GITHUB_ENV
+          fi
+
+      - name: Report test run time
+        run: |
+          echo "Time taken to run the tests: ${{ env.DURATION }} seconds"
+          yarn add install axios dotenv
+          node devops/metrics/src/cicd_script/report_devops_event.js ${{ github.repository }} "test_run" '{"pass": ${{ env.TEST_PASS }}, "time": ${{ env.DURATION }}}'

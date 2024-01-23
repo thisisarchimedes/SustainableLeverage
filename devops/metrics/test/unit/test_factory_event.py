@@ -164,4 +164,32 @@ class TestFactoryEvent:
 
         assert num_rows_after == num_rows_before + \
             1, "process() should write the event to the database."
+        
+
+    def test_test_run_event(self):
+
+        payload = {
+            'Time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'Repo': 'test_repo',
+            'Event': 'test_run',
+            'Metadata': '{"pass": true, "time": 50}'
+        }
+
+        db_connection = DBConnectionFake(None, None)
+        logger = EventLoggerFake()
+
+        event_factory = FactoryEvent(db_connection, logger, 10)
+        event = event_factory.create_event(payload)
+
+        event.process()
+
+        res_df = db_connection.get_repo_events("test_repo")
+
+        metadata_value = str(res_df['Metadata'].iloc[len(res_df.index) - 1])
+        assert metadata_value == '{"pass": true, "time": 50}' , "process() should write the event to the database."
+            
+        event_value = str(res_df['Event'].iloc[len(res_df.index) - 1])
+        assert event_value == str("test_run") , "process() should write the event to the database."
+
+        assert event.get_event_type() == 'test_run', "process() should write the event to the database."
     

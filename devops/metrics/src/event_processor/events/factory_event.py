@@ -6,6 +6,7 @@ from src.event_processor.events.event_push import EventPush
 from src.event_processor.events.event_test_pass import EventTestPass
 from src.event_processor.events.event_deploy import EventDeploy
 from src.event_processor.events.event_calc_deploy_freq import EventCalcDeployFrequency
+from src.event_processor.events.event_test_run import EventTestRun
 
 from src.event_processor.logger.event_logger import EventLogger
 
@@ -32,6 +33,8 @@ class FactoryEvent():
             event = EventDeploy(payload, self.db_connection, self.logger, self.deploy_frequency_timewindow_days)
         elif payload['Event'] == 'calc_deploy_frequency':
             event = EventCalcDeployFrequency(payload, self.db_connection, self.logger)
+        elif payload['Event'] == 'test_run':
+            event = EventTestRun(payload, self.db_connection, self.logger)
         else:
             raise Exception("Invalid event type.")
         
@@ -48,6 +51,8 @@ class FactoryEvent():
         elif event_type == 'deploy':
             return True
         elif event_type == 'calc_deploy_frequency':
+            return True
+        elif event_type == 'test_run':
             return True
         else:
             return False

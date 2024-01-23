@@ -1,0 +1,80 @@
+name: Run Tests Quality Check
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+env:
+  API_DEVOPS_EVENT_CATCHER: ${{ vars.API_DEVOPS_EVENT_CATCHER }}
+  DEVOPS_EVENTS_SECRET_TOKEN: ${{ secrets.DEVOPS_EVENTS_SECRET_TOKEN }}
+  API_KEY_ALCHEMY: ${{ secrets.API_KEY_ALCHEMY }}
+  DEPLOYER_PKEY: ${{ secrets.DEPLOYER_PKEY }}
+  DEPLOYER_ADDRESS: ${{ vars.DEPLOYER_ADDRESS }}
+  FOUNDRY_PROFILE: "ci"
+
+jobs:
+  test_quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Check out the repo"
+        uses: "actions/checkout@v4"
+        with:
+          submodules: "recursive"
+
+      - name: "Prepare Python environment"
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+
+      - name: "Install Foundry"
+        uses: "foundry-rs/foundry-toolchain@v1"
+
+      - name: "Show the Foundry config"
+        run: "forge config"
+
+      - name: "Generate a fuzz seed that changes weekly to avoid burning through RPC allowance"
+        run: >
+          echo "FOUNDRY_FUZZ_SEED=$(
+            echo $(($EPOCHSECONDS - $EPOCHSECONDS % 604800))
+          )" >> $GITHUB_ENV
+
+      - name: "Run the tests"
+        id: test_suite
+        continue-on-error: true
+        run: |
+          start=$(date +%s)
+          
+          forge test
+          
+          end=$(date +%s)
+          duration=$((end-start))
+          echo "DURATION=$duration" >> $GITHUB_ENV
+          echo "Time taken to run the script: $duration seconds"
+
+          echo "::set-output name=passed::$?"
+
+      - name: Set Test Result Env Variable
+        run: |
+          if [ ${{ steps.test_suite.outputs.passed }} -eq 0 ]; then
+            echo "TEST_PASS=true" >> $GITHUB_ENV
+          else
+            echo "TEST_PASS=false" >> $GITHUB_ENV
+          fi
+
+      - name: Calculating test coverage
+        run: |
+          forge coverage > tmp_report
+          echo "COVERAGE_FUNC=`grep "Total" tmp_report | awk '{print $(NF-2)}'`" >> $GITHUB_ENV
+
+      - name: Report test run time
+        run: |
+          echo "Time taken to run the tests: ${{ env.DURATION }} seconds"
+          
+          pip install python-dotenv
+          pip install requests          
+          python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "test_run" --metadata '{"pass": ${{ env.TEST_PASS }}, "time": ${{ env.DURATION }}, "coverage.functions": "${{ env.COVERAGE_FUNC }}"}' 

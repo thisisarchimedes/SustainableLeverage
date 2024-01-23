@@ -9,6 +9,7 @@ class DBConnectionFake(DBConnection):
 
     FAKE_DB_FILE_PATH = 'test/fake_db/db.csv'
 
+    # Fake DB Stab
     def __init__(self, database_name: Optional[str], table_name: Optional[str]):
         pass
         

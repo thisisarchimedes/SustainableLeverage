@@ -4,6 +4,8 @@ A service that accepts DevOps events (like: push to Github, Deploy etc..), store
 - **cicd_script:** A script that runs on the CI/CD pipeline and sends the events to the service.
 - **event_processor:** The backend service.
 
+More info in our [internal Notion](https://www.notion.so/archimedesfi/Adding-DevOps-Metric-to-a-Repo-721c4732e115437dbb4926a821e565c8?pvs=4)
+
 ## Table of Contents
 
 - [Quick Start](#quick-start)
@@ -14,6 +16,8 @@ A service that accepts DevOps events (like: push to Github, Deploy etc..), store
     - [Files and Directories](#files-and-directories)
     - [Deploy the backend](#deploy-the-backend)
 - [Tests](#tests)
+- [Incomming webhooks](#incomming-webhooks)
+    - [Netlify deploy](#netlify-deploy)
     
 
 ## Quick Start
@@ -29,6 +33,11 @@ export DEVOPS_EVENTS_SECRET_TOKEN="..." # The secret token that is used to authe
 2. Call the script with the relevant parameters
 ```bash
 python report_devops_event.py <Repo name> <Event> --metadata <Metadata>
+OR
+node report_devops_event.js <Repo name> <Event> --metadata <Metadata>
+OR
+./report_devops_event.sh <Repo name> <Event> <Metadata>
+
 ```
 
 - _Repo name_: The name of the repo that the event is related to or ALL if the event is not related to a specific repo.
@@ -166,3 +175,15 @@ We are using pytest for testins. See `test/` directory for tests.
 ```bash
 python -m pytest test/ -s
 ```
+
+## Incomming webhooks
+
+### Netlify deploy
+
+Netlify send a webhook on a successful deploy. We use it to calculate the deployment frequency.
+We catch the event with a Lambda function and send it to the backend service.
+
+Deploy the Lambda function:
+1. Change role in `src/webhook_catchers/netlify/`
+2. Run `src/webhook_catchers/netlify/deploy_lambda.sh`
+
