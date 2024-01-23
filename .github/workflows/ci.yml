@@ -54,7 +54,8 @@ jobs:
           slither-args:
             --checklist --detect
             msg-value-loop,delegatecall-loop,controlled-delegatecall,controlled-array-length,arbitrary-send-erc20-permit,weak-prng,reentrancy-eth,abiencoderv2-array,arbitrary-send-erc20,array-by-reference,encode-packed-collision,incorrect-shift,multiple-constructors,name-reused,protected-vars,public-mappings-nested,rtlo,shadowing-state,suicidal,uninitialized-state,uninitialized-storage,unprotected-upgrade
-            --filter-paths "lib|pseudo|test|script|openzeppelin*|forge-std*" --markdown-root ${{ github.server_url}}/${{ github.repository }}/blob/${{ github.sha }}/
+            --filter-paths "lib|pseudo|test|script|openzeppelin*|forge-std*" --markdown-root ${{ github.server_url}}/${{
+            github.repository }}/blob/${{ github.sha }}/
 
       - name: "Add build summary"
         run: |
@@ -78,7 +79,6 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r devops/requirements.txt
 
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
@@ -95,9 +95,9 @@ jobs:
       - name: "Run the tests"
         run: |
           start=$(date +%s)
-          
+
           forge test
-          
+
           end=$(date +%s)
           duration=$((end-start))
           echo "DURATION=$duration" >> $GITHUB_ENV
@@ -105,13 +105,13 @@ jobs:
 
       - name: Get test coverage
         run: |
-          forge coverage --report lcov 
-          
+          forge coverage --report lcov
+
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
-                
+
       - name: "Report DevOps Metrics"
         run: |
           echo "Time taken to run the script: ${{ env.DURATION }} seconds"
@@ -138,7 +138,7 @@ jobs:
 
       - name: "Install Foundry"
         uses: "foundry-rs/foundry-toolchain@v1"
-      
+
       - name: "Set deployer balance on the fork"
         run: |
           curl -X POST -H "Content-Type:application/json" --data \
@@ -224,15 +224,14 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-      
+
       - name: "Update setupFork script with the correct fork RPC URL"
         run: |
-          sed -i 's|THE_FORK_URL|"${{ vars.DEMO_RPC }}"|' script/setupFork.py 
+          sed -i 's|THE_FORK_URL|"${{ vars.DEMO_RPC }}"|' script/setupFork.py
 
       - name: "Deploy the contracts to demo environment"
         run: |
           forge script script/DeployContracts.s.sol --fork-url  ${{ vars.DEMO_RPC }} --broadcast --slow --skip-simulation
-          
 
       - name: Create JSON file
         run: |
@@ -250,15 +249,14 @@ jobs:
       - name: "Report on deploy event"
         run: |
           pip install -r devops/metrics/src/cicd_script/requirements.txt
-          python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "deploy" 
+          python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "deploy"
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
-          
+
       - name: "Add deploy summary"
         run: |
           echo "## Deploy result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
-          
