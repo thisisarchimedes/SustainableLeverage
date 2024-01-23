@@ -115,8 +115,6 @@ jobs:
       - name: "Report DevOps Metrics"
         run: |
           echo "Time taken to run the script: ${{ env.DURATION }} seconds"
-          python devops/src/report_new_relic.py ${{ github.repository }} "PR Test" "true" ${{ env.DURATION }}
-
           pip install python-dotenv
           pip install requests
           python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "test_pass" --metadata '{"duration": ${{ env.DURATION }}}'
