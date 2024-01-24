@@ -18,6 +18,7 @@ import { OpenPositionParams } from "src/libs/PositionCallParams.sol";
 import { PositionToken } from "src/user_facing/PositionToken.sol";
 
 import { SwapManager } from "src/internal/SwapManager.sol";
+import { Constants } from "src/libs/Constants.sol";
 
 import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
 import { ProtocolParameters } from "src/internal/ProtocolParameters.sol";
@@ -31,10 +32,11 @@ contract PositionOpener is AccessControlUpgradeable {
     using ProtocolRoles for *;
     using ErrorsLeverageEngine for *;
     using EventsLeverageEngine for *;
+    using Constants for *;
 
     uint256 internal constant BASE_DENOMINATOR = 10_000;
     uint8 internal constant WBTC_DECIMALS = 8;
-    IERC20 internal constant WBTC = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
+    IERC20 internal constant WBTC = IERC20(Constants.WBTC_ADDRESS);
 
     IWBTCVault internal wbtcVault;
     PositionToken internal positionToken;

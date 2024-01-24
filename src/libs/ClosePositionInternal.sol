@@ -20,14 +20,16 @@ import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
 
 import { PositionToken } from "src/user_facing/PositionToken.sol";
+import { Constants } from "src/libs/Constants.sol";
 
 contract ClosePositionInternal {
     using ProtocolRoles for *;
     using ErrorsLeverageEngine for *;
     using EventsLeverageEngine for *;
+    using Constants for *;
 
     uint8 internal constant WBTC_DECIMALS = 8;
-    IERC20 internal constant WBTC = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
+    IERC20 internal constant WBTC = IERC20(Constants.WBTC_ADDRESS);
 
     PositionLedger internal positionLedger;
     ILeverageDepositor internal leverageDepositor;

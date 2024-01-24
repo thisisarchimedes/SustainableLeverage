@@ -7,13 +7,14 @@ import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/ac
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
 import { ISwapRouterUniV3 } from "src/interfaces/ISwapRouterUniV3.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
+import { Constants } from "src/libs/Constants.sol";
 
 //TODO: Implement swap on different exchanges such as curvev2 pools and balancer
 contract UniV3SwapAdapter is ISwapAdapter, AccessControlUpgradeable {
     using ProtocolRoles for *;
+    using Constants for *;
 
-    IERC20 internal constant WBTC = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
-    address internal constant UNISWAPV3_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
+    IERC20 internal constant WBTC = IERC20(Constants.WBTC_ADDRESS);
 
     struct UniswapV3Data {
         bytes path;
@@ -49,9 +50,9 @@ contract UniV3SwapAdapter is ISwapAdapter, AccessControlUpgradeable {
     {
         UniswapV3Data memory data = abi.decode(payload, (UniswapV3Data));
 
-        fromToken.approve(UNISWAPV3_ROUTER, fromAmount);
+        fromToken.approve(Constants.UNISWAPV3_ROUTER_ADDRESS, fromAmount);
 
-        ISwapRouterUniV3(UNISWAPV3_ROUTER).exactInput(
+        ISwapRouterUniV3(Constants.UNISWAPV3_ROUTER_ADDRESS).exactInput(
             ISwapRouterUniV3.ExactInputParams({
                 path: data.path,
                 recipient: recipient,

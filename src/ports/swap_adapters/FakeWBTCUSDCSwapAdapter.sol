@@ -5,11 +5,14 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { IERC20Detailed } from "src/interfaces/IERC20Detailed.sol";
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
+import { Constants } from "src/libs/Constants.sol";
 
 //TODO: Implement swap on different exchanges such as curvev2 pools and balancer
 contract FakeWBTCUSDCSwapAdapter is ISwapAdapter {
-    IERC20 public wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
-    IERC20 public usdc = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+    using Constants for *;
+
+    IERC20 public wbtc = IERC20(Constants.WBTC_ADDRESS);
+    IERC20 public usdc = IERC20(Constants.USDC_ADDRESS);
 
     address public leverageDepositor;
 
