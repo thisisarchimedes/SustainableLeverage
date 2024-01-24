@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21;
 
-import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "src/libs/ClosePositionInternal.sol";
-import "src/libs/ProtocolRoles.sol";
-import "src/libs/DependencyAddresses.sol";
-import "src/internal/PositionLedger.sol";
+import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import { ClosePositionInternal } from "src/libs/ClosePositionInternal.sol";
+import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
+import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
+import { PositionLedger } from "src/internal/PositionLedger.sol";
 
 contract ClosePositiontBase is ClosePositionInternal, AccessControlUpgradeable {
     address internal monitor;
@@ -25,8 +25,8 @@ contract ClosePositiontBase is ClosePositionInternal, AccessControlUpgradeable {
 
         setExpiredVault(dependencies.expiredVault);
 
-        wbtc.approve(dependencies.expiredVault, type(uint256).max);
-        wbtc.approve(dependencies.wbtcVault, type(uint256).max);
+        WBTC.approve(dependencies.expiredVault, type(uint256).max);
+        WBTC.approve(dependencies.wbtcVault, type(uint256).max);
     }
 
     function setMonitor(address _monitor) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
@@ -39,13 +39,13 @@ contract ClosePositiontBase is ClosePositionInternal, AccessControlUpgradeable {
 
     function setExpiredVault(address _expiredVault) public onlyRole(ProtocolRoles.ADMIN_ROLE) {
         if (expiredVault != address(0)) {
-            wbtc.approve(expiredVault, 0);
+            WBTC.approve(expiredVault, 0);
             _revokeRole(ProtocolRoles.EXPIRED_VAULT_ROLE, expiredVault);
         }
 
         expiredVault = _expiredVault;
         _grantRole(ProtocolRoles.EXPIRED_VAULT_ROLE, _expiredVault);
-        wbtc.approve(_expiredVault, type(uint256).max);
+        WBTC.approve(_expiredVault, type(uint256).max);
     }
 
     function getCurrentExpiredVault() public view returns (address) {
@@ -56,11 +56,11 @@ contract ClosePositiontBase is ClosePositionInternal, AccessControlUpgradeable {
         uint256 wbtcDebtAmount = positionLedger.getDebtAmount(nftId);
 
         if (wbtcReceived <= wbtcDebtAmount) {
-            wbtcVault.repayDebt(nftId, wbtcReceived);
+            WBTC_VAULT.repayDebt(nftId, wbtcReceived);
             return 0;
         }
 
-        wbtcVault.repayDebt(nftId, wbtcDebtAmount);
+        WBTC_VAULT.repayDebt(nftId, wbtcDebtAmount);
         return wbtcReceived - wbtcDebtAmount;
     }
 }

@@ -3,7 +3,8 @@ pragma solidity >=0.8.21;
 
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
-import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
 
 import { IWBTCVault } from "src/interfaces/IWBTCVault.sol";
 
@@ -12,19 +13,18 @@ import { IWBTCVault } from "src/interfaces/IWBTCVault.sol";
 contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
 
-    IERC20 immutable wbtc;
-
-    event Repay(uint256 indexed nftId, uint256 amount);
+    IERC20 public immutable WBTC;
 
     constructor(address _wbtc) {
-        wbtc = IERC20(_wbtc);
+        WBTC = IERC20(_wbtc);
     }
+
     function borrowAmountTo(uint256 amount, address to) external override {
-        wbtc.transfer(to, amount);
+        WBTC.transfer(to, amount);
     }
 
     function repayDebt(uint256 nftId, uint256 amount) external {
-        wbtc.safeTransferFrom(msg.sender, address(this), amount);
-        emit Repay(nftId, amount);
+        WBTC.safeTransferFrom(msg.sender, address(this), amount);
+        emit EventsLeverageEngine.Repay(nftId, amount);
     }
 }

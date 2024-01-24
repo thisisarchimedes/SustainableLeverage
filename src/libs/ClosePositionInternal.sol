@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21;
 
-import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
-
-import "src/interfaces/IERC20Detailed.sol";
+import { IERC20 } from "src/interfaces/IERC20Detailed.sol";
 
 import { ILeverageDepositor } from "src/interfaces/ILeverageDepositor.sol";
 import { IWBTCVault } from "src/interfaces/IWBTCVault.sol";
@@ -23,57 +21,53 @@ import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
 
 import { PositionToken } from "src/user_facing/PositionToken.sol";
 
-
-
-
-
-
 contract ClosePositionInternal {
-
     using ProtocolRoles for *;
     using ErrorsLeverageEngine for *;
     using EventsLeverageEngine for *;
 
     uint8 internal constant WBTC_DECIMALS = 8;
-    IERC20 internal constant wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
+    IERC20 internal constant WBTC = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
 
     PositionLedger internal positionLedger;
     ILeverageDepositor internal leverageDepositor;
     LeveragedStrategy internal leveragedStrategy;
     SwapManager internal swapManager;
     PositionToken internal positionToken;
-    IWBTCVault internal wbtcVault;
+    IWBTCVault internal WBTC_VAULT;
     ProtocolParameters internal protocolParameters;
     OracleManager internal oracleManager;
 
-
-    function setDependenciesInternal(DependencyAddresses calldata dependencies) internal  {
-        
+    function setDependenciesInternal(DependencyAddresses calldata dependencies) internal {
         positionLedger = PositionLedger(dependencies.positionLedger);
         positionToken = PositionToken(dependencies.positionToken);
         swapManager = SwapManager(dependencies.swapManager);
-        
-        wbtcVault = IWBTCVault(dependencies.wbtcVault);
+
+        WBTC_VAULT = IWBTCVault(dependencies.wbtcVault);
         leveragedStrategy = LeveragedStrategy(dependencies.leveragedStrategy);
         protocolParameters = ProtocolParameters(dependencies.protocolParameters);
-        
+
         oracleManager = OracleManager(dependencies.oracleManager);
         positionLedger = PositionLedger(dependencies.positionLedger);
         leverageDepositor = ILeverageDepositor(dependencies.leverageDepositor);
-    }  
+    }
 
     function unwindPosition(uint256 nftId) internal returns (uint256) {
-
         address strategyAddress = positionLedger.getStrategyAddress(nftId);
         uint256 strategyShares = positionLedger.getStrategyShares(nftId);
 
         return leverageDepositor.redeem(strategyAddress, strategyShares);
     }
 
-    function swapStrategyTokenToWbtc(uint256 strategyTokenAmount, ClosePositionParams calldata params) internal returns (uint256) {
-
+    function swapStrategyTokenToWbtc(
+        uint256 strategyTokenAmount,
+        ClosePositionParams calldata params
+    )
+        internal
+        returns (uint256)
+    {
         address strategyAddress = positionLedger.getStrategyAddress(params.nftId);
-        address strategyUnderlyingToken = leveragedStrategy.getStrategyValueAsset(strategyAddress); 
+        address strategyUnderlyingToken = leveragedStrategy.getStrategyValueAsset(strategyAddress);
         ISwapAdapter swapAdapter = swapManager.getSwapAdapterForRoute(params.swapRoute);
 
         ISwapAdapter.SwapWbtcParams memory swapParams = ISwapAdapter.SwapWbtcParams({
@@ -82,8 +76,8 @@ contract ClosePositionInternal {
             payload: params.swapData,
             recipient: address(this)
         });
-      
-        IERC20(strategyUnderlyingToken).transfer(address(swapAdapter), strategyTokenAmount); 
+
+        IERC20(strategyUnderlyingToken).transfer(address(swapAdapter), strategyTokenAmount);
         return swapAdapter.swapToWbtc(swapParams);
     }
 }

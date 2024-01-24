@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21;
 
-import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
-
-import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
-import { ProtocolParameters } from "src/internal/ProtocolParameters.sol";
 
 enum PositionState {
     UNINITIALIZED,
@@ -38,7 +35,7 @@ contract PositionLedger is AccessControlUpgradeable {
     using ErrorsLeverageEngine for *;
     using EventsLeverageEngine for *;
 
-    mapping(uint256 => LedgerEntry) entries; // Mapping from NFT ID to LedgerEntry
+    mapping(uint256 => LedgerEntry) public entries; // Mapping from NFT ID to LedgerEntry
 
     function initialize() external initializer {
         __AccessControl_init();
