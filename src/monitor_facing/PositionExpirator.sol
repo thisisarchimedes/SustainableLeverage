@@ -5,6 +5,8 @@ import { ClosePositiontBase } from "src/monitor_facing/base/ClosePositionBase.so
 import { ClosePositionParams } from "src/libs/PositionCallParams.sol";
 
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
+
 import { ProtocolRoles, PositionState } from "src/internal/PositionLedger.sol";
 
 contract PositionExpirator is ClosePositiontBase {
