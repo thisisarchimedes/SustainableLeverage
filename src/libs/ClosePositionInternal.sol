@@ -34,7 +34,7 @@ contract ClosePositionInternal {
     LeveragedStrategy internal leveragedStrategy;
     SwapManager internal swapManager;
     PositionToken internal positionToken;
-    IWBTCVault internal WBTC_VAULT;
+    IWBTCVault internal wbtcVault;
     ProtocolParameters internal protocolParameters;
     OracleManager internal oracleManager;
 
@@ -43,7 +43,7 @@ contract ClosePositionInternal {
         positionToken = PositionToken(dependencies.positionToken);
         swapManager = SwapManager(dependencies.swapManager);
 
-        WBTC_VAULT = IWBTCVault(dependencies.wbtcVault);
+        wbtcVault = IWBTCVault(dependencies.wbtcVault);
         leveragedStrategy = LeveragedStrategy(dependencies.leveragedStrategy);
         protocolParameters = ProtocolParameters(dependencies.protocolParameters);
 

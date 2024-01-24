@@ -1,15 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.21;
 
-import { console2 } from "forge-std/console2.sol";
-
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "src/interfaces/IERC20Detailed.sol";
+import { IERC20Detailed } from "src/interfaces/IERC20Detailed.sol";
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
-import { ISwapRouterUniV3 } from "src/interfaces/ISwapRouterUniV3.sol";
-
-import { SwapManager } from "src/internal/SwapManager.sol";
 
 //TODO: Implement swap on different exchanges such as curvev2 pools and balancer
 contract FakeWBTCUSDCSwapAdapter is ISwapAdapter {
@@ -21,36 +16,36 @@ contract FakeWBTCUSDCSwapAdapter is ISwapAdapter {
     uint256 public wbtcToUsdcExchangeRate;
     uint256 public usdcToWbtcExchangeRate;
 
-    uint256 public FAKE_ORACLE_DECIMALS = 8;
-
-    constructor() { }
+    uint256 public constant FAKE_ORACLE_DECIMALS = 8;
 
     function swapToWbtc(SwapWbtcParams calldata params) external returns (uint256) {
-         return swap(params.otherToken, wbtc, params.fromAmount, params.payload, params.recipient);
-
+        return swap(params.otherToken, wbtc, params.fromAmount, params.payload, params.recipient);
     }
 
     function swapFromWbtc(SwapWbtcParams calldata params) external returns (uint256) {
         return swap(wbtc, params.otherToken, params.fromAmount, params.payload, params.recipient);
-
     }
 
     function swap(
         IERC20 fromToken,
         IERC20 toToken,
         uint256 fromAmount,
+        // solhint-disable-next-line
         bytes calldata payload,
         address recipient
     )
         internal
         returns (uint256 toTokenAmount)
-    {   
-        uint256 total_decimals = IERC20Detailed(address(toToken)).decimals() + IERC20Detailed(address(fromToken)).decimals();
-        
+    {
+        uint256 totalDecimals =
+            IERC20Detailed(address(toToken)).decimals() + IERC20Detailed(address(fromToken)).decimals();
+
         if (fromToken == wbtc) {
-            toTokenAmount = ((fromAmount * wbtcToUsdcExchangeRate) * (10 ** FAKE_ORACLE_DECIMALS)) / (10 ** total_decimals);
+            toTokenAmount =
+                ((fromAmount * wbtcToUsdcExchangeRate) * (10 ** FAKE_ORACLE_DECIMALS)) / (10 ** totalDecimals);
         } else {
-            toTokenAmount = ((fromAmount * usdcToWbtcExchangeRate) * (10 ** FAKE_ORACLE_DECIMALS)) / (10 ** total_decimals);
+            toTokenAmount =
+                ((fromAmount * usdcToWbtcExchangeRate) * (10 ** FAKE_ORACLE_DECIMALS)) / (10 ** totalDecimals);
         }
 
         toToken.transfer(recipient, toTokenAmount);

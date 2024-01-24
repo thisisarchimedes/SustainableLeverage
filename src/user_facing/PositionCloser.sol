@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21;
 
-import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
-
-import "src/interfaces/IERC20Detailed.sol";
+import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 import { ClosePositionInternal } from "src/libs/ClosePositionInternal.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
@@ -13,20 +10,7 @@ import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
 import { ClosePositionParams } from "src/libs/PositionCallParams.sol";
 
-import { IWBTCVault } from "src/interfaces/IWBTCVault.sol";
-import { ILeverageDepositor } from "src/interfaces/ILeverageDepositor.sol";
-import { IOracle } from "src/interfaces/IOracle.sol";
-import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
-import { IMultiPoolStrategy } from "src/interfaces/IMultiPoolStrategy.sol";
-import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
-
-import { PositionToken } from "src/user_facing/PositionToken.sol";
-
-import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
-import { ProtocolParameters } from "src/internal/ProtocolParameters.sol";
-import { OracleManager } from "src/internal/OracleManager.sol";
-import { PositionLedger, LedgerEntry, PositionState } from "src/internal/PositionLedger.sol";
-import { SwapManager } from "src/internal/SwapManager.sol";
+import { PositionState } from "src/internal/PositionLedger.sol";
 
 contract PositionCloser is AccessControlUpgradeable, ClosePositionInternal {
     uint256 internal constant EXIT_FEE_BASE_DENOMINATOR = 10_000;
@@ -43,7 +27,7 @@ contract PositionCloser is AccessControlUpgradeable, ClosePositionInternal {
     function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
         setDependenciesInternal(dependencies);
 
-        wbtc.approve(dependencies.wbtcVault, type(uint256).max);
+        WBTC.approve(dependencies.wbtcVault, type(uint256).max);
     }
 
     function closePosition(ClosePositionParams calldata params) external {
@@ -88,7 +72,7 @@ contract PositionCloser is AccessControlUpgradeable, ClosePositionInternal {
     function collectExitFeesAfterDebt(uint256 wbtcAmountAfterDebt) internal returns (uint256) {
         uint256 exitFee = protocolParameters.getExitFee();
         uint256 exitFeeAmount = wbtcAmountAfterDebt * exitFee / EXIT_FEE_BASE_DENOMINATOR;
-        wbtc.transfer(protocolParameters.getFeeCollector(), exitFeeAmount);
+        WBTC.transfer(protocolParameters.getFeeCollector(), exitFeeAmount);
 
         return exitFeeAmount;
     }
@@ -97,7 +81,7 @@ contract PositionCloser is AccessControlUpgradeable, ClosePositionInternal {
         if (wbtcLeft < minWbtc) {
             revert ErrorsLeverageEngine.NotEnoughTokensReceived();
         }
-        wbtc.transfer(msg.sender, wbtcLeft);
+        WBTC.transfer(msg.sender, wbtcLeft);
     }
 
     function recordPositionClosed(uint256 nftId, uint256 finalUserBalance) internal {

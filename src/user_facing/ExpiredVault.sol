@@ -5,7 +5,7 @@ import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.so
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
-import "src/interfaces/IExpiredVault.sol";
+import { IExpiredVault } from "src/interfaces/IExpiredVault.sol";
 
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
@@ -15,7 +15,6 @@ import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
 import { PositionToken } from "src/user_facing/PositionToken.sol";
 
 import { PositionLedger, PositionState } from "src/internal/PositionLedger.sol";
-
 
 contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
