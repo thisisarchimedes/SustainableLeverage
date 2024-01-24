@@ -5,7 +5,8 @@ import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.so
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
-import "src/interfaces/IExpiredVault.sol";
+import { IExpiredVault } from "src/interfaces/IExpiredVault.sol";
+import { Constants } from "src/libs/Constants.sol";
 
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
@@ -16,12 +17,12 @@ import { PositionToken } from "src/user_facing/PositionToken.sol";
 
 import { PositionLedger, PositionState } from "src/internal/PositionLedger.sol";
 
-
 contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
     using ProtocolRoles for *;
     using EventsLeverageEngine for *;
     using ErrorsLeverageEngine for *;
+    using Constants for *;
 
     IERC20 internal wbtc;
     PositionToken internal positionToken;
@@ -38,7 +39,7 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
 
         _grantRole(ProtocolRoles.ADMIN_ROLE, msg.sender);
 
-        wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
+        wbtc = IERC20(Constants.WBTC_ADDRESS);
     }
 
     function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(ProtocolRoles.ADMIN_ROLE) {

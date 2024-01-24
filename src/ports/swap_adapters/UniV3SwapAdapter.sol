@@ -7,46 +7,35 @@ import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/ac
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
 import { ISwapRouterUniV3 } from "src/interfaces/ISwapRouterUniV3.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
-
+import { Constants } from "src/libs/Constants.sol";
 
 //TODO: Implement swap on different exchanges such as curvev2 pools and balancer
 contract UniV3SwapAdapter is ISwapAdapter, AccessControlUpgradeable {
-
     using ProtocolRoles for *;
+    using Constants for *;
 
-    IERC20 internal constant wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
-    address internal constant UNISWAPV3_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
-    
-     struct UniswapV3Data {
+    IERC20 internal constant WBTC = IERC20(Constants.WBTC_ADDRESS);
+
+    struct UniswapV3Data {
         bytes path;
         uint256 deadline;
         uint256 amountOutMin;
     }
 
-    constructor() {
-    }
-
     // NOTICE: Assumes WBTC already sent to this contract
-    function swapToWbtc(SwapWbtcParams calldata params) 
-        external 
-        returns (uint256)
-    {
-        
-        uint256 balanceBefore = wbtc.balanceOf(params.recipient);
+    function swapToWbtc(SwapWbtcParams calldata params) external returns (uint256) {
+        uint256 balanceBefore = WBTC.balanceOf(params.recipient);
 
         swapOnUniswapV3(params.otherToken, params.fromAmount, params.payload, params.recipient);
 
-        return wbtc.balanceOf(params.recipient) - balanceBefore;
+        return WBTC.balanceOf(params.recipient) - balanceBefore;
     }
 
     // NOTICE: Assumes tokens already sent to this contract
-    function swapFromWbtc(SwapWbtcParams calldata params) 
-        external 
-        returns (uint256) 
-    {
+    function swapFromWbtc(SwapWbtcParams calldata params) external returns (uint256) {
         uint256 balanceBefore = params.otherToken.balanceOf(params.recipient);
 
-        swapOnUniswapV3(wbtc, params.fromAmount, params.payload, params.recipient);     
+        swapOnUniswapV3(WBTC, params.fromAmount, params.payload, params.recipient);
 
         return params.otherToken.balanceOf(params.recipient) - balanceBefore;
     }
@@ -61,9 +50,9 @@ contract UniV3SwapAdapter is ISwapAdapter, AccessControlUpgradeable {
     {
         UniswapV3Data memory data = abi.decode(payload, (UniswapV3Data));
 
-        fromToken.approve(UNISWAPV3_ROUTER, fromAmount);
-        
-        ISwapRouterUniV3(UNISWAPV3_ROUTER).exactInput(
+        fromToken.approve(Constants.UNISWAPV3_ROUTER_ADDRESS, fromAmount);
+
+        ISwapRouterUniV3(Constants.UNISWAPV3_ROUTER_ADDRESS).exactInput(
             ISwapRouterUniV3.ExactInputParams({
                 path: data.path,
                 recipient: recipient,

@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21;
 
-import "src/monitor_facing/base/ClosePositionBase.sol"; // Import the PositionManagementBase contract
-import "src/libs/PositionCallParams.sol";
-import "src/libs/ErrorsLeverageEngine.sol";
-import "src/libs/EventsLeverageEngine.sol";
-import "src/interfaces/IExpiredVault.sol";
-import "src/internal/LeveragedStrategy.sol";
-import "src/internal/ProtocolParameters.sol";
-import "src/internal/PositionLedger.sol";
+import { ClosePositiontBase } from "src/monitor_facing/base/ClosePositionBase.sol";
+import { ClosePositionParams } from "src/libs/PositionCallParams.sol";
+
+import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
+import { IExpiredVault } from "src/interfaces/IExpiredVault.sol";
+import { ProtocolRoles, PositionState } from "src/internal/PositionLedger.sol";
 
 contract PositionLiquidator is ClosePositiontBase {
     function liquidatePosition(ClosePositionParams calldata params) external onlyRole(ProtocolRoles.MONITOR_ROLE) {
@@ -64,7 +63,7 @@ contract PositionLiquidator is ClosePositiontBase {
         feePaid = leveragedStrategy.getLiquidationFee(strategyAddress) * leftoverWbtc / (10 ** WBTC_DECIMALS);
 
         address feeCollector = protocolParameters.getFeeCollector();
-        wbtc.transfer(feeCollector, feePaid);
+        WBTC.transfer(feeCollector, feePaid);
     }
 
     function setNftIdVaultBalance(uint256 nftId, uint256 balance) internal {

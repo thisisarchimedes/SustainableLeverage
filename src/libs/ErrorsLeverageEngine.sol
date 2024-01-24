@@ -18,4 +18,7 @@ library ErrorsLeverageEngine {
     error SwapAdapterAlreadySet(); // b33e2407
     error PositionMustLiveForMinDuration(); // 7616ad40
     error NotEligibleForExpiration();
+    error AmountMustBeGreaterThanZero();
+    error BlockCountTooLow();
+    error BlockCountTooHigh();
 }

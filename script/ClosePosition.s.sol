@@ -12,6 +12,7 @@ import { UniV3SwapAdapter } from "src/ports/swap_adapters/UniV3SwapAdapter.sol";
 import { SwapManager } from "src/internal/SwapManager.sol";
 import { console2 } from "forge-std/console2.sol";
 import { Script } from "forge-std/Script.sol";
+import { Constants } from "src/libs/Constants.sol";
 
 contract DeployContracts is Script {
     /* solhint-disable  */

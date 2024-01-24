@@ -1,16 +1,12 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21;
 
-import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 
-import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
-
-import "src/interfaces/IERC20Detailed.sol";
+import { IERC20 } from "src/interfaces/IERC20Detailed.sol";
 import { IWBTCVault } from "src/interfaces/IWBTCVault.sol";
-import { IExpiredVault } from "src/interfaces/IExpiredVault.sol";
 import { ILeverageDepositor } from "src/interfaces/ILeverageDepositor.sol";
-import { IOracle } from "src/interfaces/IOracle.sol";
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
 
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
@@ -22,12 +18,12 @@ import { OpenPositionParams } from "src/libs/PositionCallParams.sol";
 import { PositionToken } from "src/user_facing/PositionToken.sol";
 
 import { SwapManager } from "src/internal/SwapManager.sol";
+import { Constants } from "src/libs/Constants.sol";
 
 import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
 import { ProtocolParameters } from "src/internal/ProtocolParameters.sol";
 import { OracleManager } from "src/internal/OracleManager.sol";
 import { PositionLedger, LedgerEntry, PositionState } from "src/internal/PositionLedger.sol";
-
 
 /// @title PositionManager Contract
 /// @notice Supports only WBTC tokens for now
@@ -36,10 +32,11 @@ contract PositionOpener is AccessControlUpgradeable {
     using ProtocolRoles for *;
     using ErrorsLeverageEngine for *;
     using EventsLeverageEngine for *;
+    using Constants for *;
 
     uint256 internal constant BASE_DENOMINATOR = 10_000;
     uint8 internal constant WBTC_DECIMALS = 8;
-    IERC20 internal constant wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
+    IERC20 internal constant WBTC = IERC20(Constants.WBTC_ADDRESS);
 
     IWBTCVault internal wbtcVault;
     PositionToken internal positionToken;
@@ -67,8 +64,11 @@ contract PositionOpener is AccessControlUpgradeable {
     }
 
     function openPosition(OpenPositionParams calldata params) external returns (uint256) {
-
-        if (leveragedStrategy.isCollateralToBorrowRatioAllowed(params.strategy, params.collateralAmount, params.wbtcToBorrow) == false) {
+        if (
+            leveragedStrategy.isCollateralToBorrowRatioAllowed(
+                params.strategy, params.collateralAmount, params.wbtcToBorrow
+            ) == false
+        ) {
             revert ErrorsLeverageEngine.ExceedBorrowLimit();
         }
 
@@ -79,11 +79,11 @@ contract PositionOpener is AccessControlUpgradeable {
         sendWbtcToSwapAdapter(address(swapAdapter), params);
 
         uint256 receivedTokenAmount = swapWbtcToStrategyToken(swapAdapter, params);
-        
+
         if (isSwapReturnedEnoughTokens(params, receivedTokenAmount) == false) {
             revert ErrorsLeverageEngine.NotEnoughTokensReceived();
         }
-        
+
         uint256 sharesReceived = leverageDepositor.deposit(params.strategy, receivedTokenAmount);
         if (sharesReceived < params.minStrategyShares) {
             revert ErrorsLeverageEngine.LessThanMinimumShares();
@@ -105,14 +105,17 @@ contract PositionOpener is AccessControlUpgradeable {
     }
 
     function sendWbtcToSwapAdapter(address swapAdapter, OpenPositionParams calldata params) internal {
-
-        wbtcVault.borrowAmountTo(params.wbtcToBorrow, swapAdapter);         
-        wbtc.safeTransferFrom(msg.sender, swapAdapter, params.collateralAmount);
-
+        wbtcVault.borrowAmountTo(params.wbtcToBorrow, swapAdapter);
+        WBTC.safeTransferFrom(msg.sender, swapAdapter, params.collateralAmount);
     }
 
-    function swapWbtcToStrategyToken(ISwapAdapter swapAdapter, OpenPositionParams calldata params) internal returns (uint256) {
-
+    function swapWbtcToStrategyToken(
+        ISwapAdapter swapAdapter,
+        OpenPositionParams calldata params
+    )
+        internal
+        returns (uint256)
+    {
         address strategyUnderlyingToken = leveragedStrategy.getStrategyValueAsset(params.strategy);
         ISwapAdapter.SwapWbtcParams memory swapParams = ISwapAdapter.SwapWbtcParams({
             otherToken: IERC20(strategyUnderlyingToken),
@@ -120,19 +123,32 @@ contract PositionOpener is AccessControlUpgradeable {
             payload: params.swapData,
             recipient: address(leverageDepositor)
         });
-      
+
         return swapAdapter.swapFromWbtc(swapParams);
     }
 
-    function isSwapReturnedEnoughTokens(OpenPositionParams calldata params, uint256 receivedTokenAmount) internal view returns (bool) {
-        
+    function isSwapReturnedEnoughTokens(
+        OpenPositionParams calldata params,
+        uint256 receivedTokenAmount
+    )
+        internal
+        view
+        returns (bool)
+    {
         address strategyUnderlyingToken = leveragedStrategy.getStrategyValueAsset(params.strategy);
-        uint256 receivedTokensInWbtc = leveragedStrategy.getWBTCValueFromTokenAmount(strategyUnderlyingToken, receivedTokenAmount);
-        
+        uint256 receivedTokensInWbtc =
+            leveragedStrategy.getWBTCValueFromTokenAmount(strategyUnderlyingToken, receivedTokenAmount);
+
         return !leveragedStrategy.isPositionLiquidatable(params.strategy, receivedTokensInWbtc, params.wbtcToBorrow);
     }
 
-    function createLedgerEntryAndPositionToken(OpenPositionParams calldata params, uint256 sharesReceived) internal returns (uint256) {
+    function createLedgerEntryAndPositionToken(
+        OpenPositionParams calldata params,
+        uint256 sharesReceived
+    )
+        internal
+        returns (uint256)
+    {
         LedgerEntry memory newEntry;
 
         newEntry.collateralAmount = params.collateralAmount;
@@ -140,27 +156,32 @@ contract PositionOpener is AccessControlUpgradeable {
         newEntry.strategyShares = sharesReceived;
         newEntry.wbtcDebtAmount = params.wbtcToBorrow;
         newEntry.poistionOpenBlock = block.number;
-        newEntry.positionExpirationBlock = newEntry.poistionOpenBlock + leveragedStrategy.getPositionLifetime(params.strategy);
+        newEntry.positionExpirationBlock =
+            newEntry.poistionOpenBlock + leveragedStrategy.getPositionLifetime(params.strategy);
         newEntry.liquidationBuffer = leveragedStrategy.getLiquidationBuffer(params.strategy);
         newEntry.state = PositionState.LIVE;
         uint256 nftId = positionToken.mint(msg.sender);
-        
+
         positionLedger.createNewPositionEntry(nftId, newEntry);
 
         return nftId;
     }
 
     function previewOpenPosition(OpenPositionParams calldata params) external view returns (uint256) {
- 
         if (leveragedStrategy.getQuota(params.strategy) < params.wbtcToBorrow) {
             revert ErrorsLeverageEngine.ExceedBorrowQuota();
         }
 
-
-        if (leveragedStrategy.isCollateralToBorrowRatioAllowed(params.strategy, params.collateralAmount, params.wbtcToBorrow) == false) {
+        if (
+            leveragedStrategy.isCollateralToBorrowRatioAllowed(
+                params.strategy, params.collateralAmount, params.wbtcToBorrow
+            ) == false
+        ) {
             revert ErrorsLeverageEngine.ExceedBorrowLimit();
         }
 
-        return leveragedStrategy.getEstimateSharesForWBTCDeposit(params.strategy, params.collateralAmount + params.wbtcToBorrow);
+        return leveragedStrategy.getEstimateSharesForWBTCDeposit(
+            params.strategy, params.collateralAmount + params.wbtcToBorrow
+        );
     }
 }

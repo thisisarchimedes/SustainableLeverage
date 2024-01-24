@@ -3,12 +3,11 @@ pragma solidity >=0.8.21;
 
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
-import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 
 /// @title StrategyManager Contract
 /// @notice Only supports WBTC as collateral and borrowing asset
@@ -18,9 +17,16 @@ contract ProtocolParameters is AccessControlUpgradeable {
     using ErrorsLeverageEngine for *;
     using EventsLeverageEngine for *;
 
-    uint256 private exitFee = 50; // Fee (taken from profits) taken after returning all debt during exit by user in 10000 (For example: 50 is 0.5%)
-    address private feeCollector; // Address that collects fees
-    uint8 private minPositionDurationInBlocks = 0; // TODO: Change back to 12 - Cool down period for user in blocks before allowing close position
+    // Fee (taken from profits) taken after returning all debt during exit by user in
+    // 10000 (For example: 50 is 0.5%)
+    uint256 private exitFee = 50;
+
+    // Address that collects fees
+    address private feeCollector;
+
+    // TODO: Change back to 12 - Cool down period for user in blocks
+    // before allowing close position
+    uint8 private minPositionDurationInBlocks = 0;
 
     function initialize() external initializer {
         __AccessControl_init();
@@ -38,8 +44,12 @@ contract ProtocolParameters is AccessControlUpgradeable {
     }
 
     function setMinPositionDurationInBlocks(uint8 blockCount) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
-        require(blockCount > 1, "Block count must be greater than 1");
-        require(blockCount < 6_400, "Block count must be less than ~1 day");
+        if (blockCount <= 1) {
+            revert ErrorsLeverageEngine.BlockCountTooLow();
+        }
+        if (blockCount >= 6400) {
+            revert ErrorsLeverageEngine.BlockCountTooHigh();
+        }
         minPositionDurationInBlocks = blockCount;
     }
 
@@ -54,5 +64,4 @@ contract ProtocolParameters is AccessControlUpgradeable {
     function getMinPositionDurationInBlocks() external view returns (uint8) {
         return minPositionDurationInBlocks;
     }
-
 }

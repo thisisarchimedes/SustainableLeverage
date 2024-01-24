@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21;
 
-import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "src/interfaces/IERC20Detailed.sol";
+import { IERC20 } from "src/interfaces/IERC20Detailed.sol";
 
 import { IOracle } from "src/interfaces/IOracle.sol";
 
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
-import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
 

@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21;
 
-import "src/monitor_facing/base/ClosePositionBase.sol"; // Import the PositionManagementBase contract
-import "src/libs/PositionCallParams.sol";
+import { ClosePositiontBase } from "src/monitor_facing/base/ClosePositionBase.sol";
+import { ClosePositionParams } from "src/libs/PositionCallParams.sol";
 
-import "src/libs/ErrorsLeverageEngine.sol";
-import "src/libs/EventsLeverageEngine.sol";
-import "src/interfaces/IExpiredVault.sol";
-import "src/internal/LeveragedStrategy.sol";
-import "src/internal/ProtocolParameters.sol";
-import "src/internal/PositionLedger.sol";
+import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
+
+import { ProtocolRoles, PositionState } from "src/internal/PositionLedger.sol";
 
 contract PositionExpirator is ClosePositiontBase {
     function expirePosition(

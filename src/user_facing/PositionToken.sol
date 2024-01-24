@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21;
 
-import "openzeppelin-contracts/access/AccessControl.sol";
+import { AccessControl } from "openzeppelin-contracts/access/AccessControl.sol";
 
 import { ERC721 } from "openzeppelin-contracts/token/ERC721/ERC721.sol";
 
@@ -18,14 +18,13 @@ contract PositionToken is ERC721, AccessControl {
 
     constructor() ERC721("PositionToken", "PT") {
         _grantRole(ProtocolRoles.ADMIN_ROLE, msg.sender);
-     }
-
-    function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
-       _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionOpener);
-       _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionCloser);
-       _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.expiredVault);
     }
 
+    function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
+        _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionOpener);
+        _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionCloser);
+        _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.expiredVault);
+    }
 
     function setTokenURI(string memory uri) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
         _tokenURI = uri;

@@ -28,7 +28,6 @@
     "test:coverage:report": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage"
   },
   "devDependencies": {
-    "prettier": "^3.1.0",
-    "solhint": "^4.0.0"
+    "prettier": "^3.1.0"
   }
 }

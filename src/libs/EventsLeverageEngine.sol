@@ -44,4 +44,5 @@ library EventsLeverageEngine {
 
     event Deposit(address indexed depositor, uint256 amount);
     event Claim(address indexed claimer, uint256 indexed nftId, uint256 amount);
+    event Repay(uint256 indexed nftId, uint256 amount);
 }

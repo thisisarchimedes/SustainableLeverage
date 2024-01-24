@@ -3,10 +3,10 @@ pragma solidity >=0.8.21;
 
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 import { IERC20Detailed } from "src/interfaces/IERC20Detailed.sol";
-
+import { Constants } from "src/libs/Constants.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
@@ -23,8 +23,9 @@ contract LeveragedStrategy is AccessControlUpgradeable {
     using ProtocolRoles for *;
     using ErrorsLeverageEngine for *;
     using EventsLeverageEngine for *;
+    using Constants for *;
 
-    IERC20 internal constant wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
+    IERC20 internal constant WBTC = IERC20(Constants.WBTC_ADDRESS);
     uint256 internal constant WBTC_DECIMALS = 8;
 
     struct StrategyConfig {
@@ -36,8 +37,8 @@ contract LeveragedStrategy is AccessControlUpgradeable {
     }
 
     mapping(address => StrategyConfig) internal strategyConfig;
-    PositionLedger positionLedger;
-    OracleManager oracleManager;
+    PositionLedger public positionLedger;
+    OracleManager public oracleManager;
 
     function initialize() external initializer {
         __AccessControl_init();
@@ -167,7 +168,7 @@ contract LeveragedStrategy is AccessControlUpgradeable {
 
     function getWBTCValueFromTokenAmount(address token, uint256 amount) public view returns (uint256) {
         uint256 tokenPriceInUSD = oracleManager.getLatestTokenPriceInUSD(token);
-        uint256 wbtcPriceInUSD = oracleManager.getLatestTokenPriceInUSD(address(wbtc));
+        uint256 wbtcPriceInUSD = oracleManager.getLatestTokenPriceInUSD(address(WBTC));
 
         uint256 tokenValueInWBTCUnadjustedDecimals = ((amount * uint256(tokenPriceInUSD)) / (uint256(wbtcPriceInUSD)));
 
@@ -185,7 +186,7 @@ contract LeveragedStrategy is AccessControlUpgradeable {
         uint8 fromTokenDecimals = IERC20Detailed(fromToken).decimals();
 
         uint8 fromTokenOracleDecimals = oracleManager.getUSDOracleDecimals(fromToken);
-        uint8 wbtcOracleDecimals = oracleManager.getUSDOracleDecimals(address(wbtc));
+        uint8 wbtcOracleDecimals = oracleManager.getUSDOracleDecimals(address(WBTC));
 
         uint256 fromDec = fromTokenDecimals + fromTokenOracleDecimals;
         uint256 toDec = wbtcOracleDecimals + WBTC_DECIMALS;
@@ -199,7 +200,7 @@ contract LeveragedStrategy is AccessControlUpgradeable {
 
     function getTokenValueFromWBTCAmount(address token, uint256 wbtcAmount) public view returns (uint256) {
         uint256 tokenPriceInUSD = oracleManager.getLatestTokenPriceInUSD(token);
-        uint256 wbtcPriceInUSD = oracleManager.getLatestTokenPriceInUSD(address(wbtc));
+        uint256 wbtcPriceInUSD = oracleManager.getLatestTokenPriceInUSD(address(WBTC));
 
         uint256 tokenAmountUnadjustedDecimals = wbtcAmount * wbtcPriceInUSD / tokenPriceInUSD;
 
@@ -216,7 +217,7 @@ contract LeveragedStrategy is AccessControlUpgradeable {
     {
         uint8 tokenDecimals = IERC20Detailed(fromToken).decimals();
         uint8 tokenOracleDecimals = oracleManager.getUSDOracleDecimals(fromToken);
-        uint8 wbtcOracleDecimals = oracleManager.getUSDOracleDecimals(address(wbtc));
+        uint8 wbtcOracleDecimals = oracleManager.getUSDOracleDecimals(address(WBTC));
 
         uint256 fromDec = WBTC_DECIMALS + wbtcOracleDecimals - tokenOracleDecimals;
 
