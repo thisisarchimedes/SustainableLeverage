@@ -4,7 +4,7 @@ pragma solidity >=0.8.21;
 import { IERC20 } from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
+import { EventsLeverageEngine } from "../libs/EventsLeverageEngine.sol";
 
 import { IWBTCVault } from "src/interfaces/IWBTCVault.sol";
 
