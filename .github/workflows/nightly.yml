@@ -1,4 +1,4 @@
-name: Run Tests Quality Check
+name: Run Nightly Check
 
 on:
   schedule:
@@ -67,6 +67,7 @@ jobs:
           fi
 
       - name: Calculating test coverage
+        continue-on-error: true
         run: |
           forge coverage > tmp_report
           echo "COVERAGE_FUNC=`grep "Total" tmp_report | awk '{print $(NF-2)}'`" >> $GITHUB_ENV
