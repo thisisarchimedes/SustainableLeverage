@@ -1,17 +1,13 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
+// solhint-disable-next-line no-global-import
 import "test/BaseTest.sol";
-import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
-import { IERC721A } from "ERC721A/IERC721A.sol";
+
 import { IAccessControl } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
-import "src/internal/LeveragedStrategy.sol";
-import "src/internal/PositionLedger.sol";
-
-/// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
-/// https://book.getfoundry.sh/forge/writing-tests
+import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
 
 contract ExpirationTest is BaseTest {
     using ErrorsLeverageEngine for *;

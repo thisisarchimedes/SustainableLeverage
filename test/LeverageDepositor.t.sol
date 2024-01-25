@@ -5,18 +5,13 @@ import { IAccessControl } from "openzeppelin-contracts/access/AccessControl.sol"
 
 import { BaseTest, ERC20, ProtocolRoles } from "test/BaseTest.sol";
 
-import { PositionLedger } from "src/internal/PositionLedger.sol";
 import { OpenPositionParams } from "src/libs/PositionCallParams.sol";
 import { SwapManager } from "src/internal/SwapManager.sol";
 
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 
-/// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
-/// https://book.getfoundry.sh/forge/writing-tests
 
 contract LeverageDepositorTest is BaseTest {
-    /* solhint-disable  */
-
     using ErrorsLeverageEngine for *;
 
     function setUp() public virtual {

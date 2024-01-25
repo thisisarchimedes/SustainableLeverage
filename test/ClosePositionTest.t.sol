@@ -1,21 +1,16 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
+// solhint-disable-next-line no-global-import
 import "test/BaseTest.sol";
-import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
-import { IERC721A } from "ERC721A/IERC721A.sol";
-import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 
-/// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
-/// https://book.getfoundry.sh/forge/writing-tests
+import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 
 contract ClosePositionTest is BaseTest {
     using ErrorsLeverageEngine for *;
 
-    /* solhint-disable  */
-    address positionReceiver = makeAddr("receiver");
+    address private positionReceiver = makeAddr("receiver");
 
-    /// @dev A function invoked before each test case is run.
     function setUp() public virtual {
         initFork();
         initTestFramework();

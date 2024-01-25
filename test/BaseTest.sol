@@ -2,24 +2,18 @@
 pragma solidity >=0.8.21 <0.9.0;
 
 import { PRBTest } from "@prb/test/PRBTest.sol";
-import { console2 } from "forge-std/console2.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
-import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
-import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import { PositionToken } from "src/user_facing/PositionToken.sol";
-import { PositionOpener } from "src/user_facing/PositionOpener.sol";
-import { PositionCloser } from "src/user_facing/PositionCloser.sol";
-
+// solhint-disable-next-line no-global-import
 import "src/internal/LeverageDepositor.sol";
-import { ExpiredVault } from "src/user_facing/ExpiredVault.sol";
-import { WBTCVault } from "src/internal/WBTCVault.sol";
-import { ProtocolParameters } from "src/internal/ProtocolParameters.sol";
-import { PositionLedger, LedgerEntry, PositionState } from "src/internal/PositionLedger.sol";
-import { OracleManager } from "src/internal/OracleManager.sol";
+// solhint-disable-next-line no-unused-import
+import { LedgerEntry } from "src/internal/PositionLedger.sol";
+// solhint-disable-next-line no-unused-import
+import { PositionState } from "src/internal/PositionLedger.sol";
+// solhint-disable-next-line no-unused-import
 import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
 import { SwapManager } from "src/internal/SwapManager.sol";
 
@@ -29,13 +23,11 @@ import { IOracle } from "src/interfaces/IOracle.sol";
 import { FakeOracle } from "src/ports/oracles/FakeOracle.sol";
 import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
 import { FakeWBTCUSDCSwapAdapter } from "src/ports/swap_adapters/FakeWBTCUSDCSwapAdapter.sol";
-import { ChainlinkOracle } from "src/ports/oracles/ChainlinkOracle.sol";
 import { UniV3SwapAdapter } from "src/ports/swap_adapters/UniV3SwapAdapter.sol";
 
-import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { OpenPositionParams, ClosePositionParams } from "src/libs/PositionCallParams.sol";
 
-import { UnifiedDeployer, AllContracts } from "script/UnifiedDeployer.sol";
+import { UnifiedDeployer } from "script/UnifiedDeployer.sol";
 
 contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
     using SafeERC20 for IERC20;

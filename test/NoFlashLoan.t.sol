@@ -1,22 +1,14 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
-import { IAccessControl } from "openzeppelin-contracts-upgradeable/access/AccessControlUpgradeable.sol";
-
+// solhint-disable-next-line no-global-import
 import "test/BaseTest.sol";
-
-import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
-
-import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
-import { FakeOracle } from "src/ports/oracles/FakeOracle.sol";
 
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
 
 
 contract NoFlashLoanTest is BaseTest {
-    /* solhint-disable  */
-
     using ErrorsLeverageEngine for *;
     using ProtocolRoles for *;
 

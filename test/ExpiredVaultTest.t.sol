@@ -1,25 +1,15 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
+// solhint-disable-next-line no-global-import
 import "./BaseTest.sol";
-import { console2 } from "forge-std/console2.sol";
-
-import { ERC721 } from "openzeppelin-contracts/token/ERC721/ERC721.sol";
-
-import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
-import { FakeOracle } from "src/ports/oracles/FakeOracle.sol";
 
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 
-import { ExpiredVault } from "src/user_facing/ExpiredVault.sol";
-
-/// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
-/// https://book.getfoundry.sh/forge/writing-tests
 
 contract ExpiredVaultTest is BaseTest {
     using ErrorsLeverageEngine for *;
 
-    /// @dev A function invoked before each test case is run.
     function setUp() public {
         initFork();
         initTestFramework();

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
+// solhint-disable-next-line no-global-import
 import "test/BaseTest.sol";
 
 contract FrameworkTest is BaseTest {

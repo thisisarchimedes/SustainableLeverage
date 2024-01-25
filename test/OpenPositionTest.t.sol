@@ -1,18 +1,12 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
+// solhint-disable-next-line no-global-import
 import "test/BaseTest.sol";
-
-import { AggregatorV3Interface } from "src/interfaces/AggregatorV3Interface.sol";
 
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 
-/// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
-/// https://book.getfoundry.sh/forge/writing-tests
-
 contract OpenPositionTest is BaseTest {
-    /* solhint-disable  */
-
     using ErrorsLeverageEngine for *;
 
     /// @dev A function invoked before each test case is run.
@@ -92,6 +86,7 @@ contract OpenPositionTest is BaseTest {
         uint256 nftId = openUSDCBasedPosition(5e8, 15e8);
 
         if (allContracts.positionLedger.getPositionState(nftId) != PositionState.LIVE) {
+            // solhint-disable-next-line custom-errors
             revert("Position state isn't LIVE");
         }
     }

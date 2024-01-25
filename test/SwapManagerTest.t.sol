@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
+// solhint-disable-next-line no-global-import
 import "test/BaseTest.sol";
 
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
@@ -10,7 +11,6 @@ import { SwapManager } from "src/internal/SwapManager.sol";
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
 
 import { FakeWBTCUSDCSwapAdapter } from "src/ports/swap_adapters/FakeWBTCUSDCSwapAdapter.sol";
-import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
 
 contract SwapManagerTest is BaseTest {
     using ErrorsLeverageEngine for *;
