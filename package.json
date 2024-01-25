@@ -29,5 +29,8 @@
   },
   "devDependencies": {
     "prettier": "^3.1.0"
+  },
+  "dependencies": {
+    "solhint": "^4.1.1"
   }
 }

@@ -1,10 +1,10 @@
 {
   "extends": "solhint:recommended",
   "rules": {
-    "code-complexity": ["error", 8],
+    "code-complexity": ["error", 5],
     "compiler-version": ["error", ">=0.8.21"],
     "func-name-mixedcase": "off",
-    "no-console": "off",
+    "no-console": "error",
     "func-visibility": [
       "error",
       {
