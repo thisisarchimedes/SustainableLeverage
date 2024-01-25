@@ -16,7 +16,7 @@ import "src/internal/PositionLedger.sol";
 contract ExpirationTest is BaseTest {
     using ErrorsLeverageEngine for *;
 
-    address positionReceiver = makeAddr("receiver");
+    address public positionReceiver = makeAddr("receiver");
 
     function setUp() public {
         initFork();
@@ -110,11 +110,7 @@ contract ExpirationTest is BaseTest {
         vm.prank(address(0));
 
         ClosePositionParams memory params = getClosePositionParams(nftID);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, 0, ProtocolRoles.MONITOR_ROLE
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, 0, ProtocolRoles.MONITOR_ROLE));
         allContracts.positionExpirator.expirePosition(nftID, params);
     }
 

@@ -41,7 +41,7 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
     using SafeERC20 for IERC20;
 
     uint256 public constant TWO_DAYS = 6400 * 2;
-    address feeCollector = makeAddr("feeCollector");
+    address public feeCollector = makeAddr("feeCollector");
 
     function initFork() internal {
         string memory alchemyApiKey = vm.envOr("API_KEY_ALCHEMY", string(""));

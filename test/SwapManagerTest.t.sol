@@ -15,8 +15,8 @@ import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwa
 contract SwapManagerTest is BaseTest {
     using ErrorsLeverageEngine for *;
 
-    ISwapAdapter uniswapV3Adapter;
-    FakeWBTCUSDCSwapAdapter fakeWBTCUSDCAdapter;
+    ISwapAdapter private uniswapV3Adapter;
+    FakeWBTCUSDCSwapAdapter private  fakeWBTCUSDCAdapter;
 
     function setUp() public virtual {
         initFork();
