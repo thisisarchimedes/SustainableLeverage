@@ -81,11 +81,9 @@ jobs:
           npm install solhint
           LINT_OUTPUT=`npx solhint -c .solhint.json -f compact 'test/**/*.sol' | grep "problem" | awk '{print $1}'`
           
-          echo $LINT_OUTPUT
           if [ -z "$LINT_OUTPUT" ]; then
             LINT_OUTPUT=0
           fi
-          echo $LINT_OUTPUT
           
           echo "LINT_PROBLEMS=$LINT_OUTPUT" >> $GITHUB_ENV
 
