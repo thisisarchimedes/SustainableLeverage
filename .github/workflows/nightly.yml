@@ -75,7 +75,7 @@ jobs:
           forge coverage > tmp_report
           echo "COVERAGE_FUNC=`grep "Total" tmp_report | awk '{print $(NF-2)}'`" >> $GITHUB_ENV
 
-      - name: Run ESLint on tests
+      - name: Run lint on tests
         continue-on-error: true
         run: |
           npm install solhint

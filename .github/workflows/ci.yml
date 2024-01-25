@@ -34,6 +34,11 @@ jobs:
       - name: "Build the contracts"
         run: "forge build --skip script"
 
+      - name: "Running Linter"
+        run: |
+          npm install solhint
+          npx solhint -c .solhint.json -f compact 'src/**/*.sol' | grep "problem" | awk '{print $1}'
+        
       - name: "Add build summary"
         run: |
           echo "## Build result" >> $GITHUB_STEP_SUMMARY
