@@ -65,12 +65,11 @@ contract ClosePositiontBase is ClosePositionInternal, AccessControlUpgradeable {
     }
 
     function setNftIdVaultBalance(uint256 nftId, uint256 balance) internal {
-        positionLedger.setClaimableAmount(nftId, balance);
-
         if (balance == 0) {
             return;
         }
 
+        positionLedger.setClaimableAmount(nftId, balance);
         IExpiredVault(expiredVault).deposit(balance);
     }
 }
