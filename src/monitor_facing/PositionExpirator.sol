@@ -30,7 +30,7 @@ contract PositionExpirator is ClosePositiontBase {
         uint256 wbtcReceived = swapStrategyTokenToWbtc(strategyTokenAmountRecieved, params);
 
         // Send WBTC back to vault
-        repayLiquidatedPositionDebt(nftId, wbtcReceived);
+        repayPositionDebt(nftId, wbtcReceived);
         uint256 wbtcDebtAmount = positionLedger.getDebtAmount(params.nftId);
 
         uint256 finalUserBalance = wbtcReceived - wbtcDebtAmount;

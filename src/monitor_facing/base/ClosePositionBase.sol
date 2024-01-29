@@ -51,7 +51,7 @@ contract ClosePositiontBase is ClosePositionInternal, AccessControlUpgradeable {
         return expiredVault;
     }
 
-    function repayLiquidatedPositionDebt(uint256 nftId, uint256 wbtcReceived) internal returns (uint256 leftoverWbtc) {
+    function repayPositionDebt(uint256 nftId, uint256 wbtcReceived) internal returns (uint256 leftoverWbtc) {
         uint256 wbtcDebtAmount = positionLedger.getDebtAmount(nftId);
 
         if (wbtcReceived <= wbtcDebtAmount) {

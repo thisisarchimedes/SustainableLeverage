@@ -17,7 +17,7 @@ contract PositionLiquidator is ClosePositiontBase {
 
         revertIfNotAllowedToLiquidate(params, wbtcReceived);
 
-        uint256 leftoverWbtc = repayLiquidatedPositionDebt(nftId, wbtcReceived);
+        uint256 leftoverWbtc = repayPositionDebt(nftId, wbtcReceived);
 
         uint256 feePaid = collectLiquidationFee(params, leftoverWbtc);
 
