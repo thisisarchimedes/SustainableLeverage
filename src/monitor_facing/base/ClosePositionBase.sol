@@ -5,6 +5,7 @@ import { AccessControlUpgradeable } from "openzeppelin-contracts-upgradeable/acc
 import { ClosePositionInternal } from "src/libs/ClosePositionInternal.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
+import { IExpiredVault } from "src/interfaces/IExpiredVault.sol";
 
 contract ClosePositiontBase is ClosePositionInternal, AccessControlUpgradeable {
     address internal monitor;
@@ -61,5 +62,15 @@ contract ClosePositiontBase is ClosePositionInternal, AccessControlUpgradeable {
 
         wbtcVault.repayDebt(nftId, wbtcDebtAmount);
         return wbtcReceived - wbtcDebtAmount;
+    }
+
+    function setNftIdVaultBalance(uint256 nftId, uint256 balance) internal {
+        positionLedger.setClaimableAmount(nftId, balance);
+
+        if (balance == 0) {
+            return;
+        }
+
+        IExpiredVault(expiredVault).deposit(balance);
     }
 }

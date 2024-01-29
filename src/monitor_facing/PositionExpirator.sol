@@ -30,17 +30,13 @@ contract PositionExpirator is ClosePositiontBase {
         uint256 wbtcReceived = swapStrategyTokenToWbtc(strategyTokenAmountRecieved, params);
 
         // Send WBTC back to vault
-        repayPositionDebt(nftId, wbtcReceived);
-        uint256 wbtcDebtAmount = positionLedger.getDebtAmount(params.nftId);
-
-        uint256 finalUserBalance = wbtcReceived - wbtcDebtAmount;
+        uint256 leftoverWbtc = repayPositionDebt(nftId, wbtcReceived);
+        setNftIdVaultBalance(nftId, leftoverWbtc);
 
         // Change state of position to expired
         positionLedger.setPositionState(nftId, PositionState.EXPIRED);
 
         //emit event
-        emit EventsLeverageEngine.PositionExpired(
-            nftId, positionLedger.getStrategyAddress(nftId), finalUserBalance, wbtcDebtAmount
-        );
+        emit EventsLeverageEngine.PositionExpired(nftId, positionLedger.getStrategyAddress(nftId), leftoverWbtc);
     }
 }
