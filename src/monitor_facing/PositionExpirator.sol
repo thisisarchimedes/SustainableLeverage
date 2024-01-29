@@ -29,8 +29,10 @@ contract PositionExpirator is ClosePositiontBase {
 
         uint256 wbtcReceived = swapStrategyTokenToWbtc(strategyTokenAmountRecieved, params);
 
-        // Send WBTC back to vault
+        // Repay debt to WBTC vault
         uint256 leftoverWbtc = repayPositionDebt(nftId, wbtcReceived);
+
+        //send leftover WBTC to expired vault
         setNftIdVaultBalance(nftId, leftoverWbtc);
 
         // Change state of position to expired
