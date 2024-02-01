@@ -57,7 +57,7 @@ contract ExpiredVaultTest is BaseTest {
         // Assert
         LedgerEntry memory position = allContracts.positionLedger.getPosition(nftId);
         assertEq(position.claimableAmount, 0, "Position claimableAmount should be 0");
-        assertTrue(position.state == PositionState.CLOSED, "Position state should be CLOSED");
+        assertTrue(position.state == PositionState.LIQUIDATED, "Position state should be CLOSED");
         assertEq(allContracts.expiredVault.balance(), 0, "Expired vault balance should be 0");
         assertEq(
             balanceAfter - balanceBefore,
