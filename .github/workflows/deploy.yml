@@ -1,4 +1,12 @@
-name: "CI"
+name: Deploy to Prod Stage
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'scripts/**'
 
 env:
   API_KEY_ALCHEMY: ${{ secrets.API_KEY_ALCHEMY }}
@@ -11,126 +19,9 @@ env:
   API_DEVOPS_EVENT_CATCHER: ${{ secrets.API_DEVOPS_EVENT_CATCHER }}
   DEVOPS_EVENTS_SECRET_TOKEN: ${{ secrets.DEVOPS_EVENTS_SECRET_TOKEN }}
 
-on:
-  workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-      - "main"
-
 jobs:
-  build:
-    if: github.event_name == 'pull_request'
-    runs-on: "ubuntu-latest"
-    steps:
-      - name: "Check out the repo"
-        uses: "actions/checkout@v4"
-        with:
-          submodules: "recursive"
-
-      - name: "Install Foundry"
-        uses: "foundry-rs/foundry-toolchain@v1"
-
-      - name: "Build the contracts"
-        run: "forge build --skip script"
-
-      - name: "Running Linter"
-        run: |
-          npm install solhint
-          npx solhint -c .solhint.json -f compact 'src/**/*.sol' | grep "problem" | awk '{print $1}'
-        
-      - name: "Add build summary"
-        run: |
-          echo "## Build result" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
-
-  analyze:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Run Slither
-        uses: crytic/slither-action@v0.3.0
-        id: slither
-        with:
-          node-version: 16
-          fail-on: medium
-          slither-args:
-            --checklist --detect
-            msg-value-loop,delegatecall-loop,controlled-delegatecall,controlled-array-length,arbitrary-send-erc20-permit,weak-prng,reentrancy-eth,abiencoderv2-array,arbitrary-send-erc20,array-by-reference,encode-packed-collision,incorrect-shift,multiple-constructors,name-reused,protected-vars,public-mappings-nested,rtlo,shadowing-state,suicidal,uninitialized-state,uninitialized-storage,unprotected-upgrade
-            --filter-paths "lib|pseudo|test|script|openzeppelin*|forge-std*" --markdown-root ${{ github.server_url}}/${{
-            github.repository }}/blob/${{ github.sha }}/
-
-      - name: "Add build summary"
-        run: |
-          echo "## Build result" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
-
-  test:
-    needs: ["build"]
-    runs-on: "ubuntu-latest"
-    steps:
-      - name: "Check out the repo"
-        uses: "actions/checkout@v4"
-        with:
-          submodules: "recursive"
-
-      - name: "Prepare Python environment"
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-
-      - name: "Install Foundry"
-        uses: "foundry-rs/foundry-toolchain@v1"
-
-      - name: "Show the Foundry config"
-        run: "forge config"
-
-      - name: "Generate a fuzz seed that changes weekly to avoid burning through RPC allowance"
-        run: >
-          echo "FOUNDRY_FUZZ_SEED=$(
-            echo $(($EPOCHSECONDS - $EPOCHSECONDS % 604800))
-          )" >> $GITHUB_ENV
-
-      - name: "Run the tests"
-        run: |
-          start=$(date +%s)
-
-          forge test
-
-          end=$(date +%s)
-          duration=$((end-start))
-          echo "DURATION=$duration" >> $GITHUB_ENV
-          echo "Time taken to run the script: $duration seconds"
-
-      - name: Get test coverage
-        run: |
-          forge coverage --report lcov
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
-
-      - name: "Report DevOps Metrics"
-        run: |
-          echo "Time taken to run the script: ${{ env.DURATION }} seconds"
-          pip install python-dotenv
-          pip install requests
-          python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "test_pass" --metadata '{"duration": ${{ env.DURATION }}}'
-
-      - name: "Add test summary"
-        run: |
-          echo "## Tests result" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
   deploy_to_stable_node:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: "ubuntu-latest"
     permissions: "write-all"
     steps:
@@ -196,7 +87,6 @@ jobs:
 
   deploy_to_demo_node:
     needs: ["deploy_to_stable_node"]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: "ubuntu-latest"
     permissions: "write-all"
     steps:
@@ -248,16 +138,6 @@ jobs:
           python script/prep_addresses_json.py
           aws s3 cp deployments/deployments.json s3://smart-contract-backend-config/abis/demo_leverage_abis.json --acl public-read
           aws s3 cp deployments/demo_rpc.json s3://smart-contract-backend-config/demo_rpc.json --acl public-read
-
-      - name: "Report on deploy event"
-        run: |
-          pip install -r devops/metrics/src/cicd_script/requirements.txt
-          python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "deploy"
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
 
       - name: "Add deploy summary"
         run: |

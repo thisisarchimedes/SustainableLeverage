@@ -102,48 +102,4 @@ contract ExpiredVaultTest is BaseTest {
         vm.expectRevert(ErrorsLeverageEngine.NotOwner.selector);
         allContracts.expiredVault.claim(nftId);
     }
-
-    function testResetExpiredVault() external {
-        /*
-        TODO: Fix this test - probably shoud have set dependcy test for all contracts
-
-        // Remember
-        address oldExpiredVault = address(expiredVault);
-        IERC20 wbtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
-
-        // Prepare new expired vault
-        ExpiredVault newExpiredVault = new ExpiredVault();
-        bytes memory initDataExpiredVault =
-            abi.encodeWithSelector(ExpiredVault.initialize.selector, address(leverageEngine), WBTC);
-        newExpiredVault = ExpiredVault(
-        address(new TransparentUpgradeableProxy(address(newExpiredVault),address(proxyAdmin),initDataExpiredVault))
-        );
-
-        // Reset
-        leverageEngine.setExpiredVault(address(newExpiredVault));
-
-        // Assert
-        assertNotEq(
-            leverageEngine.getCurrentExpiredVault(), address(oldExpiredVault), "Expired vault should be updated"
-        );
-        assertEq(leverageEngine.getCurrentExpiredVault(), address(newExpiredVault), "Expired vault should be updated");
-        assertEq(
-            wbtc.allowance(address(leverageEngine), address(oldExpiredVault)),
-            0,
-            "Old expired vault should be disapproved"
-        );
-        assertEq(
-            wbtc.allowance(address(leverageEngine), address(newExpiredVault)),
-            type(uint256).max,
-            "Expired vault should be approved"
-        );
-        assertFalse(
-            leverageEngine.hasRole(ProtocolRoles.EXPIRED_VAULT_ROLE, address(oldExpiredVault)),
-            "Old expired vault should be removed from MONITOR_ROLE"
-        );
-        assertTrue(
-            leverageEngine.hasRole(ProtocolRoles.EXPIRED_VAULT_ROLE, address(newExpiredVault)),
-            "Expired vault should be added to MONITOR_ROLE"
-        );*/
-    }
 }

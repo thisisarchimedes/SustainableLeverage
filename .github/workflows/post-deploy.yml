@@ -1,0 +1,99 @@
+name: Post-Deploy Stage
+
+on:
+  workflow_run:
+    workflows: ["Deploy to Prod Stage"]
+    types:
+      - completed
+
+env:
+  PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+  API_DEVOPS_EVENT_CATCHER: ${{ secrets.API_DEVOPS_EVENT_CATCHER }}
+  DEVOPS_EVENTS_SECRET_TOKEN: ${{ secrets.DEVOPS_EVENTS_SECRET_TOKEN }}
+  
+
+jobs:
+  get-commits:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+          fetch-depth: 0 
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install dependencies
+        run: |
+          yarn add axios dotenv
+
+      - name: Get PR commits
+        id: get_pr_commits
+        run: |
+          # Get the last commit message
+          COMMIT_MESSAGE=$(git log -1 --pretty=format:%B)
+          echo "Last commit message: $COMMIT_MESSAGE"
+          
+          # Check if the commit message indicates a merge and extract the PR number
+          PR_NUMBER=$(echo "$COMMIT_MESSAGE" | grep -oP 'Merge pull request #\K[0-9]+')
+          if [ -z "$PR_NUMBER" ]; then
+            echo "This does not appear to be a merge commit from a PR."
+            exit 0  # Exit gracefully, not an error, just not a PR merge
+          fi
+          
+          echo "PR Number: $PR_NUMBER"
+          
+          # Initialize variables
+          COMMITS=()
+          PAGE=1
+          PER_PAGE=100 
+
+          # Prepare the API endpoint for fetching commits from the PR
+          COMMITS_URL="https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER/commits?per_page=$PER_PAGE&page=$PAGE"
+
+          while : ; do
+            # Fetch the commit data using GitHub API
+            RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.PAT_TOKEN }}" "$COMMITS_URL")
+            
+            # Check if the API response is valid and contains an array
+            if ! jq empty <<< "$RESPONSE"; then
+                echo "Failed to parse JSON, or got empty response"
+                exit 1
+            fi
+
+            # Extract commit SHAs from the response and add to the list
+            PAGE_COMMITS=$(echo "$RESPONSE" | jq -r '.[] | .sha')
+            COMMITS+=($PAGE_COMMITS)
+
+            # Break the loop if we have reached the last page
+            if [ $(echo "$PAGE_COMMITS" | wc -l) -lt $PER_PAGE ]; then
+              break
+            fi
+            
+            # Prepare for the next page
+            ((PAGE++))
+            COMMITS_URL="https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER/commits?per_page=$PER_PAGE&page=$PAGE"
+          done
+
+          # Convert bash array to a JSON array-like string
+          COMMIT_SHAS_JSON=$(jq -n --argjson shas "$(jq -n '$ARGS.positional' --args "${COMMITS[@]}")" '$shas' | sed 's/^[ \t]*//;s/[ \t]*$//' | tr -d '\n')
+
+          echo "All Commit SHAs as JSON Array: $COMMIT_SHAS_JSON"
+
+          echo "::set-output name=commit_shas::$COMMIT_SHAS_JSON"
+
+      - name: Report DevOps Event
+        run: |
+          node devops/metrics/src/cicd_script/report_devops_event.js ${{ github.repository }} deploy '{"commit_ids": ${{ steps.get_pr_commits.outputs.commit_shas }}}'
+
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
