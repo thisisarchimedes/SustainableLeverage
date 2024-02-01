@@ -100,10 +100,6 @@ contract OpenPositionTest is BaseTest {
         assertGt(wbtcUsd, 0);
     }
 
-    function test_DetectPoolManipulation() external {
-        // TODO flash loan attack - bend pool then open position. get far more
-    }
-
     function test_previewOpenPositionETHStrategy() external {
 
         OpenPositionParams memory params = OpenPositionParams({

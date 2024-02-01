@@ -1,0 +1,38 @@
+name: Acceptance Stage
+
+on:
+  pull_request:
+    branches:
+      - main 
+
+env:
+    API_KEY_ALCHEMY: ${{ secrets.API_KEY_ALCHEMY }}
+    DEPLOYER_PKEY: ${{ secrets.DEPLOYER_PKEY }}
+    DEPLOYER_ADDRESS: ${{ vars.DEPLOYER_ADDRESS }}
+    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    NEW_RELIC_API_KEY: ${{ secrets.NEW_RELIC_API_KEY }}
+    FOUNDRY_PROFILE: "ci"
+    API_DEVOPS_EVENT_CATCHER: ${{ secrets.API_DEVOPS_EVENT_CATCHER }}
+    DEVOPS_EVENTS_SECRET_TOKEN: ${{ secrets.DEVOPS_EVENTS_SECRET_TOKEN }}
+    
+    
+    
+jobs:
+
+    acceptance-test:
+        runs-on: "ubuntu-latest"
+        steps:
+        - name: "Check out the repo"
+          uses: "actions/checkout@v4"
+          with:
+            submodules: "recursive"
+
+        - name: "Install Foundry"
+          uses: "foundry-rs/foundry-toolchain@v1"
+
+        - name: "Build the contracts"
+          run: "forge build --skip script"
+
+        - name: "Run the acceptance tests"
+          run: echo "placeholder for acceptance tests"
