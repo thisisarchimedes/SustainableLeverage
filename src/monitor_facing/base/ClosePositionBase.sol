@@ -63,3 +63,4 @@ contract ClosePositiontBase is ClosePositionInternal, AccessControlUpgradeable {
         return wbtcReceived - wbtcDebtAmount;
     }
 }
+
