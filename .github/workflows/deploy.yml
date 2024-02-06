@@ -4,9 +4,7 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'src/**'
-      - 'scripts/**'
+
 
 env:
   API_KEY_ALCHEMY: ${{ secrets.API_KEY_ALCHEMY }}
