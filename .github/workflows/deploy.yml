@@ -143,3 +143,47 @@ jobs:
         run: |
           echo "## Deploy result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+
+  
+  report-devops-event-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+          fetch-depth: 0
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'yarn'
+
+      - name: List all commit SHAs involved in the push
+        id: format_commits
+        shell: bash
+        run: |
+          ./devops/github_actions_templates/get_commit_shas.sh ${{ github.event.before }} ${{ github.event.after }} > commit_shas.txt
+          COMMIT_SHAS_JSON=$(cat commit_shas.txt)
+          echo "::set-output name=commit_shas::$COMMIT_SHAS_JSON"
+
+      - name: Report DevOps Event
+        run: |
+          yarn add axios dotenv
+          node devops/metrics/src/cicd_script/report_devops_event.js ${{ github.repository }} deploy '{"commit_ids": ${{ steps.format_commits.outputs.commit_shas }} }'          
+        env:
+          API_DEVOPS_EVENT_CATCHER: ${{ vars.API_DEVOPS_EVENT_CATCHER }}
+          DEVOPS_EVENTS_SECRET_TOKEN: ${{ secrets.DEVOPS_EVENTS_SECRET_TOKEN }}
+
+      - name: Slack Notification
+        if: always()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
