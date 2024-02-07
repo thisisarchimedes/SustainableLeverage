@@ -106,7 +106,11 @@ contract ExpirationTest is BaseTest {
         vm.prank(address(0));
 
         ClosePositionParams memory params = getClosePositionParams(nftID);
-        vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, 0, ProtocolRoles.MONITOR_ROLE));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, 0, ProtocolRoles.MONITOR_ROLE
+            )
+        );
         allContracts.positionExpirator.expirePosition(nftID, params);
     }
 
@@ -133,6 +137,21 @@ contract ExpirationTest is BaseTest {
         allContracts.positionExpirator.expirePosition(nftID, params);
 
         uint256 wbtcBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
+        assert(wbtcBalanceAfter > wbtcBalanceBefore);
+    }
+
+    function testFundsGoesToExpiredVaultOnExpiration() public {
+        uint256 nftID = openEthPosition();
+        uint256 expirationBlock = allContracts.positionLedger.getExpirationBlock(nftID);
+        vm.roll(expirationBlock + 1);
+
+        uint256 wbtcBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.expiredVault));
+
+        ClosePositionParams memory params = getClosePositionParams(nftID);
+        allContracts.positionExpirator.expirePosition(nftID, params);
+
+        uint256 wbtcBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.expiredVault));
+
         assert(wbtcBalanceAfter > wbtcBalanceBefore);
     }
 }
