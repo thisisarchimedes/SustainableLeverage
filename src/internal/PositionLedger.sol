@@ -132,7 +132,6 @@ contract PositionLedger is AccessControlUpgradeable {
             revert ErrorsLeverageEngine.PositionNotExpiredOrLiquidated();
         }
 
-        entries[nftID].state = PositionState.CLOSED;
         entries[nftID].claimableAmount = 0;
     }
 }
