@@ -134,7 +134,7 @@ contract UnifiedDeployer {
         LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
             quota: 10_000e8,
             maximumMultiplier: 3e8,
-            positionLifetime: 1000,
+            positionLifetime: 3,
             liquidationBuffer: 1.25e8,
             liquidationFee: 0.02e8
         });
