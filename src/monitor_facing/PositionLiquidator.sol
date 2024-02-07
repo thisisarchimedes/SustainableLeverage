@@ -6,7 +6,6 @@ import { ClosePositionParams } from "src/libs/PositionCallParams.sol";
 
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 import { EventsLeverageEngine } from "src/libs/EventsLeverageEngine.sol";
-import { IExpiredVault } from "src/interfaces/IExpiredVault.sol";
 import { ProtocolRoles, PositionState } from "src/internal/PositionLedger.sol";
 
 contract PositionLiquidator is ClosePositiontBase {
@@ -17,7 +16,7 @@ contract PositionLiquidator is ClosePositiontBase {
 
         revertIfNotAllowedToLiquidate(params, wbtcReceived);
 
-        uint256 leftoverWbtc = repayLiquidatedPositionDebt(nftId, wbtcReceived);
+        uint256 leftoverWbtc = repayPositionDebt(nftId, wbtcReceived);
 
         uint256 feePaid = collectLiquidationFee(params, leftoverWbtc);
 
@@ -64,15 +63,5 @@ contract PositionLiquidator is ClosePositiontBase {
 
         address feeCollector = protocolParameters.getFeeCollector();
         WBTC.transfer(feeCollector, feePaid);
-    }
-
-    function setNftIdVaultBalance(uint256 nftId, uint256 balance) internal {
-        positionLedger.setClaimableAmount(nftId, balance);
-
-        if (balance == 0) {
-            return;
-        }
-
-        IExpiredVault(expiredVault).deposit(balance);
     }
 }
