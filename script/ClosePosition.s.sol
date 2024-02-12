@@ -50,18 +50,6 @@ contract DeployContracts is Script {
 
         positionCloser.closePosition(params);
 
-        if (block.chainid == 1337) {
-            bytes32 storageSlot = keccak256(abi.encode(address(broadcaster), 0));
-            uint256 amount = 1000e8;
-            string[] memory inputs = new string[](5);
-            inputs[0] = "python3";
-            inputs[1] = "script/setupFork.py";
-            inputs[2] = vm.toString(storageSlot);
-            inputs[3] = vm.toString(WBTC);
-            inputs[4] = vm.toString(bytes32(amount));
-
-            vm.ffi(inputs);
-        }
         vm.stopBroadcast();
     }
 }
