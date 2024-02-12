@@ -76,8 +76,10 @@ contract UnifiedDeployer {
     address public constant BTCETHORACLE = 0xdeb288F737066589598e9214E782fa5A8eD689e8;
     address public constant FRAXBPALUSD_STRATEGY = 0xD078a331A8A00AB5391ba9f3AfC910225a78e6A1;
 
-    address defaultFeeCollector;
     address admin;
+    address defaultFeeCollector;
+    address defaultPositionLiquidatorMonitor;
+    address defaultPositionExpiratorMonitor;
 
     DependencyAddresses internal dependencyAddresses;
 
@@ -98,6 +100,8 @@ contract UnifiedDeployer {
     function DeployAllContracts() public {
         admin = msg.sender; // TODO change hardcoded address before mainnet deployment
         defaultFeeCollector = msg.sender; // TODO change hardcoded address before mainnet deployment
+        defaultPositionLiquidatorMonitor = msg.sender; // TODO change hardcoded address before mainnet deployment
+        defaultPositionExpiratorMonitor = msg.sender; // TODO change hardcoded address before mainnet deployment
 
         createOracles();
 
@@ -214,9 +218,8 @@ contract UnifiedDeployer {
             address(implProtocolParameters),
             address(allContracts.proxyAdmin)
         );
-        ProtocolParameters proxylProtocolParameters = ProtocolParameters(addrProtocolParameters);
-
-        proxylProtocolParameters.setFeeCollector(defaultFeeCollector);
+        ProtocolParameters proxyProtocolParameters = ProtocolParameters(addrProtocolParameters);
+        proxyProtocolParameters.setFeeCollector(defaultFeeCollector);
 
         return addrProtocolParameters;
     }
@@ -261,6 +264,8 @@ contract UnifiedDeployer {
             address(implPositionLiquidator),
             address(allContracts.proxyAdmin)
         );
+        PositionLiquidator proxyPositionLiquidator = PositionLiquidator(addrPositionLiquidator);
+        proxyPositionLiquidator.setMonitor(defaultPositionLiquidatorMonitor);
 
         return addrPositionLiquidator;
     }
@@ -271,6 +276,8 @@ contract UnifiedDeployer {
         address addrPositionExpirator = createUpgradableContract(
             implPositionExpirator.initialize.selector, address(implPositionExpirator), address(allContracts.proxyAdmin)
         );
+        PositionExpirator proxyPositionExpirator = PositionExpirator(addrPositionExpirator);
+        proxyPositionExpirator.setMonitor(defaultPositionExpiratorMonitor);
 
         return addrPositionExpirator;
     }
