@@ -114,7 +114,6 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
 
         {
             // Liquidate position
-            allContracts.positionLiquidator.setMonitor(address(this));
             uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
 
             ClosePositionParams memory params = ClosePositionParams({
@@ -143,7 +142,6 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
         IOracle fakeWBTCUSDOracle = getFakeOracleWithSetPrice(fakeBtcUsdPrice);
         allContracts.oracleManager.setUSDOracle(WBTC, fakeWBTCUSDOracle);
 
-        allContracts.positionLiquidator.setMonitor(address(this));
         uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
 
         // Liquidate position
