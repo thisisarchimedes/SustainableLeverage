@@ -19,6 +19,8 @@ contract ExpirationTest is BaseTest {
         initTestFramework();
 
         deal(WBTC, address(allContracts.wbtcVault), 100e8);
+
+        allContracts.positionExpirator.setMonitor(address(this));
     }
 
     // Helper function to update strategy config

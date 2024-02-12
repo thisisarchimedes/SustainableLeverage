@@ -114,6 +114,7 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
 
         {
             // Liquidate position
+            allContracts.positionLiquidator.setMonitor(address(this));
             uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
 
             ClosePositionParams memory params = ClosePositionParams({
@@ -145,6 +146,7 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
         uint256 wbtcVaultBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
 
         // Liquidate position
+        allContracts.positionLiquidator.setMonitor(address(this));
         ClosePositionParams memory params = ClosePositionParams({
             nftId: nftId,
             minWBTC: 0,

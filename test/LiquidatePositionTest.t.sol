@@ -143,6 +143,8 @@ contract LiquidatePositionTest is BaseTest {
 
         closeETHBasedPosition(nftId);
 
+        allContracts.positionLiquidator.setMonitor(address(this));
+
         bytes memory payloadClose = getWETHWBTCUniswapPayload();
 
         ClosePositionParams memory params = ClosePositionParams({
