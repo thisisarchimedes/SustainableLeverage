@@ -31,7 +31,13 @@ library EventsLeverageEngine {
         uint256 positionExpireBlock,
         uint256 sharesReceived
     );
-    event PositionClosed(uint256 indexed nftId, address indexed user, uint256 receivedAmount, uint256 wbtcDebtAmount);
+    event PositionClosed(
+        uint256 indexed nftId, 
+        address indexed user, 
+        address indexed strategy,
+        uint256 receivedAmount, 
+        uint256 wbtcDebtAmount
+    );
     event PositionLiquidated(
         uint256 indexed nftId,
         address indexed strategy,

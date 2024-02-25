@@ -86,7 +86,11 @@ contract PositionCloser is AccessControlUpgradeable, ClosePositionInternal {
 
     function recordPositionClosed(uint256 nftId, uint256 finalUserBalance) internal {
         emit EventsLeverageEngine.PositionClosed(
-            nftId, msg.sender, finalUserBalance, positionLedger.getDebtAmount(nftId)
+            nftId, 
+            msg.sender, 
+            positionLedger.getStrategyAddress(nftId),
+            finalUserBalance, 
+            positionLedger.getDebtAmount(nftId)
         );
 
         positionLedger.setPositionState(nftId, PositionState.CLOSED);
