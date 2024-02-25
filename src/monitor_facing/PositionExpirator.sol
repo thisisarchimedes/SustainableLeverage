@@ -39,6 +39,10 @@ contract PositionExpirator is ClosePositiontBase {
         positionLedger.setPositionState(nftId, PositionState.EXPIRED);
 
         //emit event
-        emit EventsLeverageEngine.PositionExpired(nftId, positionLedger.getStrategyAddress(nftId), leftoverWbtc);
+        emit EventsLeverageEngine.PositionExpired(
+            nftId, 
+            positionLedger.getStrategyAddress(nftId),
+            wbtcReceived - leftoverWbtc,
+            leftoverWbtc);
     }
 }
