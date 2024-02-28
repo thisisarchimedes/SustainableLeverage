@@ -3,6 +3,7 @@ import os
 
 # Path to the deployments JSON and the output directory
 deployments_json_path = 'deployments/deployments.json'
+deployments_json_path_out = 'deployments/deployments_abis.json'
 output_directory = 'out/'
 
 # Read the deployments JSON
@@ -20,5 +21,5 @@ for deployment in deployments:
             deployment['abi'] = contract_data['abi']
 
 # Write the updated JSON back to the file
-with open(deployments_json_path, 'w') as file:
+with open(deployments_json_path_out, 'w') as file:
     json.dump(deployments, file, indent=4)
