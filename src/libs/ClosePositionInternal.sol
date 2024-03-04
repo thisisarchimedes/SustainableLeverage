@@ -6,6 +6,7 @@ import { IERC20 } from "src/interfaces/IERC20Detailed.sol";
 import { ILeverageDepositor } from "src/interfaces/ILeverageDepositor.sol";
 import { IWBTCVault } from "src/interfaces/IWBTCVault.sol";
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
+import { console2 } from "forge-std/console2.sol";
 
 import { PositionLedger } from "src/internal/PositionLedger.sol";
 import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
@@ -69,6 +70,7 @@ contract ClosePositionInternal {
         returns (uint256)
     {
         address strategyAddress = positionLedger.getStrategyAddress(params.nftId);
+        console2.log("strategyAddress", strategyAddress);
         address strategyUnderlyingToken = leveragedStrategy.getStrategyValueAsset(strategyAddress);
         ISwapAdapter swapAdapter = swapManager.getSwapAdapterForRoute(params.swapRoute);
 

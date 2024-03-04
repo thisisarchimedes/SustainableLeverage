@@ -35,7 +35,7 @@ contract OpenPosition is Script {
         address broadcaster = vm.rememberKey(0xfb3e889306aafa69793a67e74c09e657eec07c4c552543db26f3158cf53c2a57); // THIS
             // IS DUMMY KEY
         vm.startBroadcast(broadcaster);
-        positionOpener = PositionOpener(0xf4507848A8526f5B5cD8b8b02c0Bf2475D19F6FC); // UPDATE THIS WITH LATEST ADDRESS
+        positionOpener = PositionOpener(0x0c0e108510Ae7394e8080A5265eB91c778d95A95); // UPDATE THIS WITH LATEST ADDRESS
 
         ERC20(WBTC).approve(address(positionOpener), type(uint256).max);
 
