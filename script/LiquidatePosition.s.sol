@@ -8,20 +8,16 @@ import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import { PositionOpener } from "src/user_facing/PositionOpener.sol";
-import { PositionToken } from "src/user_facing/PositionToken.sol";
-
-import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
-import { WBTCVault } from "src/internal/WBTCVault.sol";
+import { PositionLiquidator } from "src/monitor_facing/PositionLiquidator.sol";
+import { ExpiredVault } from "src/user_facing/ExpiredVault.sol";
 import { SwapManager } from "src/internal/SwapManager.sol";
-import { IMultiPoolStrategy } from "src/interfaces/IMultiPoolStrategy.sol";
+import { ClosePositionParams } from "src/libs/PositionCallParams.sol";
 
 import { UniV3SwapAdapter } from "src/ports/swap_adapters/UniV3SwapAdapter.sol";
-import { OpenPositionParams } from "src/libs/PositionCallParams.sol";
 
-contract OpenPosition is Script {
-    /* solhint-disable  */
-    PositionOpener internal positionOpener = PositionOpener(0xf4507848A8526f5B5cD8b8b02c0Bf2475D19F6FC); // UPDATE THIS WITH LATEST ADDRESS
+contract LiquidatePosition is Script {
+    PositionLiquidator positionLiquidator = PositionLiquidator(0xfB3579fCE33D7733D5Ca7D023D4164627F4caFd1); // UPDATE
+        // THIS WITH LATEST ADDRESS
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -34,35 +30,26 @@ contract OpenPosition is Script {
     function run() public {
         address broadcaster = vm.rememberKey(0xfb3e889306aafa69793a67e74c09e657eec07c4c552543db26f3158cf53c2a57); // THIS
             // IS DUMMY KEY
+
         vm.startBroadcast(broadcaster);
 
-        //! adjustIn check
-        // console2.log(IMultiPoolStrategy(FRAXBPALUSD_STRATEGY).storedTotalAssets());
-        // console2.log(IMultiPoolStrategy(FRAXBPALUSD_STRATEGY).adjustInInterval());
-        // return;
-
-        ERC20(WBTC).approve(address(positionOpener), type(uint256).max);
-
-        bytes memory payload = abi.encode(
+        // Liquidate position
+        uint256 nftId = 0;
+        bytes memory payloadClose = abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
-                path: abi.encodePacked(WBTC, uint24(3000), USDC),
+                path: abi.encodePacked(USDC, uint24(3000), WETH, uint24(500), WBTC),
                 deadline: block.timestamp + 30 days,
                 amountOutMin: 1
             })
         );
-
-        OpenPositionParams memory params = OpenPositionParams({
-            collateralAmount: 0.1e8,
-            wbtcToBorrow: 0.1e8,
-            minStrategyShares: 0,
-            strategy: FRAXBPALUSD_STRATEGY,
+        ClosePositionParams memory closeParams = ClosePositionParams({
+            nftId: nftId,
+            minWBTC: 0,
             swapRoute: SwapManager.SwapRoute.UNISWAPV3,
-            swapData: payload,
+            swapData: payloadClose,
             exchange: address(0)
         });
-
-        positionOpener.openPosition(params);
-
-        vm.stopBroadcast();
+        console2.log(block.number, block.timestamp);
+        positionLiquidator.liquidatePosition(closeParams);
     }
 }
