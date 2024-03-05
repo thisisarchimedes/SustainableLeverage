@@ -16,4 +16,6 @@ struct DependencyAddresses {
     address positionExpirator;
     address positionLedger;
     address swapManager;
+    address lvBTC;
+    address lvBtcCurvePool;
 }

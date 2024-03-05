@@ -2,24 +2,20 @@ pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-
 
 contract WBTCVault is AccessControl {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-
     // Define roles
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-
 
     // Assuming that WBTC and lvBTC are ERC20 tokens, we'll need their interfaces to interact with them
     IERC20 internal wbtc;
     IERC20 internal lvbtc;
 
-    // Define events  
+    // Define events
     event SwappedlvBTCforWBTC(uint256 lvBTCAmount, uint256 WBTCReceived);
     event SwappedWBTCforlvBTC(uint256 WBTCAmount, uint256 lvBTCReceived);
     event LeverageEngineQuotaSet(address indexed leverageEngine, uint256 newQuota);
@@ -48,7 +44,7 @@ contract WBTCVault is AccessControl {
         // 6. Emit an event for the swap
 
         // Emit event after successful swap
-        emit SwappedlvBTCforWBTC(amountIn,  amountOut);
+        emit SwappedlvBTCforWBTC(amountIn, amountOut);
     }
 
     /**
@@ -67,7 +63,6 @@ contract WBTCVault is AccessControl {
 
         // Emit event after successful swap and burn
         emit SwappedWBTCforlvBTC(amountIn, amountOut);
- 
     }
 
     /**
@@ -79,48 +74,48 @@ contract WBTCVault is AccessControl {
         emit LeverageEngineQuotaSet(leverageEngine, WBTCQuota);
     }
 
-
-     /**
+    /**
      * @dev Sets the WBTC quota for a specific LeverageEngine.
      * Can only be called by an minter. Minter can only reduce quouta. It cannot increase it
      * Meant to use when need to return WBTC to the vault
      */
     function reduceLeverageEngineQuota(address leverageEngine, uint256 WBTCQuota) external onlyRole(MINTER_ROLE) {
-        
-        if (leverageEngineWBTCQuota[leverageEngine] < WBTCQuota)
+        if (leverageEngineWBTCQuota[leverageEngine] < WBTCQuota) {
             revert("Minter cannot increase quota");
+        }
 
         leverageEngineWBTCQuota[leverageEngine] = WBTCQuota;
         emit LeverageEngineQuotaSet(leverageEngine, WBTCQuota);
     }
     /**
-    * @dev Allows a LeverageEngine to borrow WBTC from the vault.
-    * Verifies that the requested amount is below the LeverageEngine's quota.
-    * Sends WBTC to the LeverageEngine and updates the quota.
-    */
+     * @dev Allows a LeverageEngine to borrow WBTC from the vault.
+     * Verifies that the requested amount is below the LeverageEngine's quota.
+     * Sends WBTC to the LeverageEngine and updates the quota.
+     */
+
     function borrowWBTC(uint256 amount) external {
         require(amount > 0, "Amount must be greater than 0");
         require(leverageEngineWBTCQuota[msg.sender] >= amount, "Exceeds available quota");
-        
+
         // Update the quota
         leverageEngineWBTCQuota[msg.sender] = leverageEngineWBTCQuota[msg.sender].sub(amount);
-        
+
         // Transfer WBTC to the LeverageEngine
         require(wbtc.transfer(msg.sender, amount), "WBTC transfer failed");
-        
+
         emit WBTCBorrowed(msg.sender, amount);
     }
 
     /**
-    * @dev Allows a LeverageEngine to repay WBTC to the vault.
-    * The quota doesn't increase after repayment.
-    */
+     * @dev Allows a LeverageEngine to repay WBTC to the vault.
+     * The quota doesn't increase after repayment.
+     */
     function repayWBTC(uint256 amount) external {
         require(amount > 0, "Amount must be greater than 0");
         // Transfer WBTC from the LeverageEngine to the vault
         require(wbtc.safeTransferFrom(msg.sender, address(this), amount), "WBTC repayment failed");
 
-        // qouta doesn't go back up on repay - it needs to happen manually 
+        // qouta doesn't go back up on repay - it needs to happen manually
 
         emit WBTCRepaid(msg.sender, amount);
     }
