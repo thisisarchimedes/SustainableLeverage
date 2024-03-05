@@ -11,6 +11,7 @@ contract ExpiredVault is IExpiredVault, AccessControl {
     PositionLedgerLib.LedgerStorage internal ledger;
 
     // Define roles
+    // TODO: use ProtocolRoles instead
     bytes32 public constant MONITOR_ROLE = keccak256("MONITOR_ROLE");
 
     constructor(IERC20 _wbtc, PositionLedgerLib.LedgerStorage _ledger) {
