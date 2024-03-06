@@ -32,10 +32,10 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
 
     function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
         lvBtc = LVBTC(dependencies.lvBTC);
-        curvePool = ICurvePool(dependencies.lvBtcCurvePool);
+        curvePool = ICurvePool(dependencies.lvBTCCurvePool);
 
-        wBtc.approve(address(dependencies.lvBtcCurvePool), type(uint256).max);
-        lvBtc.approve(address(dependencies.lvBtcCurvePool), type(uint256).max);
+        wBtc.approve(address(dependencies.lvBTCCurvePool), type(uint256).max);
+        lvBtc.approve(address(dependencies.lvBTCCurvePool), type(uint256).max);
 
         // TODO: add these roles and also access control on borrowAmountTo and repayDebt
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionOpener);

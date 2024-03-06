@@ -125,14 +125,3 @@ contract LvBTCTest is BaseCurvePoolTest {
         return balance0 * 1000 / balance1;
     }
 }
-
-/*
-
-- When Pool is low on WBTC:
-    [] Send WBTC from the vault to the pool (swap WBTC>>lvBTC)
-    [] Burn the lvBTC we got for the WBTC
-- When there is extra WBTC in the pool, get WBTC from the pool to the vault:
-    [] Mint lvBTC and send it to the vault
-    [] Swap lvBTC>>WBTC
-
-*/

@@ -228,7 +228,7 @@ contract UnifiedDeployer {
             oracles
         );
 
-        dependencyAddresses.lvBtcCurvePool = address(allContracts.lvBTCCurvePool);
+        dependencyAddresses.lvBTCCurvePool = address(allContracts.lvBTCCurvePool);
     }
 
     function initdeployCurvePool(

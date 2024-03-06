@@ -73,6 +73,12 @@ contract DeployContracts is UnifiedDeployer, BaseScript {
         deployedContracts.push(dependencyAddresses.swapManager);
         deployedContractsNames.push("SwapManager");
 
+        deployedContracts.push(dependencyAddresses.lvBTC);
+        deployedContractsNames.push("LvBTC");
+
+        deployedContracts.push(dependencyAddresses.lvBTCCurvePool);
+        deployedContractsNames.push("lvBTCCurvePool");
+
         _writeDeploymentsToJson();
     }
 
