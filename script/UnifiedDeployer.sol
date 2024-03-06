@@ -112,11 +112,6 @@ contract UnifiedDeployer {
 
         createOracles();
 
-        //deploy LvBTC
-        allContracts.lvBTC = new LVBTC(address(this));
-
-        //deploy LvBTC Curve pool
-
         deployProxyAndContracts();
 
         allContracts.expiredVault.setDependencies(dependencyAddresses);
