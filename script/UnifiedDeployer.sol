@@ -202,7 +202,7 @@ contract UnifiedDeployer {
         dependencyAddresses.swapManager = createProxiedSwapManager();
         allContracts.swapManager = SwapManager(dependencyAddresses.swapManager);
 
-        allContracts.lvBTC = new LVBTC(address(this));
+        allContracts.lvBTC = new LVBTC(address(dependencyAddresses.wbtcVault));
         dependencyAddresses.lvBTC = address(allContracts.lvBTC);
 
         string memory name = "LVBTC-WBTC-Arch-Test";

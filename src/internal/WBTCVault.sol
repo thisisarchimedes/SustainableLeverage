@@ -38,10 +38,10 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
         lvBtc.approve(address(dependencies.lvBtcCurvePool), type(uint256).max);
 
         // TODO: add these roles and also access control on borrowAmountTo and repayDebt
-        // _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionOpener);
-        // _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionCloser);
-        // _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionLiquidator);
-        // _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionExpirator);
+        _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionOpener);
+        _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionCloser);
+        _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionLiquidator);
+        _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionExpirator);
     }
 
     function swapToLVBTC(uint256 amount, uint256 minAmount) external onlyRole(ProtocolRoles.MONITOR_ROLE) {
@@ -49,6 +49,17 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
         uint256 lvBTCBalance = lvBtc.balanceOf(address(this));
 
         lvBtc.burn(lvBTCBalance);
+    }
+
+    function swapToWBTC(uint256 amount, uint256 minAmount) external onlyRole(ProtocolRoles.MONITOR_ROLE) {
+        uint256 currentAmount = lvBtc.balanceOf(address(this));
+
+        uint256 amountToMint = amount - currentAmount;
+
+        lvBtc.mint(address(this), amountToMint);
+        lvBtc.approve(address(curvePool), type(uint256).max);
+
+        curvePool.exchange(LVBTC_INDEX, WBTC_INDEX, amount, minAmount, address(this));
     }
 
     function borrowAmountTo(uint256 amount, address to) external {
