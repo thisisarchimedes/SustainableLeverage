@@ -10,16 +10,17 @@ contract CurvePoolTest is BaseCurvePoolTest {
     LVBTC private lvBTC;
 
     function setUp() public {
-        //super.setUpCurvePoolManager(); // Ensure this calls the correct base setup
+        initFork(); // Make sure to implement this in your base or here if specific to this test
+        initTestFramework(); // Ensure this is implemented according to your test setup
 
-        vm.createSelectFork("https://eth-mainnet.g.alchemy.com/v2/pLr2mJQRKzJGMLj5Df7ZhWyGjV-M7ZJI", 19_368_282);
+        // vm.createSelectFork("https://eth-mainnet.g.alchemy.com/v2/pLr2mJQRKzJGMLj5Df7ZhWyGjV-M7ZJI", 19_368_282);
 
         // Deploy lvBTC
-        lvBTC = new LVBTC(address(this));
+        lvBTC = allContracts.lvBTC;
+
+        vm.prank(address(allContracts.wbtcVault));
         lvBTC.mint(address(this), 1000e8);
         deal(WBTC, address(this), 1000e8);
-
-        uint256 myBalance = ERC20(address(lvBTC)).balanceOf(address(this));
     }
 
     function prepareDeposit(uint256 wbtcAmount, uint256 lvBtcAmount) internal {
