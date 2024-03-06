@@ -66,15 +66,6 @@ contract LvBTCTest is BaseCurvePoolTest {
         ICurvePool(allContracts.lvBTCCurvePool).add_liquidity(amounts, 0);
     }
 
-    function testCurvePoolBalanced() public {
-        // uint256 wbtcBalance = pool.balances(0);
-        // uint256 lvBtcBalance = pool.balances(1);
-
-        // uint256 ratio = calculatePoolTokensRatio(lvBtcBalance, wbtcBalance);
-
-        // assert(ratio == 1000);
-    }
-
     function testSendWBTCFromVaultToCurvePool() public {
         uint256 wbtcBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
 
