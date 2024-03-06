@@ -7,7 +7,6 @@ import "openzeppelin-contracts/utils/math/Math.sol";
 
 import "test/BaseTest.sol";
 import { BaseCurvePoolTest } from "./BaseCurvePoolTest.sol"; // Adjust path as necessary;
-import { console2 } from "forge-std/console2.sol";
 import { IWBTCVault } from "../src/interfaces/IWBTCVault.sol";
 import { ICurvePool } from "src/interfaces/ICurvePool.sol";
 
@@ -26,7 +25,6 @@ contract LvBTCTest is BaseCurvePoolTest {
         vm.prank(address(allContracts.wbtcVault));
         allContracts.lvBTC.mint(address(this), 1000e8);
 
-        console2.log(address(allContracts.lvBTC));
         deal(WBTC, address(this), 1000e8);
 
         uint256[] memory amounts = new uint256[](2);
@@ -50,11 +48,6 @@ contract LvBTCTest is BaseCurvePoolTest {
         // Calculate the desired WBTC balance after balancing the pool
         uint256 k = wbtcBalance * lvBtcBalance;
         uint256 desiredWbtcBalance = Math.sqrt(k);
-
-        console2.log("k", k);
-        console2.log("wbtcBalance", wbtcBalance);
-        console2.log("lvBtcBalance", lvBtcBalance);
-        console2.log("desiredWbtcBalance", desiredWbtcBalance);
 
         // Calculate the amount of LVBTC to sell using the ratio of desiredWbtcBalance to wbtcBalance
         uint256 lvBtcToSell = lvBtcBalance - Math.mulDiv(lvBtcBalance, desiredWbtcBalance, wbtcBalance);
@@ -93,15 +86,11 @@ contract LvBTCTest is BaseCurvePoolTest {
         uint256 wbtcbalanceBeforePool = IERC20(WBTC).balanceOf(address(allContracts.lvBTCCurvePool));
         uint256 lvBTCTotalSupplyBefore = allContracts.lvBTC.totalSupply();
 
-        console2.log("lvBTCTotalSupplyBefore", lvBTCTotalSupplyBefore);
-
         allContracts.wbtcVault.swapToLVBTC(wbtcBalanceBefore, minAmount);
 
         uint256 lvBTCTotalSupplyAfter = allContracts.lvBTC.totalSupply();
         uint256 wbtcBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
         uint256 wbtcbalanceAfterPool = IERC20(WBTC).balanceOf(address(allContracts.lvBTCCurvePool));
-
-        console2.log("lvBTCTotalSupplyAfter", lvBTCTotalSupplyAfter);
 
         assertGt(wbtcBalanceBefore * 98 / 100, wbtcBalanceAfter);
         assertGt(lvBTCTotalSupplyBefore, lvBTCTotalSupplyAfter);
@@ -112,12 +101,6 @@ contract LvBTCTest is BaseCurvePoolTest {
         deal(WBTC, address(this), 5000e8);
 
         //unbalance the pool
-        uint256 wbtcBalance = allContracts.lvBTCCurvePool.balances(0);
-        uint256 lvBtcBalance = allContracts.lvBTCCurvePool.balances(1);
-
-        console2.log("wbtcBalance before", wbtcBalance);
-        console2.log("lvBtcBalance before", lvBtcBalance);
-
         ICurvePool(address(allContracts.lvBTCCurvePool)).exchange(WBTC_INDEX, LVBTC_INDEX, 20e8, 1);
 
         //get unbalanced values
@@ -126,8 +109,6 @@ contract LvBTCTest is BaseCurvePoolTest {
 
         //calculate number of lvBTC to mint and sell to the pool
         uint256 numberToSell = calculateLVBTCToSellToBalancePool();
-
-        console2.log("numberToSell", numberToSell);
 
         uint256 wbtcInVaultBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
         uint256 lvBTCTotalSupplyBefore = allContracts.lvBTC.totalSupply();

@@ -4,7 +4,6 @@ pragma solidity >=0.8.21 <0.9.0;
 import "../src/LvBTC.sol";
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import { BaseCurvePoolTest } from "./BaseCurvePoolTest.sol"; // Ensure correct path
-import { console2 } from "forge-std/console2.sol";
 import { ICurvePool } from "../src/interfaces/ICurvePool.sol";
 
 contract CurvePoolTest is BaseCurvePoolTest {
@@ -21,7 +20,6 @@ contract CurvePoolTest is BaseCurvePoolTest {
         deal(WBTC, address(this), 1000e8);
 
         uint256 myBalance = ERC20(address(lvBTC)).balanceOf(address(this));
-        console2.log("myBalance", myBalance);
     }
 
     function prepareDeposit(uint256 wbtcAmount, uint256 lvBtcAmount) internal {
@@ -52,7 +50,6 @@ contract CurvePoolTest is BaseCurvePoolTest {
         prepareDeposit(wbtcAmount, lvBtcAmount);
 
         uint256 lpTokenBalance = allContracts.lvBTCCurvePool.balanceOf(address(this));
-        console2.log("LP Token Balance after deposit:", lpTokenBalance);
         assertTrue(lpTokenBalance > 0, "LP token balance should be greater than 0 after deposit");
 
         // Additional checks
