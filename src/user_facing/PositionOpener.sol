@@ -47,6 +47,10 @@ contract PositionOpener is AccessControlUpgradeable {
     OracleManager internal oracleManager;
     PositionLedger internal positionLedger;
 
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize() external initializer {
         __AccessControl_init();
         _grantRole(ProtocolRoles.ADMIN_ROLE, msg.sender);

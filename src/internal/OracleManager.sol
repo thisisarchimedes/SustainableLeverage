@@ -23,6 +23,10 @@ contract OracleManager is AccessControlUpgradeable {
     mapping(address => IOracle) internal ethOracles;
     mapping(address => IOracle) internal usdOracles;
 
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize() external initializer {
         __AccessControl_init();
         _grantRole(ProtocolRoles.ADMIN_ROLE, msg.sender);

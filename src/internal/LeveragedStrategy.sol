@@ -40,6 +40,10 @@ contract LeveragedStrategy is AccessControlUpgradeable {
     PositionLedger public positionLedger;
     OracleManager public oracleManager;
 
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize() external initializer {
         __AccessControl_init();
         _grantRole(ProtocolRoles.ADMIN_ROLE, msg.sender);

@@ -37,6 +37,10 @@ contract PositionLedger is AccessControlUpgradeable {
 
     mapping(uint256 => LedgerEntry) public entries; // Mapping from NFT ID to LedgerEntry
 
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize() external initializer {
         __AccessControl_init();
         _grantRole(ProtocolRoles.ADMIN_ROLE, msg.sender);
