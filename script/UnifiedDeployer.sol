@@ -108,6 +108,7 @@ contract UnifiedDeployer {
         deployProxyAndContracts();
 
         allContracts.expiredVault.setDependencies(dependencyAddresses);
+        allContracts.wbtcVault.setDependencies(dependencyAddresses);
         allContracts.leveragedStrategy.setDependencies(dependencyAddresses);
         allContracts.positionLedger.setDependencies(dependencyAddresses);
         allContracts.positionOpener.setDependencies(dependencyAddresses);
@@ -153,9 +154,6 @@ contract UnifiedDeployer {
         allContracts.positionToken = new PositionToken();
         dependencyAddresses.positionToken = address(allContracts.positionToken);
 
-        allContracts.wbtcVault = new WBTCVault(WBTC);
-        dependencyAddresses.wbtcVault = address(allContracts.wbtcVault);
-
         allContracts.leverageDepositor = new LeverageDepositor();
         dependencyAddresses.leverageDepositor = address(allContracts.leverageDepositor);
 
@@ -173,6 +171,9 @@ contract UnifiedDeployer {
 
         dependencyAddresses.positionOpener = createProxiedPositionOpener();
         allContracts.positionOpener = PositionOpener(dependencyAddresses.positionOpener);
+
+        dependencyAddresses.wbtcVault = createProxiedWbtcVault();
+        allContracts.wbtcVault = WBTCVault(dependencyAddresses.wbtcVault);
 
         dependencyAddresses.positionCloser = createProxiedPositionCloser();
         allContracts.positionCloser = PositionCloser(dependencyAddresses.positionCloser);
@@ -280,6 +281,15 @@ contract UnifiedDeployer {
         proxyPositionExpirator.setMonitor(defaultPositionExpiratorMonitor);
 
         return addrPositionExpirator;
+    }
+
+    function createProxiedWbtcVault() internal returns (address) {
+        WBTCVault implWbtcVault = new WBTCVault();
+        address addrWbtcVault = createUpgradableContract(
+            implWbtcVault.initialize.selector, address(implWbtcVault), address(allContracts.proxyAdmin)
+        );
+
+        return addrWbtcVault;
     }
 
     function createProxiedPositionLedger() internal returns (address) {
