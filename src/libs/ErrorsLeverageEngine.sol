@@ -5,6 +5,8 @@ library ErrorsLeverageEngine {
     error ExceedBorrowLimit(); // 8b085be2
     error LessThanMinimumShares(); // 3beecf45
     error OracleNotSet(); // f8794e04
+    error OraclePriceStale(); // 08b9f95b
+    error OracleNegativePrice(); // 641f4716
     error NotEnoughTokensReceived(); // 828f02ae
     error OraclePriceError(); // fa80e24f
     error ExceedBorrowQuota(); // d7f5242d

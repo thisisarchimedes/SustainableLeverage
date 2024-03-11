@@ -124,10 +124,10 @@ contract UnifiedDeployer {
     }
 
     function createOracles() internal {
-        allContracts.ethUsdOracle = new ChainlinkOracle(ETHUSDORACLE);
-        allContracts.btcEthOracle = new ChainlinkOracle(BTCETHORACLE);
-        allContracts.wbtcUsdOracle = new ChainlinkOracle(WBTCUSDORACLE);
-        allContracts.usdcUsdOracle = new ChainlinkOracle(USDCUSDORACLE);
+        allContracts.ethUsdOracle = new ChainlinkOracle(ETHUSDORACLE, 3600);
+        allContracts.btcEthOracle = new ChainlinkOracle(BTCETHORACLE, 3600);
+        allContracts.wbtcUsdOracle = new ChainlinkOracle(WBTCUSDORACLE, 3600);
+        allContracts.usdcUsdOracle = new ChainlinkOracle(USDCUSDORACLE, 1 days);
     }
 
     function allowStrategiesWithDepositor() internal {

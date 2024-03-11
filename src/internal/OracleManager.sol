@@ -40,6 +40,7 @@ contract OracleManager is AccessControlUpgradeable {
 
     function getLatestTokenPriceInETH(address token) external view returns (uint256) {
         IOracle oracle = ethOracles[token];
+        if (address(oracle) == address(0)) revert ErrorsLeverageEngine.OracleNotSet();
 
         return oracle.getLatestPrice();
     }
@@ -51,6 +52,7 @@ contract OracleManager is AccessControlUpgradeable {
 
     function getLatestTokenPriceInUSD(address token) external view returns (uint256) {
         IOracle oracle = usdOracles[token];
+        if (address(oracle) == address(0)) revert ErrorsLeverageEngine.OracleNotSet();
 
         return oracle.getLatestPrice();
     }

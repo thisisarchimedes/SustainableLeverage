@@ -5,6 +5,7 @@ pragma solidity >=0.8.21 <0.9.0;
 import "test/BaseTest.sol";
 
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
+import { ChainlinkOracle } from "src/ports/oracles/ChainlinkOracle.sol";
 
 contract OpenPositionTest is BaseTest {
     using ErrorsLeverageEngine for *;
@@ -36,6 +37,13 @@ contract OpenPositionTest is BaseTest {
     function test_ShouldRevertIfTryToBorrowDirectlyFromWbtcVault() external {
         vm.expectRevert();
         allContracts.wbtcVault.borrowAmountTo(100e8, address(this));
+    }
+
+    function test_ShouldRevertIfOraclePriceStale() external {
+        IOracle staleOracle = new ChainlinkOracle(ETHUSDORACLE, 20);
+        allContracts.oracleManager.setETHOracle(WETH, staleOracle);
+        vm.expectRevert(ErrorsLeverageEngine.OraclePriceStale.selector);
+        allContracts.oracleManager.getLatestTokenPriceInETH(WETH);
     }
 
     function test_ShouldRevertWithExceedBorrowLimit() external {
