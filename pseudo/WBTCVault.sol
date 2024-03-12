@@ -8,6 +8,7 @@ contract WBTCVault is AccessControl {
     using SafeERC20 for IERC20;
 
     // Define roles
+    // TODO: use ProtocolRoles instead 
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 

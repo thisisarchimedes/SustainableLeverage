@@ -8,6 +8,7 @@ contract lvBTC is ERC20, AccessControl {
     using SafeMath for uint256;
 
     // Define roles
+    // TODO: use ProtocolRoles instead 
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 

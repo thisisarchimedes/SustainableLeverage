@@ -12,7 +12,7 @@ contract LeverageEngine is AccessControl {
     using PositionLedgerLib for PositionLedgerLib.LedgerStorage;
 
     // Define roles
-    // TODO: user ProtocolRoles.sol instead
+    // TODO: use ProtocolRoles instead 
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant MONITOR_ROLE = keccak256("MONITOR_ROLE");
 
