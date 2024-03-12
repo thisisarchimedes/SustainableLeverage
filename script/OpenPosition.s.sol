@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+//SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.21;
 
 import { console2 } from "forge-std/console2.sol";
@@ -21,7 +21,8 @@ import { OpenPositionParams } from "src/libs/PositionCallParams.sol";
 
 contract OpenPosition is Script {
     /* solhint-disable  */
-    PositionOpener internal positionOpener = PositionOpener(0xf4507848A8526f5B5cD8b8b02c0Bf2475D19F6FC); // UPDATE THIS WITH LATEST ADDRESS
+    PositionOpener internal positionOpener = PositionOpener(0xfd6559cA4a02051AD866446769b6F969aFb9E4a5); // UPDATE THIS
+        // WITH LATEST ADDRESS
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -35,6 +36,7 @@ contract OpenPosition is Script {
         address broadcaster = vm.rememberKey(0xfb3e889306aafa69793a67e74c09e657eec07c4c552543db26f3158cf53c2a57); // THIS
             // IS DUMMY KEY
         vm.startBroadcast(broadcaster);
+        console2.log("Broadcaster address:", broadcaster); // Print the broadcaster address
 
         //! adjustIn check
         // console2.log(IMultiPoolStrategy(FRAXBPALUSD_STRATEGY).storedTotalAssets());
