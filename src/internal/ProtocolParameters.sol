@@ -19,14 +19,14 @@ contract ProtocolParameters is AccessControlUpgradeable {
 
     // Fee (taken from profits) taken after returning all debt during exit by user in
     // 10000 (For example: 50 is 0.5%)
-    uint256 private exitFee = 50;
+    uint256 private exitFee;
 
     // Address that collects fees
     address private feeCollector;
 
     // TODO: Change back to 12 - Cool down period for user in blocks
     // before allowing close position
-    uint8 private minPositionDurationInBlocks = 0;
+    uint8 private minPositionDurationInBlocks;
 
     constructor() {
         _disableInitializers();
@@ -35,6 +35,8 @@ contract ProtocolParameters is AccessControlUpgradeable {
     function initialize() external initializer {
         __AccessControl_init();
         _grantRole(ProtocolRoles.ADMIN_ROLE, msg.sender);
+        minPositionDurationInBlocks = 12;
+        exitFee = 50;
     }
 
     function setExitFee(uint256 fee) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
