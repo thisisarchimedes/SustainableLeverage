@@ -37,6 +37,8 @@ contract SwapManager is AccessControlUpgradeable {
     }
 
     function getSwapAdapterForRoute(SwapRoute route) external view returns (ISwapAdapter) {
-        return swapAdapter[route];
+        ISwapAdapter adapter = swapAdapter[route];
+        if (address(adapter) == address(0)) revert ErrorsLeverageEngine.SwapAdapterNotSet();
+        return adapter;
     }
 }

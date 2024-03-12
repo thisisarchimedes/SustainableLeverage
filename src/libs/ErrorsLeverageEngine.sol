@@ -19,8 +19,9 @@ library ErrorsLeverageEngine {
     error PositionHasNoBalance(); // 1414023b
     error SwapAdapterAlreadySet(); // b33e2407
     error PositionMustLiveForMinDuration(); // 7616ad40
-    error NotEligibleForExpiration();
-    error AmountMustBeGreaterThanZero();
-    error BlockCountTooLow();
-    error BlockCountTooHigh();
+    error NotEligibleForExpiration(); //6db32f8f
+    error AmountMustBeGreaterThanZero(); //5e85ae73
+    error BlockCountTooLow(); //0d14f234
+    error BlockCountTooHigh(); //4de7b564
+    error SwapAdapterNotSet(); //afd1c360
 }

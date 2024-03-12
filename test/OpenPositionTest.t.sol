@@ -46,6 +46,27 @@ contract OpenPositionTest is BaseTest {
         allContracts.oracleManager.getLatestTokenPriceInETH(WETH);
     }
 
+    function test_shouldRevertIfSwapAdapterNotSet() external {
+        allContracts.swapManager.setSwapAdapter(SwapManager.SwapRoute.UNISWAPV3, ISwapAdapter(address(0)));
+
+        deal(WBTC, address(this), 1e10);
+        ERC20(WBTC).approve(address(allContracts.positionOpener), type(uint256).max);
+
+        bytes memory payload = getWBTCUSDCUniswapPayload();
+
+        OpenPositionParams memory params = OpenPositionParams({
+            collateralAmount: 1e10,
+            wbtcToBorrow: 1e10,
+            minStrategyShares: 0,
+            strategy: FRAXBPALUSD_STRATEGY,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payload,
+            exchange: address(0)
+        });
+        vm.expectRevert(ErrorsLeverageEngine.SwapAdapterNotSet.selector);
+        allContracts.positionOpener.openPosition(params);
+    }
+
     function test_ShouldRevertWithExceedBorrowLimit() external {
         uint256 multiplier = allContracts.leveragedStrategy.getMaximumMultiplier(ETHPLUSETH_STRATEGY);
         uint256 collateralAmount = 5e8;
