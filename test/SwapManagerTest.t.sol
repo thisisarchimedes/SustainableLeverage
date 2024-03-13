@@ -11,22 +11,25 @@ import { SwapManager } from "src/internal/SwapManager.sol";
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
 
 import { FakeWBTCUSDCSwapAdapter } from "src/ports/swap_adapters/FakeWBTCUSDCSwapAdapter.sol";
+import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
 
 contract SwapManagerTest is BaseTest {
     using ErrorsLeverageEngine for *;
 
-    ISwapAdapter private uniswapV3Adapter;
-    FakeWBTCUSDCSwapAdapter private  fakeWBTCUSDCAdapter;
+    UniV3SwapAdapter private uniswapV3Adapter;
+    FakeWBTCUSDCSwapAdapter private fakeWBTCUSDCAdapter;
 
     function setUp() public virtual {
         initFork();
         initTestFramework();
 
-        uniswapV3Adapter = allContracts.swapManager.getSwapAdapterForRoute(SwapManager.SwapRoute.UNISWAPV3);
+        uniswapV3Adapter =
+            UniV3SwapAdapter(address(allContracts.swapManager.getSwapAdapterForRoute(SwapManager.SwapRoute.UNISWAPV3)));
 
         fakeWBTCUSDCAdapter = new FakeWBTCUSDCSwapAdapter();
         deal(USDC, address(fakeWBTCUSDCAdapter), 1_000_000_000 * (10 ** ERC20(USDC).decimals()));
         deal(WBTC, address(fakeWBTCUSDCAdapter), 1_000_000_000 * (10 ** ERC20(WBTC).decimals()));
+        uniswapV3Adapter.grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, address(this));
     }
 
     function testShouldSwapWbtcToUsdconFakeSwapper() external {

@@ -117,7 +117,8 @@ contract UnifiedDeployer {
         allContracts.positionExpirator.setDependencies(dependencyAddresses);
         allContracts.positionToken.setDependencies(dependencyAddresses);
         allContracts.leverageDepositor.setDependencies(dependencyAddresses);
-
+        allContracts.uniV3SwapAdapter.setDependencies(dependencyAddresses);
+        allContracts.swapManager.setSwapAdapter(SwapManager.SwapRoute.UNISWAPV3, allContracts.uniV3SwapAdapter);
         allowStrategiesWithDepositor();
 
         setStrategyConfig();
@@ -156,6 +157,7 @@ contract UnifiedDeployer {
 
         allContracts.leverageDepositor = new LeverageDepositor();
         dependencyAddresses.leverageDepositor = address(allContracts.leverageDepositor);
+        allContracts.uniV3SwapAdapter = new UniV3SwapAdapter();
 
         dependencyAddresses.oracleManager = createProxiedOracleManager();
         allContracts.oracleManager = OracleManager(dependencyAddresses.oracleManager);
@@ -308,7 +310,6 @@ contract UnifiedDeployer {
         );
 
         SwapManager proxySwapManager = SwapManager(addrSwapManager);
-        proxySwapManager.setSwapAdapter(SwapManager.SwapRoute.UNISWAPV3, new UniV3SwapAdapter());
 
         return addrSwapManager;
     }
