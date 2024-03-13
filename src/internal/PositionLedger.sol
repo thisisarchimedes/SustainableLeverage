@@ -35,7 +35,7 @@ contract PositionLedger is AccessControlUpgradeable {
     using ErrorsLeverageEngine for *;
     using EventsLeverageEngine for *;
 
-    mapping(uint256 => LedgerEntry) public entries; // Mapping from NFT ID to LedgerEntry
+    mapping(uint256 => LedgerEntry) private entries; // Mapping from NFT ID to LedgerEntry
 
     constructor() {
         _disableInitializers();

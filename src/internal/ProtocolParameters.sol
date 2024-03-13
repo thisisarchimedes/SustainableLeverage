@@ -37,6 +37,7 @@ contract ProtocolParameters is AccessControlUpgradeable {
         _grantRole(ProtocolRoles.ADMIN_ROLE, msg.sender);
         minPositionDurationInBlocks = 12;
         exitFee = 50;
+        feeCollector = msg.sender;
     }
 
     function setExitFee(uint256 fee) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
