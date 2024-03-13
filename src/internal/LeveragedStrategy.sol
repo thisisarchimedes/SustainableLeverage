@@ -15,6 +15,7 @@ import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { PositionLedger, PositionState } from "src/internal/PositionLedger.sol";
 import { OracleManager } from "src/internal/OracleManager.sol";
 import { IMultiPoolStrategy } from "src/interfaces/IMultiPoolStrategy.sol";
+import { ProtocolParameters } from "src/internal/ProtocolParameters.sol";
 
 /// @title StrategyManager Contract
 /// @notice Only supports WBTC as collateral and borrowing asset
@@ -39,6 +40,7 @@ contract LeveragedStrategy is AccessControlUpgradeable {
     mapping(address => StrategyConfig) internal strategyConfig;
     PositionLedger public positionLedger;
     OracleManager public oracleManager;
+    ProtocolParameters public protocolParameters;
 
     constructor() {
         _disableInitializers();
@@ -54,6 +56,7 @@ contract LeveragedStrategy is AccessControlUpgradeable {
 
         positionLedger = PositionLedger(dependencies.positionLedger);
         oracleManager = OracleManager(dependencies.oracleManager);
+        protocolParameters = ProtocolParameters(dependencies.protocolParameters);
     }
 
     function setStrategyConfig(
@@ -63,6 +66,10 @@ contract LeveragedStrategy is AccessControlUpgradeable {
         external
         onlyRole(ProtocolRoles.ADMIN_ROLE)
     {
+        uint8 minPositionLifetime = protocolParameters.getMinPositionDurationInBlocks();
+        if (config.positionLifetime < minPositionLifetime) {
+            revert ErrorsLeverageEngine.PositionLifetimeTooShort();
+        }
         strategyConfig[strategy] = config;
 
         emit EventsLeverageEngine.StrategyConfigUpdated(
