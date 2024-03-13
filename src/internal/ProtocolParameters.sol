@@ -24,7 +24,6 @@ contract ProtocolParameters is AccessControlUpgradeable {
     // Address that collects fees
     address private feeCollector;
 
-    // TODO: Change back to 12 - Cool down period for user in blocks
     // before allowing close position
     uint8 private minPositionDurationInBlocks;
 

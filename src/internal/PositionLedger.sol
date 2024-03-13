@@ -68,7 +68,6 @@ contract PositionLedger is AccessControlUpgradeable {
         entries[nftID] = entry;
     }
 
-    // TODO: remove this one
     function getPosition(uint256 nftID) external view returns (LedgerEntry memory) {
         return entries[nftID];
     }
@@ -141,7 +140,6 @@ contract PositionLedger is AccessControlUpgradeable {
         entry.claimableAmount = claimableAmount;
     }
 
-    // TODO: remove this one
     function claimableAmountWasClaimed(uint256 nftID) external onlyRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE) {
         PositionState state = entries[nftID].state;
         if (state != PositionState.EXPIRED && state != PositionState.LIQUIDATED) {

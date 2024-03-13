@@ -9,7 +9,6 @@ import { ISwapRouterUniV3 } from "src/interfaces/ISwapRouterUniV3.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
 import { Constants } from "src/libs/Constants.sol";
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
-//TODO: Implement swap on different exchanges such as curvev2 pools and balancer
 
 contract UniV3SwapAdapter is ISwapAdapter, AccessControl {
     using ProtocolRoles for *;
