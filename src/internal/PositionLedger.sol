@@ -21,7 +21,7 @@ struct LedgerEntry {
     address strategyAddress;
     uint256 strategyShares;
     uint256 wbtcDebtAmount;
-    uint256 poistionOpenBlock;
+    uint256 positionOpenBlock;
     uint256 positionExpirationBlock;
     uint256 liquidationBuffer;
     PositionState state;
@@ -115,7 +115,7 @@ contract PositionLedger is AccessControlUpgradeable {
     }
 
     function getOpenBlock(uint256 nftID) external view returns (uint256) {
-        return entries[nftID].poistionOpenBlock;
+        return entries[nftID].positionOpenBlock;
     }
 
     function getExpirationBlock(uint256 nftID) public view returns (uint256) {
