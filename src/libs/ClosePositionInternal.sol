@@ -50,7 +50,6 @@ contract ClosePositionInternal {
         protocolParameters = ProtocolParameters(dependencies.protocolParameters);
 
         oracleManager = OracleManager(dependencies.oracleManager);
-        positionLedger = PositionLedger(dependencies.positionLedger);
         leverageDepositor = ILeverageDepositor(dependencies.leverageDepositor);
     }
 
