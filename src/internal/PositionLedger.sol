@@ -61,6 +61,10 @@ contract PositionLedger is AccessControlUpgradeable {
         external
         onlyRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE)
     {
+        LedgerEntry memory existingEntry = entries[nftID];
+        if (existingEntry.state != PositionState.UNINITIALIZED) {
+            revert ErrorsLeverageEngine.PositionAlreadyExists();
+        }
         entries[nftID] = entry;
     }
 

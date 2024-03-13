@@ -25,4 +25,5 @@ library ErrorsLeverageEngine {
     error BlockCountTooHigh(); //4de7b564
     error SwapAdapterNotSet(); //afd1c360
     error PositionLifetimeTooShort(); //4ebfd554
+    error PositionAlreadyExists(); //6e8de458
 }
