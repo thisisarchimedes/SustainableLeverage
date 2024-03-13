@@ -80,10 +80,14 @@ contract PositionLedger is AccessControlUpgradeable {
         external
         onlyRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE)
     {
-        entries[nftID].state = state;
+        LedgerEntry storage entry = entries[nftID];
+        if (entry.state == PositionState.UNINITIALIZED) {
+            revert ErrorsLeverageEngine.PositionDoesNotExist();
+        }
+        entry.state = state;
 
         if (state == PositionState.CLOSED) {
-            entries[nftID].claimableAmount = 0;
+            entry.claimableAmount = 0;
         }
     }
 
@@ -130,7 +134,11 @@ contract PositionLedger is AccessControlUpgradeable {
         external
         onlyRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE)
     {
-        entries[nftID].claimableAmount = claimableAmount;
+        LedgerEntry storage entry = entries[nftID];
+        if (entry.state == PositionState.UNINITIALIZED) {
+            revert ErrorsLeverageEngine.PositionDoesNotExist();
+        }
+        entry.claimableAmount = claimableAmount;
     }
 
     // TODO: remove this one
