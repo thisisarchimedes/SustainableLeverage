@@ -40,6 +40,9 @@ contract ProtocolParameters is AccessControlUpgradeable {
     }
 
     function setExitFee(uint256 fee) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
+        if (fee > 10_000) {
+            revert ErrorsLeverageEngine.FeeTooHigh();
+        }
         exitFee = fee;
         emit EventsLeverageEngine.ExitFeeUpdated(fee);
     }

@@ -27,4 +27,5 @@ library ErrorsLeverageEngine {
     error PositionLifetimeTooShort(); //4ebfd554
     error PositionAlreadyExists(); //6e8de458
     error PositionDoesNotExist(); //f7b3b391
+    error FeeTooHigh(); //cd4e6167
 }
