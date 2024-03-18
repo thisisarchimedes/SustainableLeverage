@@ -64,18 +64,16 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
         curvePool.exchange(LVBTC_INDEX, WBTC_INDEX, amount, minAmount, address(this));
     }
 
-    
-
     function borrowAmountTo(
-            uint256 amount,
-            address to
-        )
-            external
-            override
-            onlyRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE)
-        {
-            wbtc.transfer(to, amount);
-        }
+        uint256 amount,
+        address to
+    )
+        external
+        override
+        onlyRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE)
+    {
+        wbtc.transfer(to, amount);
+    }
 
     function repayDebt(uint256 nftId, uint256 amount) external {
         wbtc.safeTransferFrom(msg.sender, address(this), amount);
