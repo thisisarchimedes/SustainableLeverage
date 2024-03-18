@@ -36,7 +36,7 @@ contract DeployContracts is BaseScript {
         address[] memory oracles = new address[](2);
 
         ICurvePool deployedPool = initdeployCurvePool(
-            address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599),
+            address(WBTC),
             name,
             symbol,
             A,

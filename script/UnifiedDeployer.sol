@@ -38,8 +38,6 @@ import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
 
 import { LVBTC } from "src/LvBTC.sol";
-import { ICurveStableswapFactoryNG } from "src/interfaces/ICurveStableswapFactoryNG.sol";
-import { ICurvePool } from "src/interfaces/ICurvePool.sol";
 
 struct AllContracts {
     PositionToken positionToken;
@@ -64,7 +62,6 @@ struct AllContracts {
     ChainlinkOracle usdcUsdOracle;
     UniV3SwapAdapter uniV3SwapAdapter;
     LVBTC lvBTC;
-    ICurvePool lvBTCCurvePool;
 }
 
 contract UnifiedDeployer {
@@ -81,7 +78,6 @@ contract UnifiedDeployer {
     address public constant USDCUSDORACLE = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
     address public constant BTCETHORACLE = 0xdeb288F737066589598e9214E782fa5A8eD689e8;
     address public constant FRAXBPALUSD_STRATEGY = 0xD078a331A8A00AB5391ba9f3AfC910225a78e6A1;
-    address public constant CURVE_STABLE_FACTORY_NG_ADDRESS = 0x6A8cbed756804B16E05E741eDaBd5cB544AE21bf;
 
     address admin;
     address defaultFeeCollector;
@@ -206,73 +202,6 @@ contract UnifiedDeployer {
 
         allContracts.lvBTC = new LVBTC(address(dependencyAddresses.wbtcVault));
         dependencyAddresses.lvBTC = address(allContracts.lvBTC);
-
-        string memory name = "LVBTC-WBTC-Arch-Test";
-        string memory symbol = "LWAT";
-        uint256 A = 4000;
-        uint256 fee = 4_000_000; // 0.3%
-        uint256 offpeg_fee_multiplier = 20_000_000_000;
-        uint256 ma_exp_time = 866; // 1 day
-        uint256 implementation_idx = 0;
-        uint8[] memory asset_types = new uint8[](2);
-        asset_types[0] = 0;
-        bytes4[] memory method_ids = new bytes4[](2);
-        method_ids[0] = 0;
-        method_ids[1] = 0;
-        address[] memory oracles = new address[](2);
-
-        allContracts.lvBTCCurvePool = initdeployCurvePool(
-            dependencyAddresses.lvBTC,
-            name,
-            symbol,
-            A,
-            fee,
-            offpeg_fee_multiplier,
-            ma_exp_time,
-            implementation_idx,
-            asset_types,
-            method_ids,
-            oracles
-        );
-
-        dependencyAddresses.lvBTCCurvePool = address(allContracts.lvBTCCurvePool);
-    }
-
-    function initdeployCurvePool(
-        address _lvBTC,
-        string memory name,
-        string memory symbol,
-        uint256 A,
-        uint256 fee,
-        uint256 offpeg_fee_multiplier,
-        uint256 ma_exp_time,
-        uint256 implementation_idx,
-        uint8[] memory asset_types,
-        bytes4[] memory method_ids,
-        address[] memory oracles
-    )
-        internal
-        returns (ICurvePool)
-    {
-        address[] memory coins = new address[](2);
-        coins[0] = address(WBTC);
-        coins[1] = address(_lvBTC);
-
-        address poolAddress = ICurveStableswapFactoryNG(CURVE_STABLE_FACTORY_NG_ADDRESS).deploy_plain_pool(
-            name,
-            symbol,
-            coins,
-            A,
-            fee,
-            offpeg_fee_multiplier,
-            ma_exp_time,
-            implementation_idx,
-            asset_types,
-            method_ids,
-            oracles
-        );
-
-        return ICurvePool(poolAddress);
     }
 
     function createProxiedExpiredVault() internal returns (address) {
