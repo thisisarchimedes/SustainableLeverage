@@ -59,10 +59,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: "Update setupFork script with the correct FORK RPC URL"
-        run: |
-          sed -i 's|THE_FORK_URL|"${{ vars.STABLE_RPC }}"|' script/setupFork.py
-
       - name: "Deploy the contracts to EC2 test Hardhat environment"
         run: |
           forge script script/DeployContracts.s.sol --fork-url  ${{ vars.STABLE_RPC }} --broadcast --slow --skip-simulation
@@ -117,10 +113,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-
-      - name: "Update setupFork script with the correct fork RPC URL"
-        run: |
-          sed -i 's|THE_FORK_URL|"${{ vars.DEMO_RPC }}"|' script/setupFork.py
 
       - name: "Deploy the contracts to demo environment"
         run: |
