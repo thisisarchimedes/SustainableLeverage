@@ -40,7 +40,6 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
         wbtc.approve(address(dependencies.lvBTCCurvePool), type(uint256).max);
         lvBtc.approve(address(dependencies.lvBTCCurvePool), type(uint256).max);
 
-        // TODO: add these roles and also access control on borrowAmountTo and repayDebt
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionOpener);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionCloser);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionLiquidator);
