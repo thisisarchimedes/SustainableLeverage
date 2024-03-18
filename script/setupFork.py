@@ -4,8 +4,7 @@ import sys
 
 
 def set_wbtc_balance_of_vault(storageSlot, wbtc_address, amount):
-    # The line below automatiaclly updates by Github Actions using sed (this script is called via Foundry and doesn't have env vars)
-    fork_url = THE_FORK_URL
+    fork_url = "http://localhost:8545"
     requests.post(
         url=fork_url,
         json={
