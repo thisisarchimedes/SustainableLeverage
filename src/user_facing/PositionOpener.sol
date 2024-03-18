@@ -47,6 +47,10 @@ contract PositionOpener is AccessControlUpgradeable {
     OracleManager internal oracleManager;
     PositionLedger internal positionLedger;
 
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize() external initializer {
         __AccessControl_init();
         _grantRole(ProtocolRoles.ADMIN_ROLE, msg.sender);
@@ -155,9 +159,9 @@ contract PositionOpener is AccessControlUpgradeable {
         newEntry.strategyAddress = params.strategy;
         newEntry.strategyShares = sharesReceived;
         newEntry.wbtcDebtAmount = params.wbtcToBorrow;
-        newEntry.poistionOpenBlock = block.number;
+        newEntry.positionOpenBlock = block.number;
         newEntry.positionExpirationBlock =
-            newEntry.poistionOpenBlock + leveragedStrategy.getPositionLifetime(params.strategy);
+            newEntry.positionOpenBlock + leveragedStrategy.getPositionLifetime(params.strategy);
         newEntry.liquidationBuffer = leveragedStrategy.getLiquidationBuffer(params.strategy);
         newEntry.state = PositionState.LIVE;
         uint256 nftId = positionToken.mint(msg.sender);

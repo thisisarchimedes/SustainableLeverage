@@ -8,7 +8,6 @@ import { IERC20Detailed } from "src/interfaces/IERC20Detailed.sol";
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
 import { Constants } from "src/libs/Constants.sol";
 
-//TODO: Implement swap on different exchanges such as curvev2 pools and balancer
 contract FakeWBTCWETHSwapAdapter is ISwapAdapter {
     using Constants for *;
 

@@ -17,6 +17,7 @@ contract PositionToken is ERC721, AccessControl {
     uint256 internal nextTokenId = 0;
 
     constructor() ERC721("PositionToken", "PT") {
+        _setRoleAdmin(ProtocolRoles.ADMIN_ROLE, ProtocolRoles.ADMIN_ROLE);
         _grantRole(ProtocolRoles.ADMIN_ROLE, msg.sender);
     }
 
