@@ -115,6 +115,7 @@ contract UnifiedDeployer {
         deployProxyAndContracts();
 
         allContracts.expiredVault.setDependencies(dependencyAddresses);
+        allContracts.wbtcVault.setDependencies(dependencyAddresses);
         allContracts.leveragedStrategy.setDependencies(dependencyAddresses);
         allContracts.positionLedger.setDependencies(dependencyAddresses);
         allContracts.positionOpener.setDependencies(dependencyAddresses);
@@ -125,16 +126,18 @@ contract UnifiedDeployer {
         allContracts.leverageDepositor.setDependencies(dependencyAddresses);
         allContracts.wbtcVault.setDependencies(dependencyAddresses);
 
+        allContracts.uniV3SwapAdapter.setDependencies(dependencyAddresses);
+        allContracts.swapManager.setSwapAdapter(SwapManager.SwapRoute.UNISWAPV3, allContracts.uniV3SwapAdapter);
         allowStrategiesWithDepositor();
 
         setStrategyConfig();
     }
 
     function createOracles() internal {
-        allContracts.ethUsdOracle = new ChainlinkOracle(ETHUSDORACLE);
-        allContracts.btcEthOracle = new ChainlinkOracle(BTCETHORACLE);
-        allContracts.wbtcUsdOracle = new ChainlinkOracle(WBTCUSDORACLE);
-        allContracts.usdcUsdOracle = new ChainlinkOracle(USDCUSDORACLE);
+        allContracts.ethUsdOracle = new ChainlinkOracle(ETHUSDORACLE, 3600);
+        allContracts.btcEthOracle = new ChainlinkOracle(BTCETHORACLE, 3600);
+        allContracts.wbtcUsdOracle = new ChainlinkOracle(WBTCUSDORACLE, 3600);
+        allContracts.usdcUsdOracle = new ChainlinkOracle(USDCUSDORACLE, 1 days);
     }
 
     function allowStrategiesWithDepositor() internal {
@@ -146,7 +149,7 @@ contract UnifiedDeployer {
         LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
             quota: 10_000e8,
             maximumMultiplier: 3e8,
-            positionLifetime: 3,
+            positionLifetime: 15,
             liquidationBuffer: 1.25e8,
             liquidationFee: 0.02e8
         });
@@ -163,6 +166,7 @@ contract UnifiedDeployer {
 
         allContracts.leverageDepositor = new LeverageDepositor();
         dependencyAddresses.leverageDepositor = address(allContracts.leverageDepositor);
+        allContracts.uniV3SwapAdapter = new UniV3SwapAdapter();
 
         dependencyAddresses.wbtcVault = createProxiedWBTCVault();
         allContracts.wbtcVault = WBTCVault(dependencyAddresses.wbtcVault);
@@ -181,6 +185,9 @@ contract UnifiedDeployer {
 
         dependencyAddresses.positionOpener = createProxiedPositionOpener();
         allContracts.positionOpener = PositionOpener(dependencyAddresses.positionOpener);
+
+        dependencyAddresses.wbtcVault = createProxiedWbtcVault();
+        allContracts.wbtcVault = WBTCVault(dependencyAddresses.wbtcVault);
 
         dependencyAddresses.positionCloser = createProxiedPositionCloser();
         allContracts.positionCloser = PositionCloser(dependencyAddresses.positionCloser);
@@ -360,6 +367,15 @@ contract UnifiedDeployer {
         return addrPositionExpirator;
     }
 
+    function createProxiedWbtcVault() internal returns (address) {
+        WBTCVault implWbtcVault = new WBTCVault();
+        address addrWbtcVault = createUpgradableContract(
+            implWbtcVault.initialize.selector, address(implWbtcVault), address(allContracts.proxyAdmin)
+        );
+
+        return addrWbtcVault;
+    }
+
     function createProxiedPositionLedger() internal returns (address) {
         PositionLedger implPositionLedger = new PositionLedger();
         address addrPositionLedger = createUpgradableContract(
@@ -385,7 +401,6 @@ contract UnifiedDeployer {
         );
 
         SwapManager proxySwapManager = SwapManager(addrSwapManager);
-        proxySwapManager.setSwapAdapter(SwapManager.SwapRoute.UNISWAPV3, new UniV3SwapAdapter());
 
         return addrSwapManager;
     }

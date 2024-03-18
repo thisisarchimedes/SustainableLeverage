@@ -23,6 +23,10 @@ contract SwapManager is AccessControlUpgradeable {
         UNISWAPV3
     }
 
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize() external initializer {
         __AccessControl_init();
         _grantRole(ProtocolRoles.ADMIN_ROLE, msg.sender);
@@ -33,6 +37,8 @@ contract SwapManager is AccessControlUpgradeable {
     }
 
     function getSwapAdapterForRoute(SwapRoute route) external view returns (ISwapAdapter) {
-        return swapAdapter[route];
+        ISwapAdapter adapter = swapAdapter[route];
+        if (address(adapter) == address(0)) revert ErrorsLeverageEngine.SwapAdapterNotSet();
+        return adapter;
     }
 }

@@ -23,6 +23,10 @@ contract OracleManager is AccessControlUpgradeable {
     mapping(address => IOracle) internal ethOracles;
     mapping(address => IOracle) internal usdOracles;
 
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize() external initializer {
         __AccessControl_init();
         _grantRole(ProtocolRoles.ADMIN_ROLE, msg.sender);
@@ -40,6 +44,7 @@ contract OracleManager is AccessControlUpgradeable {
 
     function getLatestTokenPriceInETH(address token) external view returns (uint256) {
         IOracle oracle = ethOracles[token];
+        if (address(oracle) == address(0)) revert ErrorsLeverageEngine.OracleNotSet();
 
         return oracle.getLatestPrice();
     }
@@ -51,6 +56,7 @@ contract OracleManager is AccessControlUpgradeable {
 
     function getLatestTokenPriceInUSD(address token) external view returns (uint256) {
         IOracle oracle = usdOracles[token];
+        if (address(oracle) == address(0)) revert ErrorsLeverageEngine.OracleNotSet();
 
         return oracle.getLatestPrice();
     }

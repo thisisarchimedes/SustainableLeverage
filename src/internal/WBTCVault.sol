@@ -11,16 +11,17 @@ import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 
 import { IWBTCVault } from "src/interfaces/IWBTCVault.sol";
+import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
+import { Constants } from "src/libs/Constants.sol";
 
-//TODO implement this contract. This is just skeleton for test purposes
-// TODO add access control
 contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
+    using ProtocolRoles for *;
 
     int128 private immutable WBTC_INDEX = 0;
     int128 private immutable LVBTC_INDEX = 1;
 
-    IERC20 private immutable wBtc = IERC20(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599);
+    IERC20 public wbtc;
     LVBTC private lvBtc;
     ICurvePool private curvePool;
 
@@ -28,13 +29,15 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
         __AccessControl_init();
         _grantRole(ProtocolRoles.ADMIN_ROLE, msg.sender);
         _grantRole(ProtocolRoles.MONITOR_ROLE, msg.sender);
+
+        wbtc = IERC20(Constants.WBTC_ADDRESS);
     }
 
     function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
         lvBtc = LVBTC(dependencies.lvBTC);
         curvePool = ICurvePool(dependencies.lvBTCCurvePool);
 
-        wBtc.approve(address(dependencies.lvBTCCurvePool), type(uint256).max);
+        wbtc.approve(address(dependencies.lvBTCCurvePool), type(uint256).max);
         lvBtc.approve(address(dependencies.lvBTCCurvePool), type(uint256).max);
 
         // TODO: add these roles and also access control on borrowAmountTo and repayDebt
@@ -55,19 +58,27 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
         uint256 currentAmount = lvBtc.balanceOf(address(this));
 
         uint256 amountToMint = amount - currentAmount;
-
         lvBtc.mint(address(this), amountToMint);
         lvBtc.approve(address(curvePool), type(uint256).max);
 
         curvePool.exchange(LVBTC_INDEX, WBTC_INDEX, amount, minAmount, address(this));
     }
 
-    function borrowAmountTo(uint256 amount, address to) external {
-        wBtc.transfer(to, amount);
-    }
+    
+
+    function borrowAmountTo(
+            uint256 amount,
+            address to
+        )
+            external
+            override
+            onlyRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE)
+        {
+            wbtc.transfer(to, amount);
+        }
 
     function repayDebt(uint256 nftId, uint256 amount) external {
-        wBtc.safeTransferFrom(msg.sender, address(this), amount);
+        wbtc.safeTransferFrom(msg.sender, address(this), amount);
         emit EventsLeverageEngine.Repay(nftId, amount);
     }
 }

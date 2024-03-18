@@ -21,7 +21,7 @@ struct LedgerEntry {
     address strategyAddress;
     uint256 strategyShares;
     uint256 wbtcDebtAmount;
-    uint256 poistionOpenBlock;
+    uint256 positionOpenBlock;
     uint256 positionExpirationBlock;
     uint256 liquidationBuffer;
     PositionState state;
@@ -35,7 +35,11 @@ contract PositionLedger is AccessControlUpgradeable {
     using ErrorsLeverageEngine for *;
     using EventsLeverageEngine for *;
 
-    mapping(uint256 => LedgerEntry) public entries; // Mapping from NFT ID to LedgerEntry
+    mapping(uint256 => LedgerEntry) private entries; // Mapping from NFT ID to LedgerEntry
+
+    constructor() {
+        _disableInitializers();
+    }
 
     function initialize() external initializer {
         __AccessControl_init();
@@ -57,10 +61,13 @@ contract PositionLedger is AccessControlUpgradeable {
         external
         onlyRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE)
     {
+        LedgerEntry memory existingEntry = entries[nftID];
+        if (existingEntry.state != PositionState.UNINITIALIZED) {
+            revert ErrorsLeverageEngine.PositionAlreadyExists();
+        }
         entries[nftID] = entry;
     }
 
-    // TODO: remove this one
     function getPosition(uint256 nftID) external view returns (LedgerEntry memory) {
         return entries[nftID];
     }
@@ -72,10 +79,14 @@ contract PositionLedger is AccessControlUpgradeable {
         external
         onlyRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE)
     {
-        entries[nftID].state = state;
+        LedgerEntry storage entry = entries[nftID];
+        if (entry.state == PositionState.UNINITIALIZED) {
+            revert ErrorsLeverageEngine.PositionDoesNotExist();
+        }
+        entry.state = state;
 
         if (state == PositionState.CLOSED) {
-            entries[nftID].claimableAmount = 0;
+            entry.claimableAmount = 0;
         }
     }
 
@@ -104,7 +115,7 @@ contract PositionLedger is AccessControlUpgradeable {
     }
 
     function getOpenBlock(uint256 nftID) external view returns (uint256) {
-        return entries[nftID].poistionOpenBlock;
+        return entries[nftID].positionOpenBlock;
     }
 
     function getExpirationBlock(uint256 nftID) public view returns (uint256) {
@@ -122,10 +133,13 @@ contract PositionLedger is AccessControlUpgradeable {
         external
         onlyRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE)
     {
-        entries[nftID].claimableAmount = claimableAmount;
+        LedgerEntry storage entry = entries[nftID];
+        if (entry.state == PositionState.UNINITIALIZED) {
+            revert ErrorsLeverageEngine.PositionDoesNotExist();
+        }
+        entry.claimableAmount = claimableAmount;
     }
 
-    // TODO: remove this one
     function claimableAmountWasClaimed(uint256 nftID) external onlyRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE) {
         PositionState state = entries[nftID].state;
         if (state != PositionState.EXPIRED && state != PositionState.LIQUIDATED) {

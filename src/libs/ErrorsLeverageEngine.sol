@@ -5,6 +5,8 @@ library ErrorsLeverageEngine {
     error ExceedBorrowLimit(); // 8b085be2
     error LessThanMinimumShares(); // 3beecf45
     error OracleNotSet(); // f8794e04
+    error OraclePriceStale(); // 08b9f95b
+    error OracleNegativePrice(); // 641f4716
     error NotEnoughTokensReceived(); // 828f02ae
     error OraclePriceError(); // fa80e24f
     error ExceedBorrowQuota(); // d7f5242d
@@ -17,8 +19,13 @@ library ErrorsLeverageEngine {
     error PositionHasNoBalance(); // 1414023b
     error SwapAdapterAlreadySet(); // b33e2407
     error PositionMustLiveForMinDuration(); // 7616ad40
-    error NotEligibleForExpiration();
-    error AmountMustBeGreaterThanZero();
-    error BlockCountTooLow();
-    error BlockCountTooHigh();
+    error NotEligibleForExpiration(); //6db32f8f
+    error AmountMustBeGreaterThanZero(); //5e85ae73
+    error BlockCountTooLow(); //0d14f234
+    error BlockCountTooHigh(); //4de7b564
+    error SwapAdapterNotSet(); //afd1c360
+    error PositionLifetimeTooShort(); //4ebfd554
+    error PositionAlreadyExists(); //6e8de458
+    error PositionDoesNotExist(); //f7b3b391
+    error FeeTooHigh(); //cd4e6167
 }

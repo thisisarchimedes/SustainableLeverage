@@ -88,6 +88,28 @@ contract ClosePositionTest is BaseTest {
         allContracts.positionCloser.closePosition(params);
     }
 
+    function test_shouldRevertIfNotMinTimePassed() external {
+        openETHBasedPosition(5e8, 15e8);
+        bytes memory payload = abi.encode(
+            UniV3SwapAdapter.UniswapV3Data({
+                path: abi.encodePacked(WETH, uint24(3000), WBTC),
+                deadline: block.timestamp + 1000,
+                amountOutMin: 1
+            })
+        );
+
+        ClosePositionParams memory params = ClosePositionParams({
+            nftId: 0,
+            minWBTC: 0,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payload,
+            exchange: address(0)
+        });
+
+        vm.expectRevert(ErrorsLeverageEngine.PositionMustLiveForMinDuration.selector);
+        allContracts.positionCloser.closePosition(params);
+    }
+
     function test_ShouldClosePosition() external {
         openETHBasedPosition(5e8, 15e8);
 
