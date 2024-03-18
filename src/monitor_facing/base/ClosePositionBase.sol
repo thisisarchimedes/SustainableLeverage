@@ -8,7 +8,6 @@ import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { IExpiredVault } from "src/interfaces/IExpiredVault.sol";
 
 contract ClosePositiontBase is ClosePositionInternal, AccessControlUpgradeable {
-    address internal monitor;
     address internal expiredVault;
 
     constructor() {
@@ -31,11 +30,11 @@ contract ClosePositiontBase is ClosePositionInternal, AccessControlUpgradeable {
     }
 
     function setMonitor(address _monitor) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
-        if (monitor != address(0)) {
-            _revokeRole(ProtocolRoles.MONITOR_ROLE, monitor);
-        }
-        monitor = _monitor;
         _grantRole(ProtocolRoles.MONITOR_ROLE, _monitor);
+    }
+
+    function revokeMonitor(address _monitor) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
+        _revokeRole(ProtocolRoles.MONITOR_ROLE, _monitor);
     }
 
     function setExpiredVault(address _expiredVault) public onlyRole(ProtocolRoles.ADMIN_ROLE) {

@@ -30,6 +30,7 @@ contract OracleManager is AccessControlUpgradeable {
     function initialize() external initializer {
         __AccessControl_init();
         _grantRole(ProtocolRoles.ADMIN_ROLE, msg.sender);
+        _setRoleAdmin(ProtocolRoles.ADMIN_ROLE, ProtocolRoles.ADMIN_ROLE);
     }
 
     function setETHOracle(address token, IOracle oracle) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
