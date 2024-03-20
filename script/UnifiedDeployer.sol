@@ -81,36 +81,7 @@ contract UnifiedDeployer {
     using SafeERC20 for IERC20;
     using ProtocolRoles for *;
 
-    DeploymentParameters[2] public deploymentParameters = [
-        // Mainnet Deployment
-        DeploymentParameters({
-            ethUsdPriceStaleThreshold: 3600,
-            btcEthPriceStaleThreshold: 3600,
-            wbtcUsdPriceStaleThreshold: 3600,
-            usdcUsdPriceStaleThreshold: 1 days,
-            strategyConfig: LeveragedStrategy.StrategyConfig({
-                quota: 10_000e8,
-                maximumMultiplier: 3e8,
-                positionLifetime: 15,
-                liquidationBuffer: 1.25e8,
-                liquidationFee: 0.02e8
-            })
-        }),
-        // Fork Deployment
-        DeploymentParameters({
-            ethUsdPriceStaleThreshold: 365 days * 10,
-            btcEthPriceStaleThreshold: 365 days * 10,
-            wbtcUsdPriceStaleThreshold: 365 days * 10,
-            usdcUsdPriceStaleThreshold: 365 days * 10,
-            strategyConfig: LeveragedStrategy.StrategyConfig({
-                quota: 10_000e8,
-                maximumMultiplier: 3e8,
-                positionLifetime: 15,
-                liquidationBuffer: 1.25e8,
-                liquidationFee: 0.02e8
-            })
-        })
-    ];
+    DeploymentParameters[2] public deploymentParameters;
 
     IERC20 internal wbtc;
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
@@ -131,6 +102,37 @@ contract UnifiedDeployer {
     DependencyAddresses internal dependencyAddresses;
 
     AllContracts internal allContracts;
+
+    constructor() {
+        // Mainnet Deployment
+        deploymentParameters[uint256(Environment.MAINNET)] = DeploymentParameters({
+            ethUsdPriceStaleThreshold: 3600,
+            btcEthPriceStaleThreshold: 3600,
+            wbtcUsdPriceStaleThreshold: 3600,
+            usdcUsdPriceStaleThreshold: 1 days,
+            strategyConfig: LeveragedStrategy.StrategyConfig({
+                quota: 10_000e8,
+                maximumMultiplier: 3e8,
+                positionLifetime: 15,
+                liquidationBuffer: 1.25e8,
+                liquidationFee: 0.02e8
+            })
+        });
+        // Fork Deployment
+        deploymentParameters[uint256(Environment.FORK)] = DeploymentParameters({
+            ethUsdPriceStaleThreshold: 365 days * 10,
+            btcEthPriceStaleThreshold: 365 days * 10,
+            wbtcUsdPriceStaleThreshold: 365 days * 10,
+            usdcUsdPriceStaleThreshold: 365 days * 10,
+            strategyConfig: LeveragedStrategy.StrategyConfig({
+                quota: 10_000e8,
+                maximumMultiplier: 3e8,
+                positionLifetime: 15,
+                liquidationBuffer: 1.25e8,
+                liquidationFee: 0.02e8
+            })
+        });
+    }
 
     function getDependecyAddresses() external view returns (DependencyAddresses memory) {
         return dependencyAddresses;
@@ -172,10 +174,14 @@ contract UnifiedDeployer {
     }
 
     function createOracles() internal {
-        allContracts.ethUsdOracle = new ChainlinkOracle(ETHUSDORACLE, deploymentParameters[uint256(ENV)].ethUsdPriceStaleThreshold);
-        allContracts.btcEthOracle = new ChainlinkOracle(BTCETHORACLE, deploymentParameters[uint256(ENV)].btcEthPriceStaleThreshold);
-        allContracts.wbtcUsdOracle = new ChainlinkOracle(WBTCUSDORACLE, deploymentParameters[uint256(ENV)].wbtcUsdPriceStaleThreshold);
-        allContracts.usdcUsdOracle = new ChainlinkOracle(USDCUSDORACLE, deploymentParameters[uint256(ENV)].usdcUsdPriceStaleThreshold);
+        allContracts.ethUsdOracle =
+            new ChainlinkOracle(ETHUSDORACLE, deploymentParameters[uint256(ENV)].ethUsdPriceStaleThreshold);
+        allContracts.btcEthOracle =
+            new ChainlinkOracle(BTCETHORACLE, deploymentParameters[uint256(ENV)].btcEthPriceStaleThreshold);
+        allContracts.wbtcUsdOracle =
+            new ChainlinkOracle(WBTCUSDORACLE, deploymentParameters[uint256(ENV)].wbtcUsdPriceStaleThreshold);
+        allContracts.usdcUsdOracle =
+            new ChainlinkOracle(USDCUSDORACLE, deploymentParameters[uint256(ENV)].usdcUsdPriceStaleThreshold);
     }
 
     function allowStrategiesWithDepositor() internal {
