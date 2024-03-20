@@ -37,6 +37,22 @@ import { PositionExpirator } from "src/monitor_facing/PositionExpirator.sol";
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
 
+// ! Specify Mainnet or Fork environment
+Environment constant ENV = Environment.FORK;
+
+enum Environment {
+    MAINNET,
+    FORK
+}
+
+struct DeploymentParameters {
+    uint256 ethUsdPriceStaleThreshold;
+    uint256 btcEthPriceStaleThreshold;
+    uint256 wbtcUsdPriceStaleThreshold;
+    uint256 usdcUsdPriceStaleThreshold;
+    LeveragedStrategy.StrategyConfig strategyConfig;
+}
+
 struct AllContracts {
     PositionToken positionToken;
     LeverageDepositor leverageDepositor;
@@ -64,6 +80,37 @@ struct AllContracts {
 contract UnifiedDeployer {
     using SafeERC20 for IERC20;
     using ProtocolRoles for *;
+
+    DeploymentParameters[2] public deploymentParameters = [
+        // Mainnet Deployment
+        DeploymentParameters({
+            ethUsdPriceStaleThreshold: 3600,
+            btcEthPriceStaleThreshold: 3600,
+            wbtcUsdPriceStaleThreshold: 3600,
+            usdcUsdPriceStaleThreshold: 1 days,
+            strategyConfig: LeveragedStrategy.StrategyConfig({
+                quota: 10_000e8,
+                maximumMultiplier: 3e8,
+                positionLifetime: 15,
+                liquidationBuffer: 1.25e8,
+                liquidationFee: 0.02e8
+            })
+        }),
+        // Fork Deployment
+        DeploymentParameters({
+            ethUsdPriceStaleThreshold: 365 days * 10,
+            btcEthPriceStaleThreshold: 365 days * 10,
+            wbtcUsdPriceStaleThreshold: 365 days * 10,
+            usdcUsdPriceStaleThreshold: 365 days * 10,
+            strategyConfig: LeveragedStrategy.StrategyConfig({
+                quota: 10_000e8,
+                maximumMultiplier: 3e8,
+                positionLifetime: 15,
+                liquidationBuffer: 1.25e8,
+                liquidationFee: 0.02e8
+            })
+        })
+    ];
 
     IERC20 internal wbtc;
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
@@ -125,10 +172,10 @@ contract UnifiedDeployer {
     }
 
     function createOracles() internal {
-        allContracts.ethUsdOracle = new ChainlinkOracle(ETHUSDORACLE, 3600);
-        allContracts.btcEthOracle = new ChainlinkOracle(BTCETHORACLE, 3600);
-        allContracts.wbtcUsdOracle = new ChainlinkOracle(WBTCUSDORACLE, 3600);
-        allContracts.usdcUsdOracle = new ChainlinkOracle(USDCUSDORACLE, 1 days);
+        allContracts.ethUsdOracle = new ChainlinkOracle(ETHUSDORACLE, deploymentParameters[uint256(ENV)].ethUsdPriceStaleThreshold);
+        allContracts.btcEthOracle = new ChainlinkOracle(BTCETHORACLE, deploymentParameters[uint256(ENV)].btcEthPriceStaleThreshold);
+        allContracts.wbtcUsdOracle = new ChainlinkOracle(WBTCUSDORACLE, deploymentParameters[uint256(ENV)].wbtcUsdPriceStaleThreshold);
+        allContracts.usdcUsdOracle = new ChainlinkOracle(USDCUSDORACLE, deploymentParameters[uint256(ENV)].usdcUsdPriceStaleThreshold);
     }
 
     function allowStrategiesWithDepositor() internal {
@@ -137,13 +184,7 @@ contract UnifiedDeployer {
     }
 
     function setStrategyConfig() internal {
-        LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
-            quota: 10_000e8,
-            maximumMultiplier: 3e8,
-            positionLifetime: 15,
-            liquidationBuffer: 1.25e8,
-            liquidationFee: 0.02e8
-        });
+        LeveragedStrategy.StrategyConfig memory strategyConfig = deploymentParameters[uint256(ENV)].strategyConfig;
         allContracts.leveragedStrategy.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
         allContracts.leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
     }
