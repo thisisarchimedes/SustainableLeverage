@@ -38,12 +38,14 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
         wbtc = IERC20(Constants.WBTC_ADDRESS);
     }
 
+    function setlvBTCPoolAddress(address lvBTCPoolAddress) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
+        curvePool = ICurvePool(lvBTCPoolAddress);
+        wbtc.approve(address(lvBTCPoolAddress), type(uint256).max);
+        lvBtc.approve(address(lvBTCPoolAddress), type(uint256).max);
+    }
+
     function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
         lvBtc = LVBTC(dependencies.lvBTC);
-        curvePool = ICurvePool(dependencies.lvBTCCurvePool);
-
-        wbtc.approve(address(dependencies.lvBTCCurvePool), type(uint256).max);
-        lvBtc.approve(address(dependencies.lvBTCCurvePool), type(uint256).max);
 
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionOpener);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionCloser);
