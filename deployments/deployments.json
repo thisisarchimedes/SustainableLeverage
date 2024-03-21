@@ -1,54 +1,66 @@
 [
   {
-    "address": "0xAEAB486eDa966A9C00B2b49c3a9163218faD9071",
+    "address": "0x37B322ff95a9b5dD3a4D10AB1556a580cEAdc2A4",
     "name": "ExpiredVault"
   },
   {
-    "address": "0xc18efeD2510f4280ab9fA89bc3A9d8BF4A53cc83",
+    "address": "0x1ce0D1E19c9514230FF8CD1DAbaC2555fb92122b",
     "name": "LeverageDepositor"
   },
   {
-    "address": "0x48273a62A8b8903d6757720f19165F090288BBC3",
+    "address": "0x6Ea2F043e5EeafD0552963B60aAf18A4E105cB5B",
     "name": "wbtcVault"
   },
   {
-    "address": "0x093634781f3b8785cDD37165b1F0E6507636Ad93",
+    "address": "0x7616c785A665Dda9f922991cEC696aA9958Dfe79",
     "name": "PositionToken"
   },
   {
-    "address": "0x64e4905eA8D48eF60259E8ecee2cc1863AB9eaFA",
+    "address": "0xC52281182Cce57605c03901D4Ae165aF99EfbeE3",
     "name": "ProxyAdmin"
   },
   {
-    "address": "0x8dA13e34324f95bF157593AE94AB1F24BEebD937",
+    "address": "0xB724c6aFD432FF28f90fE33710c5222f677454b8",
     "name": "LeveragedStrategy"
   },
   {
-    "address": "0x3a43146E8322FdDb4e8BBb395540263864107380",
+    "address": "0xa2b085a02E1A4c64BE08250Eb3270075575aFfAf",
     "name": "ProtocolParameters"
   },
   {
-    "address": "0xa798A3614567a786Bb75d28BFCCe5CdE33591275",
+    "address": "0xB5588494de770e68C998B8E595176308f7C0B9b2",
     "name": "OracleManager"
   },
   {
-    "address": "0xf4507848A8526f5B5cD8b8b02c0Bf2475D19F6FC",
+    "address": "0x1AA739f4cE7713B283e892a9bF155420af91aB2e",
     "name": "PositionOpener"
   },
   {
-    "address": "0x1d6C8A1B29FAF897A54202e537d8eE4065071CcB",
+    "address": "0x01b6a4ee3649a08e478Be8746f9D0f2402708793",
     "name": "PositionCloser"
   },
   {
-    "address": "0xfB3579fCE33D7733D5Ca7D023D4164627F4caFd1",
+    "address": "0x1e094d19f6975E16128BF05D8163dB6196e48E33",
     "name": "PositionLiquidator"
   },
   {
-    "address": "0xaE251Cd1a1d8121876cA609141bA5C63C0889e42",
+    "address": "0x9106f25e3474D5D47EeD5f35448c879E2dc4388C",
+    "name": "positionExpirator"
+  },
+  {
+    "address": "0xDe30d4B2843465A7C349493e22702cd667436389",
     "name": "PositionLedger"
   },
   {
-    "address": "0x37CD4B78620BF8583E37a3d05Fe1E1B138bbE31f",
+    "address": "0xdc68A2367429c10FBb1440b978a176DE5CD0b1B6",
     "name": "SwapManager"
+  },
+  {
+    "address": "0xfDAF621825f60464b3c4d22730D09B4b4ca03Df6",
+    "name": "LvBTC"
+  },
+  {
+    "address": "0x635EF0056A597D13863B73825CcA297236578595",
+    "name": "lvBTCCurvePool"
   }
 ]

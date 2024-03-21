@@ -37,6 +37,8 @@ import { PositionExpirator } from "src/monitor_facing/PositionExpirator.sol";
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
 
+import { LVBTC } from "src/LvBTC.sol";
+
 // ! Specify Mainnet or Fork environment
 Environment constant ENV = Environment.FORK;
 
@@ -75,6 +77,7 @@ struct AllContracts {
     ChainlinkOracle wbtcUsdOracle;
     ChainlinkOracle usdcUsdOracle;
     UniV3SwapAdapter uniV3SwapAdapter;
+    LVBTC lvBTC;
 }
 
 contract UnifiedDeployer {
@@ -166,6 +169,8 @@ contract UnifiedDeployer {
         allContracts.positionExpirator.setDependencies(dependencyAddresses);
         allContracts.positionToken.setDependencies(dependencyAddresses);
         allContracts.leverageDepositor.setDependencies(dependencyAddresses);
+        allContracts.wbtcVault.setDependencies(dependencyAddresses);
+
         allContracts.uniV3SwapAdapter.setDependencies(dependencyAddresses);
         allContracts.swapManager.setSwapAdapter(SwapManager.SwapRoute.UNISWAPV3, allContracts.uniV3SwapAdapter);
         allowStrategiesWithDepositor();
@@ -206,6 +211,9 @@ contract UnifiedDeployer {
         dependencyAddresses.leverageDepositor = address(allContracts.leverageDepositor);
         allContracts.uniV3SwapAdapter = new UniV3SwapAdapter();
 
+        dependencyAddresses.wbtcVault = createProxiedWBTCVault();
+        allContracts.wbtcVault = WBTCVault(dependencyAddresses.wbtcVault);
+
         dependencyAddresses.oracleManager = createProxiedOracleManager();
         allContracts.oracleManager = OracleManager(dependencyAddresses.oracleManager);
 
@@ -238,6 +246,9 @@ contract UnifiedDeployer {
 
         dependencyAddresses.swapManager = createProxiedSwapManager();
         allContracts.swapManager = SwapManager(dependencyAddresses.swapManager);
+
+        allContracts.lvBTC = new LVBTC(address(dependencyAddresses.wbtcVault));
+        dependencyAddresses.lvBTC = address(allContracts.lvBTC);
     }
 
     function createProxiedExpiredVault() internal returns (address) {
@@ -348,6 +359,15 @@ contract UnifiedDeployer {
         );
 
         return addrPositionLedger;
+    }
+
+    function createProxiedWBTCVault() internal returns (address) {
+        WBTCVault implWbtcVault = new WBTCVault();
+        address addrWBTCVault = createUpgradableContract(
+            implWbtcVault.initialize.selector, address(implWbtcVault), address(allContracts.proxyAdmin)
+        );
+
+        return addrWBTCVault;
     }
 
     function createProxiedSwapManager() internal returns (address) {
