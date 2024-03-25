@@ -6,4 +6,5 @@ library ProtocolRoles {
     bytes32 public constant MONITOR_ROLE = keccak256("MONITOR_ROLE");
     bytes32 public constant EXPIRED_VAULT_ROLE = keccak256("EXPIRED_VAULT_ROLE");
     bytes32 public constant INTERNAL_CONTRACT_ROLE = keccak256("INTERNAL_CONTRACT_ROLE");
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 }
