@@ -64,7 +64,7 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
         uint256 currentAmount = lvBtc.balanceOf(address(this));
 
         uint256 amountToMint = amount - currentAmount;
-        lvBtc.mint(address(this), amountToMint);
+        lvBtc.mint(amountToMint);
         lvBtc.approve(address(curvePool), type(uint256).max);
 
         curvePool.exchange(LVBTC_INDEX, WBTC_INDEX, amount, minAmount, address(this));

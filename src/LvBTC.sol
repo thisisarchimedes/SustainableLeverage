@@ -6,6 +6,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract LVBTC is ERC20, ERC20Burnable, Ownable {
     uint8 private constant DECIMALS = 8;
+    address private mintDestination;
 
     constructor(address admin) ERC20("Leveraged BTC", "lvBTC") Ownable(admin) { }
 
@@ -13,7 +14,11 @@ contract LVBTC is ERC20, ERC20Burnable, Ownable {
         return DECIMALS;
     }
 
-    function mint(address to, uint256 amount) public onlyOwner {
-        _mint(to, amount);
+    function mint(uint256 amount) public onlyOwner {
+        _mint(mintDestination, amount);
+    }
+
+    function setMintDestination(address to) public onlyOwner {
+        mintDestination = to;
     }
 }
