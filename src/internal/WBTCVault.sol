@@ -53,18 +53,18 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionExpirator);
     }
 
-    function swapToLVBTC(uint256 amount, uint256 minAmount) external onlyRole(ProtocolRoles.MONITOR_ROLE) {
+    function swapWBTCtolvBTC(uint256 amount, uint256 minAmount) external onlyRole(ProtocolRoles.MONITOR_ROLE) {
         curvePool.exchange(WBTC_INDEX, LVBTC_INDEX, amount, minAmount, address(this));
         uint256 lvBTCBalance = lvBtc.balanceOf(address(this));
 
         lvBtc.burn(lvBTCBalance);
     }
 
-    function swapToWBTC(uint256 amount, uint256 minAmount) external onlyRole(ProtocolRoles.MONITOR_ROLE) {
+    function swaplvBTCtoWBTC(uint256 amount, uint256 minAmount) external onlyRole(ProtocolRoles.MONITOR_ROLE) {
         uint256 currentAmount = lvBtc.balanceOf(address(this));
 
         uint256 amountToMint = amount - currentAmount;
-        lvBtc.mint(address(this), amountToMint);
+        lvBtc.mint(amountToMint);
         lvBtc.approve(address(curvePool), type(uint256).max);
 
         curvePool.exchange(LVBTC_INDEX, WBTC_INDEX, amount, minAmount, address(this));
