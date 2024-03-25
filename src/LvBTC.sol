@@ -8,17 +8,28 @@ contract LVBTC is ERC20, ERC20Burnable, Ownable {
     uint8 private constant DECIMALS = 8;
     address private mintDestination;
 
+    mapping(address => bool) public minters;
+
     constructor(address admin) ERC20("Leveraged BTC", "lvBTC") Ownable(admin) { }
 
     function decimals() public pure override returns (uint8) {
         return DECIMALS;
     }
 
-    function mint(uint256 amount) public onlyOwner {
+    function mint(uint256 amount) public {
+        require(minters[msg.sender], "Caller is not a minter");
         _mint(mintDestination, amount);
     }
 
     function setMintDestination(address to) public onlyOwner {
         mintDestination = to;
+    }
+
+    function addMinter(address minter) public onlyOwner {
+        minters[minter] = true;
+    }
+
+    function removeMinter(address minter) public onlyOwner {
+        minters[minter] = false;
     }
 }
