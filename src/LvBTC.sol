@@ -8,8 +8,6 @@ contract LVBTC is ERC20Burnable, AccessControl {
     uint8 private constant DECIMALS = 8;
     address private mintDestination;
 
-    mapping(address => bool) public minters;
-
     constructor(address admin) ERC20("Leveraged BTC", "lvBTC") {
         _grantRole(ProtocolRoles.ADMIN_ROLE, admin);
         _grantRole(ProtocolRoles.MINTER_ROLE, admin);
@@ -30,7 +28,6 @@ contract LVBTC is ERC20Burnable, AccessControl {
     }
 
     function addMinter(address minter) public onlyRole(ProtocolRoles.ADMIN_ROLE) {
-        minters[minter] = true;
         grantRole(ProtocolRoles.MINTER_ROLE, minter);
     }
 
