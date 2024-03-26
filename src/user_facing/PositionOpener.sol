@@ -23,7 +23,7 @@ import { Constants } from "src/libs/Constants.sol";
 import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
 import { ProtocolParameters } from "src/internal/ProtocolParameters.sol";
 import { OracleManager } from "src/internal/OracleManager.sol";
-import { PositionLedger, LedgerEntry, PositionState } from "src/internal/PositionLedger.sol";
+import { PositionLedger, LedgerEntry } from "src/internal/PositionLedger.sol";
 
 /// @title PositionManager Contract
 /// @notice Supports only WBTC tokens for now
@@ -163,7 +163,6 @@ contract PositionOpener is AccessControlUpgradeable {
         newEntry.positionExpirationBlock =
             newEntry.positionOpenBlock + leveragedStrategy.getPositionLifetime(params.strategy);
         newEntry.liquidationBuffer = leveragedStrategy.getLiquidationBuffer(params.strategy);
-        newEntry.state = PositionState.LIVE;
         uint256 nftId = positionToken.mint(msg.sender);
 
         positionLedger.createNewPositionEntry(nftId, newEntry);

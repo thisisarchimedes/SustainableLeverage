@@ -26,7 +26,7 @@ import { UniV3SwapAdapter } from "src/ports/swap_adapters/UniV3SwapAdapter.sol";
 import "src/internal/LeverageDepositor.sol";
 import { WBTCVault } from "src/internal/WBTCVault.sol";
 import { ProtocolParameters } from "src/internal/ProtocolParameters.sol";
-import { PositionLedger, LedgerEntry, PositionState } from "src/internal/PositionLedger.sol";
+import { PositionLedger, LedgerEntry } from "src/internal/PositionLedger.sol";
 import { OracleManager } from "src/internal/OracleManager.sol";
 import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
 import { SwapManager } from "src/internal/SwapManager.sol";

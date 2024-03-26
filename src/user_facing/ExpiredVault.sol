@@ -77,7 +77,7 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
 
         balance -= claimableAmount;
 
-        positionLedger.claimableAmountWasClaimed(nftId);
+        positionLedger.setClaimableAmount(nftId, 0);
 
         wbtc.safeTransfer(msg.sender, claimableAmount);
 
