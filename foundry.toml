@@ -24,7 +24,7 @@
   verbosity = 4
 
 [etherscan]
-
+  mainnet = { key = "${API_KEY_ETHERSCAN}" }
 [fmt]
   bracket_spacing = true
   int_types = "long"
