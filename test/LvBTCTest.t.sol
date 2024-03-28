@@ -1,154 +1,172 @@
-// // SPDX-License-Identifier: CC BY-NC-ND 4.0
-// pragma solidity >=0.8.21 <0.9.0;
+// SPDX-License-Identifier: CC BY-NC-ND 4.0
+pragma solidity ^0.8.18;
 
-// import "../src/LvBTC.sol";
-// import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
-// import "openzeppelin-contracts/utils/math/Math.sol";
+import "../src/LvBTC.sol";
+import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-contracts/utils/math/Math.sol";
 
-// import "test/BaseTest.sol";
-// import { BaseCurvePoolTest } from "./BaseCurvePoolTest.sol"; // Adjust path as necessary;
-// import { IWBTCVault } from "../src/interfaces/IWBTCVault.sol";
-// import { ICurvePool } from "src/interfaces/ICurvePool.sol";
-// import "forge-std/console.sol";
+import "test/BaseTest.sol";
+import { IWBTCVault } from "../src/interfaces/IWBTCVault.sol";
+import { ICurvePool } from "src/interfaces/ICurvePool.sol";
+import "forge-std/console.sol";
+import { console2 } from "forge-std/console2.sol";
 
-// contract LvBTCTest is BaseCurvePoolTest {
-//     int128 private immutable WBTC_INDEX = 0;
-//     int128 private immutable LVBTC_INDEX = 1;
+contract LvBTCTest is BaseTest {
+    int128 private immutable WBTC_INDEX = 0;
+    int128 private immutable LVBTC_INDEX = 1;
+    address private LVBTC_ADMIN_ADDRESS = 0x93B435e55881Ea20cBBAaE00eaEdAf7Ce366BeF2;
 
-//     function setUp() public {
-//         initFork();
-//         initTestFramework();
+    function setUp() public {
+        initFork();
+        initTestFramework();
 
-//         // deposit to curve pool
-//         ERC20(WBTC).approve(address(allContracts.lvBTCCurvePool), type(uint256).max);
-//         ERC20(allContracts.lvBTC).approve(address(allContracts.lvBTCCurvePool), type(uint256).max);
+        mintLvBTCToSelf();
+        // deposit to curve pool
+        ERC20(WBTC).approve(address(allContracts.lvBTCCurvePool), type(uint256).max);
+        ERC20(allContracts.lvBTC).approve(address(allContracts.lvBTCCurvePool), type(uint256).max);
 
-//         vm.prank(address(allContracts.wbtcVault));
-//         allContracts.lvBTC.mint(address(this), 1000e8);
+        allContracts.lvBTC.transfer(address(allContracts.wbtcVault), 1e8); //TODO:check
+        deal(WBTC, address(this), 1000e8);
 
-//         deal(WBTC, address(this), 1000e8);
+        uint256 balance = allContracts.lvBTC.balanceOf(address(this));
+        console2.log("balance", balance);
+        // Initialize WBTC Vault and other necessary components
+        deal(WBTC, address(allContracts.wbtcVault), 1000e8);
 
-//         uint256[] memory amounts = new uint256[](2);
-//         amounts[0] = 1e8;
-//         amounts[1] = 5e8;
-//         ICurvePool(allContracts.lvBTCCurvePool).add_liquidity(amounts, 0);
+        deal(WBTC, address(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496), 100e8);
+        allContracts.lvBTC.transfer(address(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496), 100e8); //TODO:check
 
-//         // Initialize WBTC Vault and other necessary components
-//         deal(WBTC, address(allContracts.wbtcVault), 10e8);
-//     }
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 10e8;
+        amounts[1] = 50e8;
+        ICurvePool(allContracts.lvBTCCurvePool).add_liquidity(amounts, 0);
 
-//     function testDepositToCurvePool() public {
-//         // Example test using depositToCurvePool from CurvePoolManagement
-//         depositToCurvePool(100e8, 100e8);
-//     }
+        allContracts.wbtcVault.setlvBTCPoolAddress(address(allContracts.lvBTCCurvePool));
+    }
 
-//     function calculateLVBTCToSellToBalancePool() public view returns (uint256) {
-//         uint256 wbtcBalance = allContracts.lvBTCCurvePool.balances(0);
-//         uint256 lvBtcBalance = allContracts.lvBTCCurvePool.balances(1);
+    function mintLvBTCToSelf() internal {
+        uint256 amountToMint = 5000e8;
 
-//         // Calculate the desired WBTC balance after balancing the pool
-//         uint256 k = wbtcBalance * lvBtcBalance;
-//         uint256 desiredWbtcBalance = Math.sqrt(k);
+        //mint and sell lvBTC to curve pool
+        address deployerAddress = address(this);
 
-//         // Calculate the amount of LVBTC to sell using the ratio of desiredWbtcBalance to wbtcBalance
-//         uint256 lvBtcToSell = lvBtcBalance - Math.mulDiv(lvBtcBalance, desiredWbtcBalance, wbtcBalance);
+        vm.startPrank(LVBTC_ADMIN_ADDRESS);
+        allContracts.lvBTC.addMinter(LVBTC_ADMIN_ADDRESS);
+        allContracts.lvBTC.setMintDestination(deployerAddress);
+        allContracts.lvBTC.mint(5000e8);
+        allContracts.lvBTC.setMintDestination(address(allContracts.wbtcVault));
 
-//         return lvBtcToSell;
-//     }
+        vm.stopPrank();
 
-//     function depositToCurvePool(uint256 wbtcAmount, uint256 lvBtcAmount) internal {
-//         ERC20(WBTC).approve(address(allContracts.lvBTCCurvePool), wbtcAmount);
-//         ERC20(allContracts.lvBTC).approve(address(allContracts.lvBTCCurvePool), lvBtcAmount);
+        assert(allContracts.lvBTC.balanceOf(address(this)) == amountToMint);
+        assert(allContracts.lvBTC.totalSupply() == amountToMint);
+    }
 
-//         uint256[] memory amounts = new uint256[](2);
-//         amounts[0] = wbtcAmount;
-//         amounts[1] = lvBtcAmount;
+    function testDepositToCurvePool() public {
+        // Example test using depositToCurvePool from CurvePoolManagement
+        depositToCurvePool(1e8, 1e8);
+    }
 
-//         ICurvePool(allContracts.lvBTCCurvePool).add_liquidity(amounts, 0);
-//     }
+    function calculateLVBTCToSellToBalancePool() public view returns (uint256) {
+        uint256 wbtcBalance = allContracts.lvBTCCurvePool.balances(0);
+        uint256 lvBtcBalance = allContracts.lvBTCCurvePool.balances(1);
 
-//     function testSendWBTCFromVaultToCurvePool() public {
-//         uint256 wbtcBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
-//         uint256 lvBTCTotalSupplyBefore = allContracts.lvBTC.totalSupply();
+        // Calculate the desired WBTC balance after balancing the pool
+        uint256 k = wbtcBalance * lvBtcBalance;
+        uint256 desiredWbtcBalance = Math.sqrt(k);
 
-//         console.log("**** SEND WBTC FROM VAULT TO CURVE ****");
-//         console.log("LVBTC total supply before:", lvBTCTotalSupplyBefore);
+        // Calculate the amount of LVBTC to sell using the ratio of desiredWbtcBalance to wbtcBalance
+        uint256 lvBtcToSell = lvBtcBalance - Math.mulDiv(lvBtcBalance, desiredWbtcBalance, wbtcBalance);
 
-//         console.log("WBTC Vault balance:", wbtcBalanceBefore);
+        return lvBtcToSell;
+    }
 
-//         uint256 minAmount = allContracts.lvBTCCurvePool.get_dy(WBTC_INDEX, LVBTC_INDEX, wbtcBalanceBefore / 2);
+    function depositToCurvePool(uint256 wbtcAmount, uint256 lvBtcAmount) internal {
+        ERC20(WBTC).approve(address(allContracts.lvBTCCurvePool), wbtcAmount);
+        allContracts.lvBTC.approve(address(allContracts.lvBTCCurvePool), lvBtcAmount);
 
-//         //deduct 1% slippage
-//         minAmount -= minAmount / 100;
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = wbtcAmount;
+        amounts[1] = lvBtcAmount;
 
-//         uint256 wbtcbalanceBeforePool = IERC20(WBTC).balanceOf(address(allContracts.lvBTCCurvePool));
-//         console.log("WBTC in curve pool before:", wbtcbalanceBeforePool);
+        ICurvePool(allContracts.lvBTCCurvePool).add_liquidity(amounts, 0);
+    }
 
-//         allContracts.wbtcVault.swapToLVBTC(wbtcBalanceBefore / 2, minAmount);
-//         console.log("******************");
-//         uint256 lvBTCTotalSupplyAfter = allContracts.lvBTC.totalSupply();
-//         console.log("LVBTC total supply after:", lvBTCTotalSupplyAfter);
+    // test that we dont have enough lvBTC -> call mint -> call swap lvBTC to WBTC and burn the remaining lvBTC in the
+    // contract.
 
-//         uint256 wbtcBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
-//         uint256 wbtcbalanceAfterPool = IERC20(WBTC).balanceOf(address(allContracts.lvBTCCurvePool));
-//         console.log("WBTC Vault balance after:", wbtcBalanceAfter);
-//         console.log("WBTC in curve pool after:", wbtcbalanceAfterPool);
+    function testSwapBigAmountOfLvBTCToWBTC() public {
+        uint256 lvBTCBalance = allContracts.lvBTC.balanceOf(address(allContracts.wbtcVault));
 
-//         assertGt(wbtcBalanceBefore * 98 / 100, wbtcBalanceAfter);
-//         assertGt(lvBTCTotalSupplyBefore, lvBTCTotalSupplyAfter);
-//         assertGt(wbtcbalanceAfterPool, wbtcbalanceBeforePool);
+        vm.expectRevert(ErrorsLeverageEngine.NotEnoughLvBTC.selector);
+        allContracts.wbtcVault.swaplvBTCtoWBTC(lvBTCBalance * 2, 1);
+    }
 
-//         console.log("*****************");
-//     }
+    function testSendWBTCFromVaultToCurvePool() public {
+        uint256 wbtcBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
+        uint256 lvBTCTotalSupplyBefore = allContracts.lvBTC.totalSupply();
 
-//     function testMintLVBTCAndBuyWBTCFromPool() public {
-//         deal(WBTC, address(this), 5000e8);
+        uint256 minAmount = allContracts.lvBTCCurvePool.get_dy(WBTC_INDEX, LVBTC_INDEX, wbtcBalanceBefore / 2);
 
-//         console.log("**** MINT LVBTC AND BUY WBTC FROM CURVE ****");
+        //deduct 1% slippage
+        minAmount -= minAmount / 100;
 
-//         //unbalance the pool
-//         ICurvePool(address(allContracts.lvBTCCurvePool)).exchange(WBTC_INDEX, LVBTC_INDEX, 20e8, 1);
+        uint256 wbtcbalanceBeforePool = IERC20(WBTC).balanceOf(address(allContracts.lvBTCCurvePool));
 
-//         //get unbalanced values
-//         uint256 wbtcInPoolBefore = allContracts.lvBTCCurvePool.balances(0);
-//         uint256 lvBtcInPoolBefore = allContracts.lvBTCCurvePool.balances(1);
-//         uint256 wbtcInVaultBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
+        allContracts.wbtcVault.swapWBTCtolvBTC(wbtcBalanceBefore / 2, minAmount);
+        uint256 lvBTCTotalSupplyAfter = allContracts.lvBTC.totalSupply();
 
-//         console.log("WBTC in vault before:", wbtcInVaultBefore);
+        uint256 wbtcBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
+        uint256 wbtcbalanceAfterPool = IERC20(WBTC).balanceOf(address(allContracts.lvBTCCurvePool));
 
-//         console.log("WBTC in curve pool before:", wbtcInPoolBefore);
+        assertGt(wbtcBalanceBefore * 98 / 100, wbtcBalanceAfter);
+        assertGt(lvBTCTotalSupplyBefore, lvBTCTotalSupplyAfter);
+        assertGt(wbtcbalanceAfterPool, wbtcbalanceBeforePool);
+    }
 
-//         console.log("LVBTC in curve pool before:", lvBtcInPoolBefore);
+    function testMintLVBTCAndBuyWBTCFromPool() public {
+        deal(WBTC, address(this), 5000e8);
 
-//         //calculate number of lvBTC to mint and sell to the pool
-//         uint256 numberToSell = calculateLVBTCToSellToBalancePool();
+        //unbalance the pool
+        ICurvePool(address(allContracts.lvBTCCurvePool)).exchange(WBTC_INDEX, LVBTC_INDEX, 20e8, 1);
 
-//         console.log("**** Minting and selling LVBTC to curve pool ****");
+        //get unbalanced values
+        uint256 wbtcInPoolBefore = allContracts.lvBTCCurvePool.balances(0);
+        uint256 lvBtcInPoolBefore = allContracts.lvBTCCurvePool.balances(1);
+        uint256 wbtcInVaultBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
 
-//         uint256 lvBTCTotalSupplyBefore = allContracts.lvBTC.totalSupply();
-//         uint256 minAmount = allContracts.lvBTCCurvePool.get_dy(LVBTC_INDEX, WBTC_INDEX, numberToSell);
+        //calculate number of lvBTC to mint and sell to the pool
+        uint256 numberToSell = calculateLVBTCToSellToBalancePool();
 
-//         //mint and sell lvBTC to curve pool
-//         allContracts.wbtcVault.swapToWBTC(numberToSell, minAmount);
+        //mint and sell lvBTC to curve pool
+        vm.startPrank(LVBTC_ADMIN_ADDRESS);
+        allContracts.lvBTC.addMinter(address(this));
+        allContracts.lvBTC.setMintDestination(address(allContracts.wbtcVault));
+        vm.stopPrank();
 
-//         uint256 wbtcInVaultAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
+        uint256 lvBTCTotalSupplyBefore = allContracts.lvBTC.totalSupply();
 
-//         //get balances after
-//         uint256 wbtInPooleAfter = allContracts.lvBTCCurvePool.balances(0);
-//         uint256 lvBtcInPoolAfter = allContracts.lvBTCCurvePool.balances(1);
-//         console.log("WBTC in vault after:", wbtcInVaultAfter);
-//         console.log("WBTC in curve pool after:", wbtInPooleAfter);
-//         console.log("LVBTC in curve pool after:", lvBtcInPoolAfter);
+        allContracts.lvBTC.mint(numberToSell);
 
-//         uint256 lvBTCTotalSupplyAfter = allContracts.lvBTC.totalSupply();
+        uint256 minAmount = allContracts.lvBTCCurvePool.get_dy(LVBTC_INDEX, WBTC_INDEX, numberToSell);
 
-//         assertGt(wbtcInVaultAfter, wbtcInVaultBefore);
-//         assertGt(lvBtcInPoolAfter, lvBtcInPoolBefore);
-//         assertGt(wbtcInPoolBefore, wbtInPooleAfter);
-//         assertGt(lvBTCTotalSupplyAfter, lvBTCTotalSupplyBefore);
-//     }
+        allContracts.wbtcVault.swaplvBTCtoWBTC(numberToSell, minAmount);
 
-//     function calculatePoolTokensRatio(uint256 balance0, uint256 balance1) public pure returns (uint256) {
-//         return balance0 * 1000 / balance1;
-//     }
-// }
+        uint256 wbtcInVaultAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
+
+        //get balances after
+        uint256 wbtInPooleAfter = allContracts.lvBTCCurvePool.balances(0);
+        uint256 lvBtcInPoolAfter = allContracts.lvBTCCurvePool.balances(1);
+
+        uint256 lvBTCTotalSupplyAfter = allContracts.lvBTC.totalSupply();
+
+        assertGt(wbtcInVaultAfter, wbtcInVaultBefore);
+        assertGt(lvBtcInPoolAfter, lvBtcInPoolBefore);
+        assertGt(wbtcInPoolBefore, wbtInPooleAfter);
+        assertGt(lvBTCTotalSupplyAfter, lvBTCTotalSupplyBefore);
+    }
+
+    function calculatePoolTokensRatio(uint256 balance0, uint256 balance1) public pure returns (uint256) {
+        return balance0 * 1000 / balance1;
+    }
+}

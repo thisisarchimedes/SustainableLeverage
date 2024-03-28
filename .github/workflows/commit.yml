@@ -102,7 +102,9 @@ jobs:
 
       - name: "Run the tests"
         run: |
-          forge test
+          forge test --no-match-contract CurvePoolTest --no-match-contract LvBTCTest
+          forge test --match-contract CurvePoolTest --evm-version shanghai
+          forge test --match-contract LvBTCTest --evm-version shanghai
 
       - name: Get test coverage
         run: |
