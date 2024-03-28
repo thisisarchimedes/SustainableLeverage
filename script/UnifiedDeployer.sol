@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
-import { PRBTest } from "@prb/test/PRBTest.sol";
-import { console2 } from "forge-std/console2.sol";
-import { StdCheats } from "forge-std/StdCheats.sol";
-
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
@@ -18,9 +14,6 @@ import { PositionCloser } from "src/user_facing/PositionCloser.sol";
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
 import { ICurvePool } from "src/interfaces/ICurvePool.sol";
 
-import { FakeOracle } from "src/ports/oracles/FakeOracle.sol";
-import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
-import { FakeWBTCUSDCSwapAdapter } from "src/ports/swap_adapters/FakeWBTCUSDCSwapAdapter.sol";
 import { ChainlinkOracle } from "src/ports/oracles/ChainlinkOracle.sol";
 import { UniV3SwapAdapter } from "src/ports/swap_adapters/UniV3SwapAdapter.sol";
 
@@ -120,7 +113,7 @@ contract UnifiedDeployer {
             strategyConfig: LeveragedStrategy.StrategyConfig({
                 quota: 10_000e8,
                 maximumMultiplier: 3e8,
-                positionLifetime: 15,
+                positionLifetimeInBlocks: 15,
                 liquidationBuffer: 1.25e8,
                 liquidationFee: 0.02e8
             })
@@ -134,7 +127,7 @@ contract UnifiedDeployer {
             strategyConfig: LeveragedStrategy.StrategyConfig({
                 quota: 10_000e8,
                 maximumMultiplier: 3e8,
-                positionLifetime: 15,
+                positionLifetimeInBlocks: 15,
                 liquidationBuffer: 1.25e8,
                 liquidationFee: 0.02e8
             })

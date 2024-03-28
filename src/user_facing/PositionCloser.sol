@@ -22,6 +22,7 @@ contract PositionCloser is AccessControlUpgradeable, ClosePositionInternal {
     function initialize() external initializer {
         __AccessControl_init();
         _grantRole(ProtocolRoles.ADMIN_ROLE, msg.sender);
+        _setRoleAdmin(ProtocolRoles.ADMIN_ROLE, ProtocolRoles.ADMIN_ROLE);
     }
 
     function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
@@ -86,10 +87,10 @@ contract PositionCloser is AccessControlUpgradeable, ClosePositionInternal {
 
     function recordPositionClosed(uint256 nftId, uint256 finalUserBalance) internal {
         emit EventsLeverageEngine.PositionClosed(
-            nftId, 
-            msg.sender, 
+            nftId,
+            msg.sender,
             positionLedger.getStrategyAddress(nftId),
-            finalUserBalance, 
+            finalUserBalance,
             positionLedger.getDebtAmount(nftId)
         );
 

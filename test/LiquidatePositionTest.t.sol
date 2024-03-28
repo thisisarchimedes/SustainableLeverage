@@ -11,16 +11,13 @@ import { FakeOracle } from "src/ports/oracles/FakeOracle.sol";
 import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
 
-
 contract LiquidatePositionTest is BaseTest {
     /* solhint-disable  */
 
     using ErrorsLeverageEngine for *;
     using ProtocolRoles for *;
 
-
     function setUp() public virtual {
-
         initFork();
         initTestFramework();
 
@@ -31,12 +28,11 @@ contract LiquidatePositionTest is BaseTest {
     }
 
     function testSetLiquidationBufferPerStrategyTo10And15PercentAbove() external {
-
         uint256 newLiquidationBuffer;
         LeveragedStrategy.StrategyConfig memory strategyConfig;
 
         strategyConfig.quota = 100e8;
-        strategyConfig.positionLifetime = 1000;
+        strategyConfig.positionLifetimeInBlocks = 1000;
         strategyConfig.maximumMultiplier = 3e8;
         strategyConfig.liquidationFee = 0.02e8;
 
@@ -56,7 +52,7 @@ contract LiquidatePositionTest is BaseTest {
         LeveragedStrategy.StrategyConfig memory strategyConfig;
 
         strategyConfig.quota = 100e8;
-        strategyConfig.positionLifetime = 1000;
+        strategyConfig.positionLifetimeInBlocks = 1000;
         strategyConfig.maximumMultiplier = 3e8;
         strategyConfig.liquidationBuffer = 1.1e8;
 
@@ -154,7 +150,7 @@ contract LiquidatePositionTest is BaseTest {
             swapData: payloadClose,
             exchange: address(0)
         });
-        
+
         vm.expectRevert(bytes("ERC4626: redeem more than max"));
         allContracts.positionLiquidator.liquidatePosition(params);
     }
@@ -164,7 +160,7 @@ contract LiquidatePositionTest is BaseTest {
         LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
             quota: 100e8,
             maximumMultiplier: 3e8,
-            positionLifetime: 1000,
+            positionLifetimeInBlocks: 1000,
             liquidationBuffer: 1.1e8,
             liquidationFee: liquidationFee
         });
@@ -199,12 +195,11 @@ contract LiquidatePositionTest is BaseTest {
     }
 
     function testLiquidationOfUSDCBasedPosition() external {
-
         uint256 liquidationFee = 0.02e8;
         LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
             quota: 100e8,
             maximumMultiplier: 3e8,
-            positionLifetime: 1000,
+            positionLifetimeInBlocks: 1000,
             liquidationBuffer: 1.1e8,
             liquidationFee: liquidationFee
         });
@@ -239,7 +234,6 @@ contract LiquidatePositionTest is BaseTest {
     }
 
     function testSendLeftoverToExpirationVault() external {
-        
         uint256 collateralAmount = 10e8;
         uint256 borrowAmount = 30e8;
         uint256 expirationVaultBalance = ERC20(WBTC).balanceOf(address(allContracts.expiredVault));
@@ -248,7 +242,7 @@ contract LiquidatePositionTest is BaseTest {
         LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
             quota: 100e8,
             maximumMultiplier: 3e8,
-            positionLifetime: 1000,
+            positionLifetimeInBlocks: 1000,
             liquidationBuffer: 1.1e8,
             liquidationFee: liquidationFee
         });
@@ -264,7 +258,6 @@ contract LiquidatePositionTest is BaseTest {
     }
 
     function testAllDebtGotBackToValue() external {
-        
         uint256 collateralAmount = 10e8;
         uint256 borrowAmount = 30e8;
         uint256 wbtcVaultBalanceBefore = ERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
@@ -274,7 +267,7 @@ contract LiquidatePositionTest is BaseTest {
         LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
             quota: 100e8,
             maximumMultiplier: 3e8,
-            positionLifetime: 1000,
+            positionLifetimeInBlocks: 1000,
             liquidationBuffer: 1.1e8,
             liquidationFee: liquidationFee
         });
@@ -290,7 +283,6 @@ contract LiquidatePositionTest is BaseTest {
     }
 
     function testNonMonitorCannotLiquidate() external {
-        
         uint256 collateralAmount = 10e8;
         uint256 borrowAmount = 30e8;
 
@@ -298,14 +290,14 @@ contract LiquidatePositionTest is BaseTest {
         LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
             quota: 100e8,
             maximumMultiplier: 3e8,
-            positionLifetime: 1000,
+            positionLifetimeInBlocks: 1000,
             liquidationBuffer: 1.1e8,
             liquidationFee: liquidationFee
         });
         allContracts.leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
 
         uint256 nftId = openETHBasedPosition(collateralAmount, borrowAmount);
-        
+
         ClosePositionParams memory params = ClosePositionParams({
             nftId: nftId,
             minWBTC: 0,
@@ -315,7 +307,11 @@ contract LiquidatePositionTest is BaseTest {
         });
 
         vm.prank(address(0));
-        vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, 0, ProtocolRoles.MONITOR_ROLE));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, 0, ProtocolRoles.MONITOR_ROLE
+            )
+        );
         allContracts.positionLiquidator.liquidatePosition(params);
     }
 }

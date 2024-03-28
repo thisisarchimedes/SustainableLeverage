@@ -13,6 +13,7 @@ contract ExpirationTest is BaseTest {
     using ErrorsLeverageEngine for *;
 
     address public positionReceiver = makeAddr("receiver");
+    address public secondMonitor = makeAddr("secondMonitor");
 
     function setUp() public {
         initFork();
@@ -27,7 +28,7 @@ contract ExpirationTest is BaseTest {
     function updateStrategyConfig(uint256 newBlockNumber) internal {
         LeveragedStrategy.StrategyConfig memory strategyConfig =
             allContracts.leveragedStrategy.getStrategyConfig(ETHPLUSETH_STRATEGY);
-        strategyConfig.positionLifetime = newBlockNumber;
+        strategyConfig.positionLifetimeInBlocks = newBlockNumber;
         allContracts.leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
     }
 
@@ -56,13 +57,13 @@ contract ExpirationTest is BaseTest {
 
     function testSetExpirationBlock() public {
         uint256 newBlockNumber =
-            allContracts.leveragedStrategy.getStrategyConfig(ETHPLUSETH_STRATEGY).positionLifetime + 10;
+            allContracts.leveragedStrategy.getStrategyConfig(ETHPLUSETH_STRATEGY).positionLifetimeInBlocks + 10;
         updateStrategyConfig(newBlockNumber);
 
         LeveragedStrategy.StrategyConfig memory strategyConfigAfter =
             allContracts.leveragedStrategy.getStrategyConfig(ETHPLUSETH_STRATEGY);
 
-        assert(strategyConfigAfter.positionLifetime == newBlockNumber);
+        assert(strategyConfigAfter.positionLifetimeInBlocks == newBlockNumber);
     }
 
     function testChangeExpirationBlockDontAffectLivePositions() public {
@@ -70,7 +71,7 @@ contract ExpirationTest is BaseTest {
         uint256 expirationBlockBefore = allContracts.positionLedger.getExpirationBlock(nftId);
 
         uint256 newBlockNumber =
-            allContracts.leveragedStrategy.getStrategyConfig(ETHPLUSETH_STRATEGY).positionLifetime + 10;
+            allContracts.leveragedStrategy.getStrategyConfig(ETHPLUSETH_STRATEGY).positionLifetimeInBlocks + 10;
         updateStrategyConfig(newBlockNumber);
 
         uint256 expirationBlockAfter = allContracts.positionLedger.getExpirationBlock(nftId);
@@ -152,6 +153,22 @@ contract ExpirationTest is BaseTest {
 
         uint256 wbtcBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.expiredVault));
 
+        assert(wbtcBalanceAfter > wbtcBalanceBefore);
+    }
+
+    function testExpiratorCanHaveMultipleMonitor() public {
+        uint256 nftID = openEthPosition();
+        uint256 expirationBlock = allContracts.positionLedger.getExpirationBlock(nftID);
+        vm.roll(expirationBlock + 1);
+
+        uint256 wbtcBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
+
+        ClosePositionParams memory params = getClosePositionParams(nftID);
+        allContracts.positionExpirator.setMonitor(secondMonitor);
+        vm.prank(secondMonitor);
+        allContracts.positionExpirator.expirePosition(nftID, params);
+
+        uint256 wbtcBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
         assert(wbtcBalanceAfter > wbtcBalanceBefore);
     }
 }

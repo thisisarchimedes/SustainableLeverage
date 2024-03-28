@@ -19,19 +19,19 @@ contract LVBTC is ERC20Burnable, AccessControl {
         return DECIMALS;
     }
 
-    function mint(uint256 amount) public onlyRole(ProtocolRoles.MINTER_ROLE) {
+    function mint(uint256 amount) external onlyRole(ProtocolRoles.MINTER_ROLE) {
         _mint(mintDestination, amount);
     }
 
-    function setMintDestination(address to) public onlyRole(ProtocolRoles.ADMIN_ROLE) {
+    function setMintDestination(address to) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
         mintDestination = to;
     }
 
-    function addMinter(address minter) public onlyRole(ProtocolRoles.ADMIN_ROLE) {
+    function addMinter(address minter) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
         grantRole(ProtocolRoles.MINTER_ROLE, minter);
     }
 
-    function removeMinter(address minter) public onlyRole(ProtocolRoles.ADMIN_ROLE) {
+    function removeMinter(address minter) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
         revokeRole(ProtocolRoles.MINTER_ROLE, minter);
     }
 }
