@@ -13,6 +13,7 @@ contract ExpirationTest is BaseTest {
     using ErrorsLeverageEngine for *;
 
     address public positionReceiver = makeAddr("receiver");
+    address public secondMonitor = makeAddr("secondMonitor");
 
     function setUp() public {
         initFork();
@@ -152,6 +153,22 @@ contract ExpirationTest is BaseTest {
 
         uint256 wbtcBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.expiredVault));
 
+        assert(wbtcBalanceAfter > wbtcBalanceBefore);
+    }
+
+    function testExpiratorCanHaveMultipleMonitor() public {
+        uint256 nftID = openEthPosition();
+        uint256 expirationBlock = allContracts.positionLedger.getExpirationBlock(nftID);
+        vm.roll(expirationBlock + 1);
+
+        uint256 wbtcBalanceBefore = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
+
+        ClosePositionParams memory params = getClosePositionParams(nftID);
+        allContracts.positionExpirator.setMonitor(secondMonitor);
+        vm.prank(secondMonitor);
+        allContracts.positionExpirator.expirePosition(nftID, params);
+
+        uint256 wbtcBalanceAfter = IERC20(WBTC).balanceOf(address(allContracts.wbtcVault));
         assert(wbtcBalanceAfter > wbtcBalanceBefore);
     }
 }

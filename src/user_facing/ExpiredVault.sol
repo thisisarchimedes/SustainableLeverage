@@ -38,6 +38,7 @@ contract ExpiredVault is IExpiredVault, AccessControlUpgradeable {
         __AccessControl_init();
 
         _grantRole(ProtocolRoles.ADMIN_ROLE, msg.sender);
+        _setRoleAdmin(ProtocolRoles.ADMIN_ROLE, ProtocolRoles.ADMIN_ROLE);
 
         wbtc = IERC20(Constants.WBTC_ADDRESS);
     }
