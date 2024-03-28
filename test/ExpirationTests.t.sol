@@ -27,7 +27,7 @@ contract ExpirationTest is BaseTest {
     function updateStrategyConfig(uint256 newBlockNumber) internal {
         LeveragedStrategy.StrategyConfig memory strategyConfig =
             allContracts.leveragedStrategy.getStrategyConfig(ETHPLUSETH_STRATEGY);
-        strategyConfig.positionLifetime = newBlockNumber;
+        strategyConfig.positionLifetimeInBlocks = newBlockNumber;
         allContracts.leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
     }
 
@@ -56,13 +56,13 @@ contract ExpirationTest is BaseTest {
 
     function testSetExpirationBlock() public {
         uint256 newBlockNumber =
-            allContracts.leveragedStrategy.getStrategyConfig(ETHPLUSETH_STRATEGY).positionLifetime + 10;
+            allContracts.leveragedStrategy.getStrategyConfig(ETHPLUSETH_STRATEGY).positionLifetimeInBlocks + 10;
         updateStrategyConfig(newBlockNumber);
 
         LeveragedStrategy.StrategyConfig memory strategyConfigAfter =
             allContracts.leveragedStrategy.getStrategyConfig(ETHPLUSETH_STRATEGY);
 
-        assert(strategyConfigAfter.positionLifetime == newBlockNumber);
+        assert(strategyConfigAfter.positionLifetimeInBlocks == newBlockNumber);
     }
 
     function testChangeExpirationBlockDontAffectLivePositions() public {
@@ -70,7 +70,7 @@ contract ExpirationTest is BaseTest {
         uint256 expirationBlockBefore = allContracts.positionLedger.getExpirationBlock(nftId);
 
         uint256 newBlockNumber =
-            allContracts.leveragedStrategy.getStrategyConfig(ETHPLUSETH_STRATEGY).positionLifetime + 10;
+            allContracts.leveragedStrategy.getStrategyConfig(ETHPLUSETH_STRATEGY).positionLifetimeInBlocks + 10;
         updateStrategyConfig(newBlockNumber);
 
         uint256 expirationBlockAfter = allContracts.positionLedger.getExpirationBlock(nftId);

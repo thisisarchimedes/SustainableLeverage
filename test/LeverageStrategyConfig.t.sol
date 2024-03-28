@@ -37,10 +37,10 @@ contract LeverageStrategyConfig is BaseTest {
 
         // quick check that we initialized the test suit correctly
 
-        uint256 lifetime1 = allContracts.leveragedStrategy.getPositionLifetime(ETHPLUSETH_STRATEGY);
+        uint256 lifetime1 = allContracts.leveragedStrategy.getPositionLifetimeInBlocks(ETHPLUSETH_STRATEGY);
         assertGt(lifetime1, 1);
 
-        uint256 lifetime2 = allContracts.leveragedStrategy.getPositionLifetime(FRAXBPALUSD_STRATEGY);
+        uint256 lifetime2 = allContracts.leveragedStrategy.getPositionLifetimeInBlocks(FRAXBPALUSD_STRATEGY);
         assertGt(lifetime2, 1);
         
     }

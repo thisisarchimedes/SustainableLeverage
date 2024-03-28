@@ -101,7 +101,7 @@ contract PositionOpener is AccessControlUpgradeable {
             params.strategy,
             params.collateralAmount,
             params.wbtcToBorrow,
-            block.number + leveragedStrategy.getPositionLifetime(params.strategy),
+            block.number + leveragedStrategy.getPositionLifetimeInBlocks(params.strategy),
             sharesReceived
         );
 
@@ -161,7 +161,7 @@ contract PositionOpener is AccessControlUpgradeable {
         newEntry.wbtcDebtAmount = params.wbtcToBorrow;
         newEntry.positionOpenBlock = block.number;
         newEntry.positionExpirationBlock =
-            newEntry.positionOpenBlock + leveragedStrategy.getPositionLifetime(params.strategy);
+            newEntry.positionOpenBlock + leveragedStrategy.getPositionLifetimeInBlocks(params.strategy);
         newEntry.liquidationBuffer = leveragedStrategy.getLiquidationBuffer(params.strategy);
         uint256 nftId = positionToken.mint(msg.sender);
 

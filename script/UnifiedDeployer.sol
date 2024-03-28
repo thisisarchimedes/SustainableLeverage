@@ -109,7 +109,7 @@ contract UnifiedDeployer {
             strategyConfig: LeveragedStrategy.StrategyConfig({
                 quota: 10_000e8,
                 maximumMultiplier: 3e8,
-                positionLifetime: 15,
+                positionLifetimeInBlocks: 15,
                 liquidationBuffer: 1.25e8,
                 liquidationFee: 0.02e8
             })
@@ -123,7 +123,7 @@ contract UnifiedDeployer {
             strategyConfig: LeveragedStrategy.StrategyConfig({
                 quota: 10_000e8,
                 maximumMultiplier: 3e8,
-                positionLifetime: 15,
+                positionLifetimeInBlocks: 15,
                 liquidationBuffer: 1.25e8,
                 liquidationFee: 0.02e8
             })
