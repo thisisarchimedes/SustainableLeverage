@@ -12,6 +12,7 @@ import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
 
 import { FakeWBTCUSDCSwapAdapter } from "src/ports/swap_adapters/FakeWBTCUSDCSwapAdapter.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
+import { console2 } from "forge-std/console2.sol";
 
 contract SwapManagerTest is BaseTest {
     using ErrorsLeverageEngine for *;
@@ -92,7 +93,7 @@ contract SwapManagerTest is BaseTest {
     function getUniswapWBTCUSDCPayload() internal view returns (bytes memory) {
         return abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
-                path: abi.encodePacked(WBTC, uint24(3000), USDC),
+                path: abi.encodePacked(WBTC, uint24(500), WETH, uint24(500), USDC),
                 deadline: block.timestamp + 100_000,
                 amountOutMin: 1
             })
@@ -131,7 +132,7 @@ contract SwapManagerTest is BaseTest {
     function getUniswapUSDCWBTCPayload() internal view returns (bytes memory) {
         return abi.encode(
             UniV3SwapAdapter.UniswapV3Data({
-                path: abi.encodePacked(USDC, uint24(3000), WBTC),
+                path: abi.encodePacked(USDC, uint24(500), WETH, uint24(3000), WBTC),
                 deadline: block.timestamp + 100_000,
                 amountOutMin: 1
             })
@@ -148,8 +149,8 @@ contract SwapManagerTest is BaseTest {
 
         uint256 expectedUsdcAmount = getOracleWbtcAmountUsdcValue(wbtcAmountToSwap);
 
-        uint256 delta = expectedUsdcAmount * 2500 / 100_000;
-        assertAlmostEq(expectedUsdcAmount, usdcBalanceAfter - usdcBalanceBefore, delta);
+        uint256 slippage = expectedUsdcAmount * 500 / 100_000;
+        assertGte(usdcBalanceAfter - usdcBalanceBefore, expectedUsdcAmount - slippage);
     }
 
     function getOracleWbtcAmountUsdcValue(uint256 wbtcAmount) internal view returns (uint256) {
@@ -168,8 +169,8 @@ contract SwapManagerTest is BaseTest {
 
         uint256 expectedWbtcAmount = getOracleUsdcAmountWbtcValue(usdcAmountToSwap);
 
-        uint256 delta = expectedWbtcAmount * 2500 / 100_000;
-        assertAlmostEq(expectedWbtcAmount, wbtcBalanceAfter - wbtcBalanceBefore, delta);
+        uint256 slippage = expectedWbtcAmount * 500 / 100_000;
+        assertGte(wbtcBalanceAfter - wbtcBalanceBefore, expectedWbtcAmount - slippage);
     }
 
     function getOracleUsdcAmountWbtcValue(uint256 usdcAmount) internal view returns (uint256) {

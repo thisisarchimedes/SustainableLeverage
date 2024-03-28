@@ -42,7 +42,7 @@ contract BaseTest is PRBTest, StdCheats, UnifiedDeployer {
         }
 
         // Otherwise, run the test against the mainnet fork.
-        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 19_526_284 });
+        vm.createSelectFork({ urlOrAlias: "mainnet", blockNumber: 19_533_348 });
     }
 
     function initTestFramework() internal {
