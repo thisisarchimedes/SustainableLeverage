@@ -52,7 +52,7 @@ jobs:
         run: |
           start=$(date +%s)
 
-          forge test --no-match-contract CurvePoolTest --no-match-contract LvBTCTest
+          forge test --no-match-contract "CurvePoolTest|LvBTCTest"
           forge test --match-contract CurvePoolTest --evm-version shanghai
           forge test --match-contract LvBTCTest --evm-version shanghai
           
