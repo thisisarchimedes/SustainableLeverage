@@ -12,6 +12,7 @@ import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { IWBTCVault } from "src/interfaces/IWBTCVault.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
 import { Constants } from "src/libs/Constants.sol";
+import { ErrorsLeverageEngine } from "src/libs/ErrorsLeverageEngine.sol";
 
 contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
@@ -34,6 +35,7 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
         _grantRole(ProtocolRoles.MONITOR_ROLE, msg.sender);
         _setRoleAdmin(ProtocolRoles.ADMIN_ROLE, ProtocolRoles.ADMIN_ROLE);
         _setRoleAdmin(ProtocolRoles.MONITOR_ROLE, ProtocolRoles.ADMIN_ROLE);
+        _setRoleAdmin(ProtocolRoles.MINTER_ROLE, ProtocolRoles.ADMIN_ROLE);
 
         wbtc = IERC20(Constants.WBTC_ADDRESS);
     }
@@ -51,23 +53,40 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionCloser);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionLiquidator);
         _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.positionExpirator);
+        _grantRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE, dependencies.lvBTC);
     }
 
-    function swapWBTCtolvBTC(uint256 amount, uint256 minAmount) external onlyRole(ProtocolRoles.MONITOR_ROLE) {
-        curvePool.exchange(WBTC_INDEX, LVBTC_INDEX, amount, minAmount, address(this));
-        uint256 lvBTCBalance = lvBtc.balanceOf(address(this));
+    function swapWBTCtolvBTC(
+        uint256 wbtcAmount,
+        uint256 minlvBTCAmount
+    )
+        external
+        onlyRole(ProtocolRoles.MONITOR_ROLE)
+    {
+        uint256 lvBTCBalanceBeforeSwap = lvBtc.balanceOf(address(this));
 
-        lvBtc.burn(lvBTCBalance);
+        curvePool.exchange(WBTC_INDEX, LVBTC_INDEX, wbtcAmount, minlvBTCAmount, address(this));
+        uint256 lvBTCBalanceAfterSwap = lvBtc.balanceOf(address(this));
+
+        uint256 totalToBurn = lvBTCBalanceAfterSwap - lvBTCBalanceBeforeSwap;
+
+        lvBtc.burn(totalToBurn);
     }
 
-    function swaplvBTCtoWBTC(uint256 amount, uint256 minAmount) external onlyRole(ProtocolRoles.MONITOR_ROLE) {
-        uint256 currentAmount = lvBtc.balanceOf(address(this));
+    function swaplvBTCtoWBTC(
+        uint256 lvBTCAmount,
+        uint256 minWBTCAmount
+    )
+        external
+        onlyRole(ProtocolRoles.MONITOR_ROLE)
+    {
+        uint256 currentlvBTCAmount = lvBtc.balanceOf(address(this));
 
-        uint256 amountToMint = amount - currentAmount;
-        lvBtc.mint(amountToMint);
-        lvBtc.approve(address(curvePool), type(uint256).max);
+        if (currentlvBTCAmount < lvBTCAmount) {
+            revert ErrorsLeverageEngine.NotEnoughLvBTC();
+        }
 
-        curvePool.exchange(LVBTC_INDEX, WBTC_INDEX, amount, minAmount, address(this));
+        curvePool.exchange(LVBTC_INDEX, WBTC_INDEX, lvBTCAmount, minWBTCAmount, address(this));
     }
 
     function borrowAmountTo(

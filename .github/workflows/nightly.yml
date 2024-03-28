@@ -2,7 +2,7 @@ name: Nightly Check
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: "0 0 * * *"
   workflow_dispatch:
 
 env:
@@ -51,9 +51,9 @@ jobs:
         continue-on-error: true
         run: |
           start=$(date +%s)
-          
-          forge test
-          
+
+          forge test 
+
           end=$(date +%s)
           duration=$((end-start))
           echo "DURATION=$duration" >> $GITHUB_ENV
@@ -81,19 +81,17 @@ jobs:
         run: |
           npm install solhint
           LINT_OUTPUT=`npx solhint -c .solhint.json -f compact 'test/**/*.sol' | grep "problem" | awk '{print $1}'`
-          
+
           if [ -z "$LINT_OUTPUT" ]; then
             LINT_OUTPUT=0
           fi
-          
+
           echo "LINT_PROBLEMS=$LINT_OUTPUT" >> $GITHUB_ENV
 
       - name: Report test run time
         run: |
           echo "Time taken to run the tests: ${{ env.DURATION }} seconds"
-          
+
           pip install python-dotenv
           pip install requests          
           python devops/metrics/src/cicd_script/report_devops_event.py ${{ github.repository }} "test_run" --metadata '{"pass": "${{ env.TEST_PASS }}", "time": "${{ env.DURATION }}" ,"coverage": {"functions": "${{ env.COVERAGE_FUNC }}"}, "linter_issues": {"tests": "${{ env. LINT_PROBLEMS }}"}}'
-          
-

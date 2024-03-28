@@ -12,6 +12,7 @@ import { PositionOpener } from "src/user_facing/PositionOpener.sol";
 import { PositionCloser } from "src/user_facing/PositionCloser.sol";
 
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
+import { ICurvePool } from "src/interfaces/ICurvePool.sol";
 
 import { ChainlinkOracle } from "src/ports/oracles/ChainlinkOracle.sol";
 import { UniV3SwapAdapter } from "src/ports/swap_adapters/UniV3SwapAdapter.sol";
@@ -71,6 +72,7 @@ struct AllContracts {
     ChainlinkOracle usdcUsdOracle;
     UniV3SwapAdapter uniV3SwapAdapter;
     LVBTC lvBTC;
+    ICurvePool lvBTCCurvePool;
 }
 
 contract UnifiedDeployer {
@@ -89,6 +91,8 @@ contract UnifiedDeployer {
     address public constant USDCUSDORACLE = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
     address public constant BTCETHORACLE = 0xdeb288F737066589598e9214E782fa5A8eD689e8;
     address public constant FRAXBPALUSD_STRATEGY = 0xD078a331A8A00AB5391ba9f3AfC910225a78e6A1;
+    address public constant LVBTC_ADDRESS = 0x1ce0D1E19c9514230FF8CD1DAbaC2555fb92122b;
+    address public constant LVBTC_CURVE_POOL = 0xFD94A5dCB0E52fDD076Bee3eA1Aa16C48081660C;
 
     address admin;
     address defaultFeeCollector;
@@ -240,8 +244,11 @@ contract UnifiedDeployer {
         dependencyAddresses.swapManager = createProxiedSwapManager();
         allContracts.swapManager = SwapManager(dependencyAddresses.swapManager);
 
-        allContracts.lvBTC = new LVBTC(address(dependencyAddresses.wbtcVault));
+        allContracts.lvBTC = LVBTC(LVBTC_ADDRESS);
         dependencyAddresses.lvBTC = address(allContracts.lvBTC);
+
+        allContracts.lvBTCCurvePool = ICurvePool(LVBTC_CURVE_POOL);
+        dependencyAddresses.lvBTCCurvePool = address(allContracts.lvBTCCurvePool);
     }
 
     function createProxiedExpiredVault() internal returns (address) {

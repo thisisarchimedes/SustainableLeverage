@@ -28,4 +28,5 @@ library ErrorsLeverageEngine {
     error PositionAlreadyExists(); //6e8de458
     error PositionDoesNotExist(); //f7b3b391
     error FeeTooHigh(); //cd4e6167
+    error NotEnoughLvBTC();
 }
