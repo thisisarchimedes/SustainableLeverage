@@ -17,9 +17,6 @@ import { PositionCloser } from "src/user_facing/PositionCloser.sol";
 
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
 
-import { FakeOracle } from "src/ports/oracles/FakeOracle.sol";
-import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
-import { FakeWBTCUSDCSwapAdapter } from "src/ports/swap_adapters/FakeWBTCUSDCSwapAdapter.sol";
 import { ChainlinkOracle } from "src/ports/oracles/ChainlinkOracle.sol";
 import { UniV3SwapAdapter } from "src/ports/swap_adapters/UniV3SwapAdapter.sol";
 
