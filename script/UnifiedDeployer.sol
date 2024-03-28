@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: CC BY-NC-ND 4.0
 pragma solidity >=0.8.21 <0.9.0;
 
-import { PRBTest } from "@prb/test/PRBTest.sol";
-import { console2 } from "forge-std/console2.sol";
-import { StdCheats } from "forge-std/StdCheats.sol";
-
 import { SafeERC20 } from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import { ERC20 } from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import { ProxyAdmin } from "openzeppelin-contracts/proxy/transparent/ProxyAdmin.sol";
@@ -17,16 +13,13 @@ import { PositionCloser } from "src/user_facing/PositionCloser.sol";
 
 import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
 
-import { FakeOracle } from "src/ports/oracles/FakeOracle.sol";
-import { FakeWBTCWETHSwapAdapter } from "src/ports/swap_adapters/FakeWBTCWETHSwapAdapter.sol";
-import { FakeWBTCUSDCSwapAdapter } from "src/ports/swap_adapters/FakeWBTCUSDCSwapAdapter.sol";
 import { ChainlinkOracle } from "src/ports/oracles/ChainlinkOracle.sol";
 import { UniV3SwapAdapter } from "src/ports/swap_adapters/UniV3SwapAdapter.sol";
 
 import "src/internal/LeverageDepositor.sol";
 import { WBTCVault } from "src/internal/WBTCVault.sol";
 import { ProtocolParameters } from "src/internal/ProtocolParameters.sol";
-import { PositionLedger, LedgerEntry, PositionState } from "src/internal/PositionLedger.sol";
+import { PositionLedger, LedgerEntry } from "src/internal/PositionLedger.sol";
 import { OracleManager } from "src/internal/OracleManager.sol";
 import { LeveragedStrategy } from "src/internal/LeveragedStrategy.sol";
 import { SwapManager } from "src/internal/SwapManager.sol";
@@ -36,6 +29,24 @@ import { PositionExpirator } from "src/monitor_facing/PositionExpirator.sol";
 
 import { DependencyAddresses } from "src/libs/DependencyAddresses.sol";
 import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
+
+import { LVBTC } from "src/LvBTC.sol";
+
+// ! Specify Mainnet or Fork environment
+Environment constant ENV = Environment.FORK;
+
+enum Environment {
+    MAINNET,
+    FORK
+}
+
+struct DeploymentParameters {
+    uint256 ethUsdPriceStaleThreshold;
+    uint256 btcEthPriceStaleThreshold;
+    uint256 wbtcUsdPriceStaleThreshold;
+    uint256 usdcUsdPriceStaleThreshold;
+    LeveragedStrategy.StrategyConfig strategyConfig;
+}
 
 struct AllContracts {
     PositionToken positionToken;
@@ -59,11 +70,14 @@ struct AllContracts {
     ChainlinkOracle wbtcUsdOracle;
     ChainlinkOracle usdcUsdOracle;
     UniV3SwapAdapter uniV3SwapAdapter;
+    LVBTC lvBTC;
 }
 
 contract UnifiedDeployer {
     using SafeERC20 for IERC20;
     using ProtocolRoles for *;
+
+    DeploymentParameters[2] public deploymentParameters;
 
     IERC20 internal wbtc;
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
@@ -84,6 +98,37 @@ contract UnifiedDeployer {
     DependencyAddresses internal dependencyAddresses;
 
     AllContracts internal allContracts;
+
+    constructor() {
+        // Mainnet Deployment
+        deploymentParameters[uint256(Environment.MAINNET)] = DeploymentParameters({
+            ethUsdPriceStaleThreshold: 3600,
+            btcEthPriceStaleThreshold: 3600,
+            wbtcUsdPriceStaleThreshold: 3600,
+            usdcUsdPriceStaleThreshold: 1 days,
+            strategyConfig: LeveragedStrategy.StrategyConfig({
+                quota: 10_000e8,
+                maximumMultiplier: 3e8,
+                positionLifetimeInBlocks: 15,
+                liquidationBuffer: 1.25e8,
+                liquidationFee: 0.02e8
+            })
+        });
+        // Fork Deployment
+        deploymentParameters[uint256(Environment.FORK)] = DeploymentParameters({
+            ethUsdPriceStaleThreshold: 365 days * 10,
+            btcEthPriceStaleThreshold: 365 days * 10,
+            wbtcUsdPriceStaleThreshold: 365 days * 10,
+            usdcUsdPriceStaleThreshold: 365 days * 10,
+            strategyConfig: LeveragedStrategy.StrategyConfig({
+                quota: 10_000e8,
+                maximumMultiplier: 3e8,
+                positionLifetimeInBlocks: 15,
+                liquidationBuffer: 1.25e8,
+                liquidationFee: 0.02e8
+            })
+        });
+    }
 
     function getDependecyAddresses() external view returns (DependencyAddresses memory) {
         return dependencyAddresses;
@@ -117,6 +162,8 @@ contract UnifiedDeployer {
         allContracts.positionExpirator.setDependencies(dependencyAddresses);
         allContracts.positionToken.setDependencies(dependencyAddresses);
         allContracts.leverageDepositor.setDependencies(dependencyAddresses);
+        allContracts.wbtcVault.setDependencies(dependencyAddresses);
+
         allContracts.uniV3SwapAdapter.setDependencies(dependencyAddresses);
         allContracts.swapManager.setSwapAdapter(SwapManager.SwapRoute.UNISWAPV3, allContracts.uniV3SwapAdapter);
         allowStrategiesWithDepositor();
@@ -125,10 +172,14 @@ contract UnifiedDeployer {
     }
 
     function createOracles() internal {
-        allContracts.ethUsdOracle = new ChainlinkOracle(ETHUSDORACLE, 3600);
-        allContracts.btcEthOracle = new ChainlinkOracle(BTCETHORACLE, 3600);
-        allContracts.wbtcUsdOracle = new ChainlinkOracle(WBTCUSDORACLE, 3600);
-        allContracts.usdcUsdOracle = new ChainlinkOracle(USDCUSDORACLE, 1 days);
+        allContracts.ethUsdOracle =
+            new ChainlinkOracle(ETHUSDORACLE, deploymentParameters[uint256(ENV)].ethUsdPriceStaleThreshold);
+        allContracts.btcEthOracle =
+            new ChainlinkOracle(BTCETHORACLE, deploymentParameters[uint256(ENV)].btcEthPriceStaleThreshold);
+        allContracts.wbtcUsdOracle =
+            new ChainlinkOracle(WBTCUSDORACLE, deploymentParameters[uint256(ENV)].wbtcUsdPriceStaleThreshold);
+        allContracts.usdcUsdOracle =
+            new ChainlinkOracle(USDCUSDORACLE, deploymentParameters[uint256(ENV)].usdcUsdPriceStaleThreshold);
     }
 
     function allowStrategiesWithDepositor() internal {
@@ -137,13 +188,7 @@ contract UnifiedDeployer {
     }
 
     function setStrategyConfig() internal {
-        LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
-            quota: 10_000e8,
-            maximumMultiplier: 3e8,
-            positionLifetime: 15,
-            liquidationBuffer: 1.25e8,
-            liquidationFee: 0.02e8
-        });
+        LeveragedStrategy.StrategyConfig memory strategyConfig = deploymentParameters[uint256(ENV)].strategyConfig;
         allContracts.leveragedStrategy.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
         allContracts.leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
     }
@@ -158,6 +203,9 @@ contract UnifiedDeployer {
         allContracts.leverageDepositor = new LeverageDepositor();
         dependencyAddresses.leverageDepositor = address(allContracts.leverageDepositor);
         allContracts.uniV3SwapAdapter = new UniV3SwapAdapter();
+
+        dependencyAddresses.wbtcVault = createProxiedWBTCVault();
+        allContracts.wbtcVault = WBTCVault(dependencyAddresses.wbtcVault);
 
         dependencyAddresses.oracleManager = createProxiedOracleManager();
         allContracts.oracleManager = OracleManager(dependencyAddresses.oracleManager);
@@ -191,6 +239,9 @@ contract UnifiedDeployer {
 
         dependencyAddresses.swapManager = createProxiedSwapManager();
         allContracts.swapManager = SwapManager(dependencyAddresses.swapManager);
+
+        allContracts.lvBTC = new LVBTC(address(dependencyAddresses.wbtcVault));
+        dependencyAddresses.lvBTC = address(allContracts.lvBTC);
     }
 
     function createProxiedExpiredVault() internal returns (address) {
@@ -301,6 +352,15 @@ contract UnifiedDeployer {
         );
 
         return addrPositionLedger;
+    }
+
+    function createProxiedWBTCVault() internal returns (address) {
+        WBTCVault implWbtcVault = new WBTCVault();
+        address addrWBTCVault = createUpgradableContract(
+            implWbtcVault.initialize.selector, address(implWbtcVault), address(allContracts.proxyAdmin)
+        );
+
+        return addrWBTCVault;
     }
 
     function createProxiedSwapManager() internal returns (address) {

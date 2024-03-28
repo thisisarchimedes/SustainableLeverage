@@ -67,6 +67,7 @@ contract PositionLedger is AccessControlUpgradeable {
         if (existingEntry.state != PositionState.UNINITIALIZED) {
             revert ErrorsLeverageEngine.PositionAlreadyExists();
         }
+        entry.state = PositionState.LIVE;
         entries[nftID] = entry;
     }
 
@@ -140,14 +141,5 @@ contract PositionLedger is AccessControlUpgradeable {
             revert ErrorsLeverageEngine.PositionDoesNotExist();
         }
         entry.claimableAmount = claimableAmount;
-    }
-
-    function claimableAmountWasClaimed(uint256 nftID) external onlyRole(ProtocolRoles.INTERNAL_CONTRACT_ROLE) {
-        PositionState state = entries[nftID].state;
-        if (state != PositionState.EXPIRED && state != PositionState.LIQUIDATED) {
-            revert ErrorsLeverageEngine.PositionNotExpiredOrLiquidated();
-        }
-
-        entries[nftID].claimableAmount = 0;
     }
 }

@@ -31,7 +31,7 @@ contract LeveragedStrategy is AccessControlUpgradeable {
 
     struct StrategyConfig {
         uint256 quota;
-        uint256 positionLifetime;
+        uint256 positionLifetimeInBlocks;
         uint256 maximumMultiplier;
         uint256 liquidationBuffer;
         uint256 liquidationFee;
@@ -69,7 +69,7 @@ contract LeveragedStrategy is AccessControlUpgradeable {
         onlyRole(ProtocolRoles.ADMIN_ROLE)
     {
         uint8 minPositionLifetime = protocolParameters.getMinPositionDurationInBlocks();
-        if (config.positionLifetime < minPositionLifetime) {
+        if (config.positionLifetimeInBlocks < minPositionLifetime) {
             revert ErrorsLeverageEngine.PositionLifetimeTooShort();
         }
         strategyConfig[strategy] = config;
@@ -77,7 +77,7 @@ contract LeveragedStrategy is AccessControlUpgradeable {
         emit EventsLeverageEngine.StrategyConfigUpdated(
             strategy,
             config.quota,
-            config.positionLifetime,
+            config.positionLifetimeInBlocks,
             config.maximumMultiplier,
             config.liquidationBuffer,
             config.liquidationFee
@@ -120,8 +120,8 @@ contract LeveragedStrategy is AccessControlUpgradeable {
         return strategyConfig[strategy].quota;
     }
 
-    function getPositionLifetime(address strategy) external view returns (uint256) {
-        return strategyConfig[strategy].positionLifetime;
+    function getPositionLifetimeInBlocks(address strategy) external view returns (uint256) {
+        return strategyConfig[strategy].positionLifetimeInBlocks;
     }
 
     function getLiquidationBuffer(address strategy) external view returns (uint256) {

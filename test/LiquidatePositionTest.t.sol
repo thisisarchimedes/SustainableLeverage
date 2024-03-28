@@ -32,7 +32,7 @@ contract LiquidatePositionTest is BaseTest {
         LeveragedStrategy.StrategyConfig memory strategyConfig;
 
         strategyConfig.quota = 100e8;
-        strategyConfig.positionLifetime = 1000;
+        strategyConfig.positionLifetimeInBlocks = 1000;
         strategyConfig.maximumMultiplier = 3e8;
         strategyConfig.liquidationFee = 0.02e8;
 
@@ -52,7 +52,7 @@ contract LiquidatePositionTest is BaseTest {
         LeveragedStrategy.StrategyConfig memory strategyConfig;
 
         strategyConfig.quota = 100e8;
-        strategyConfig.positionLifetime = 1000;
+        strategyConfig.positionLifetimeInBlocks = 1000;
         strategyConfig.maximumMultiplier = 3e8;
         strategyConfig.liquidationBuffer = 1.1e8;
 
@@ -160,7 +160,7 @@ contract LiquidatePositionTest is BaseTest {
         LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
             quota: 100e8,
             maximumMultiplier: 3e8,
-            positionLifetime: 1000,
+            positionLifetimeInBlocks: 1000,
             liquidationBuffer: 1.1e8,
             liquidationFee: liquidationFee
         });
@@ -199,7 +199,7 @@ contract LiquidatePositionTest is BaseTest {
         LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
             quota: 100e8,
             maximumMultiplier: 3e8,
-            positionLifetime: 1000,
+            positionLifetimeInBlocks: 1000,
             liquidationBuffer: 1.1e8,
             liquidationFee: liquidationFee
         });
@@ -242,7 +242,7 @@ contract LiquidatePositionTest is BaseTest {
         LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
             quota: 100e8,
             maximumMultiplier: 3e8,
-            positionLifetime: 1000,
+            positionLifetimeInBlocks: 1000,
             liquidationBuffer: 1.1e8,
             liquidationFee: liquidationFee
         });
@@ -267,7 +267,7 @@ contract LiquidatePositionTest is BaseTest {
         LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
             quota: 100e8,
             maximumMultiplier: 3e8,
-            positionLifetime: 1000,
+            positionLifetimeInBlocks: 1000,
             liquidationBuffer: 1.1e8,
             liquidationFee: liquidationFee
         });
@@ -290,7 +290,7 @@ contract LiquidatePositionTest is BaseTest {
         LeveragedStrategy.StrategyConfig memory strategyConfig = LeveragedStrategy.StrategyConfig({
             quota: 100e8,
             maximumMultiplier: 3e8,
-            positionLifetime: 1000,
+            positionLifetimeInBlocks: 1000,
             liquidationBuffer: 1.1e8,
             liquidationFee: liquidationFee
         });

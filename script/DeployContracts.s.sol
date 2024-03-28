@@ -65,13 +65,19 @@ contract DeployContracts is UnifiedDeployer, BaseScript {
         deployedContractsNames.push("PositionLiquidator");
 
         deployedContracts.push(dependencyAddresses.positionExpirator);
-        deployedContractsNames.push("positionExpirator");
+        deployedContractsNames.push("PositionExpirator");
 
         deployedContracts.push(dependencyAddresses.positionLedger);
         deployedContractsNames.push("PositionLedger");
 
         deployedContracts.push(dependencyAddresses.swapManager);
         deployedContractsNames.push("SwapManager");
+
+        deployedContracts.push(dependencyAddresses.lvBTC);
+        deployedContractsNames.push("LvBTC");
+
+        deployedContracts.push(dependencyAddresses.lvBTCCurvePool);
+        deployedContractsNames.push("lvBTCCurvePool");
 
         _writeDeploymentsToJson();
     }
