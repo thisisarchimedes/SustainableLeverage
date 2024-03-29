@@ -93,6 +93,7 @@ contract UnifiedDeployer {
     address public constant FRAXBPALUSD_STRATEGY = 0xD078a331A8A00AB5391ba9f3AfC910225a78e6A1;
     address public constant LVBTC_ADDRESS = 0x1ce0D1E19c9514230FF8CD1DAbaC2555fb92122b;
     address public constant LVBTC_CURVE_POOL = 0xFD94A5dCB0E52fDD076Bee3eA1Aa16C48081660C;
+    address public constant UNIV3_WBTC_WETH_STRATEGY_LEVERAGE = 0x6Ea2F043e5EeafD0552963B60aAf18A4E105cB5B;
 
     address admin;
     address defaultFeeCollector;
@@ -111,11 +112,11 @@ contract UnifiedDeployer {
             wbtcUsdPriceStaleThreshold: 3600,
             usdcUsdPriceStaleThreshold: 1 days,
             strategyConfig: LeveragedStrategy.StrategyConfig({
-                quota: 10_000e8,
-                maximumMultiplier: 3e8,
-                positionLifetimeInBlocks: 15,
-                liquidationBuffer: 1.25e8,
-                liquidationFee: 0.02e8
+                quota: 100e8,
+                maximumMultiplier: 5e8,
+                positionLifetimeInBlocks: 216_600,
+                liquidationBuffer: 1.05e8,
+                liquidationFee: 0.05e8
             })
         });
         // Fork Deployment
@@ -147,8 +148,9 @@ contract UnifiedDeployer {
     }
 
     function DeployAllContracts() public {
-        admin = msg.sender; // TODO change hardcoded address before mainnet deployment
-        defaultFeeCollector = msg.sender; // TODO change hardcoded address before mainnet deployment
+        admin = 0x95622e85962BC154c76AB24e48FdF6CdAeDAd6E5; // TODO change hardcoded address before mainnet deployment
+        defaultFeeCollector = 0x29520fd76494Fd155c04Fa7c5532D2B2695D68C6; // TODO change hardcoded address before
+            // mainnet deployment
         defaultPositionLiquidatorMonitor = msg.sender; // TODO change hardcoded address before mainnet deployment
         defaultPositionExpiratorMonitor = msg.sender; // TODO change hardcoded address before mainnet deployment
 
@@ -187,14 +189,20 @@ contract UnifiedDeployer {
     }
 
     function allowStrategiesWithDepositor() internal {
-        allContracts.leverageDepositor.allowStrategyWithDepositor(ETHPLUSETH_STRATEGY);
-        allContracts.leverageDepositor.allowStrategyWithDepositor(FRAXBPALUSD_STRATEGY);
+        if (ENV == Environment.FORK) {
+            allContracts.leverageDepositor.allowStrategyWithDepositor(ETHPLUSETH_STRATEGY);
+            allContracts.leverageDepositor.allowStrategyWithDepositor(FRAXBPALUSD_STRATEGY);
+        }
+        allContracts.leverageDepositor.allowStrategyWithDepositor(UNIV3_WBTC_WETH_STRATEGY_LEVERAGE);
     }
 
     function setStrategyConfig() internal {
         LeveragedStrategy.StrategyConfig memory strategyConfig = deploymentParameters[uint256(ENV)].strategyConfig;
-        allContracts.leveragedStrategy.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
-        allContracts.leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
+        if (ENV == Environment.FORK) {
+            allContracts.leveragedStrategy.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
+            allContracts.leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
+        }
+        allContracts.leveragedStrategy.setStrategyConfig(UNIV3_WBTC_WETH_STRATEGY_LEVERAGE, strategyConfig);
     }
 
     function deployProxyAndContracts() internal {
@@ -375,8 +383,6 @@ contract UnifiedDeployer {
         address addrSwapManager = createUpgradableContract(
             implSwapManager.initialize.selector, address(implSwapManager), address(allContracts.proxyAdmin)
         );
-
-        SwapManager proxySwapManager = SwapManager(addrSwapManager);
 
         return addrSwapManager;
     }
