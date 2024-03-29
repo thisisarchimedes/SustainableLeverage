@@ -119,9 +119,9 @@ contract PositionOpener is AccessControlUpgradeable {
         WBTC.safeTransferFrom(msg.sender, swapAdapter, params.collateralAmount);
     }
 
-    function sendWbtcToLeverageDepositor(uint256 wbtcAmount) internal {
-        wbtcVault.borrowAmountTo(wbtcAmount, address(leverageDepositor));
-        WBTC.safeTransferFrom(msg.sender, address(leverageDepositor), wbtcAmount);
+    function sendWbtcToLeverageDepositor(OpenPositionParams calldata params) internal {
+        wbtcVault.borrowAmountTo(params.wbtcToBorrow, address(leverageDepositor));
+        WBTC.safeTransferFrom(msg.sender, address(leverageDepositor), params.collateralAmount);
     }
 
     function swapWbtcToStrategyToken(
