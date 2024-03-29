@@ -69,6 +69,9 @@ contract ClosePositionInternal {
     {
         address strategyAddress = positionLedger.getStrategyAddress(params.nftId);
         address strategyUnderlyingToken = leveragedStrategy.getStrategyValueAsset(strategyAddress);
+        if (strategyUnderlyingToken == Constants.WBTC_ADDRESS) {
+            return strategyTokenAmount;
+        }
         ISwapAdapter swapAdapter = swapManager.getSwapAdapterForRoute(params.swapRoute);
 
         ISwapAdapter.SwapWbtcParams memory swapParams = ISwapAdapter.SwapWbtcParams({
