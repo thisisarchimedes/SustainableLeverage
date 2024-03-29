@@ -82,7 +82,7 @@ contract PositionOpener is AccessControlUpgradeable {
         address strategyAsset = leveragedStrategy.getStrategyValueAsset(params.strategy);
         if (strategyAsset == address(WBTC)) {
             receivedTokenAmount = params.collateralAmount + params.wbtcToBorrow;
-            sendWbtcToLeverageDepositor(receivedTokenAmount);
+            sendWbtcToLeverageDepositor(params);
         } else {
             ISwapAdapter swapAdapter = swapManager.getSwapAdapterForRoute(params.swapRoute);
 
