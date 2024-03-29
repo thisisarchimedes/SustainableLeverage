@@ -26,8 +26,6 @@ contract DeployContracts is UnifiedDeployer, BaseScript {
         DeployAllContracts();
 
         CreateContractJSON();
-
-        postDeployConfig();
     }
 
     function CreateContractJSON() internal {

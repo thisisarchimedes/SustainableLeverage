@@ -78,15 +78,20 @@ contract PositionOpener is AccessControlUpgradeable {
         }
 
         leveragedStrategy.reduceQuotaBy(params.strategy, params.wbtcToBorrow);
+        uint256 receivedTokenAmount;
+        address strategyAsset = leveragedStrategy.getStrategyValueAsset(params.strategy);
+        if (strategyAsset == address(WBTC)) {
+            receivedTokenAmount = params.collateralAmount + params.wbtcToBorrow;
+            sendWbtcToLeverageDepositor(params);
+        } else {
+            ISwapAdapter swapAdapter = swapManager.getSwapAdapterForRoute(params.swapRoute);
 
-        ISwapAdapter swapAdapter = swapManager.getSwapAdapterForRoute(params.swapRoute);
+            sendWbtcToSwapAdapter(address(swapAdapter), params);
 
-        sendWbtcToSwapAdapter(address(swapAdapter), params);
-
-        uint256 receivedTokenAmount = swapWbtcToStrategyToken(swapAdapter, params);
-
-        if (isSwapReturnedEnoughTokens(params, receivedTokenAmount) == false) {
-            revert ErrorsLeverageEngine.NotEnoughTokensReceived();
+            receivedTokenAmount = swapWbtcToStrategyToken(swapAdapter, params);
+            if (isSwapReturnedEnoughTokens(params, receivedTokenAmount) == false) {
+                revert ErrorsLeverageEngine.NotEnoughTokensReceived();
+            }
         }
 
         uint256 sharesReceived = leverageDepositor.deposit(params.strategy, receivedTokenAmount);
@@ -112,6 +117,11 @@ contract PositionOpener is AccessControlUpgradeable {
     function sendWbtcToSwapAdapter(address swapAdapter, OpenPositionParams calldata params) internal {
         wbtcVault.borrowAmountTo(params.wbtcToBorrow, swapAdapter);
         WBTC.safeTransferFrom(msg.sender, swapAdapter, params.collateralAmount);
+    }
+
+    function sendWbtcToLeverageDepositor(OpenPositionParams calldata params) internal {
+        wbtcVault.borrowAmountTo(params.wbtcToBorrow, address(leverageDepositor));
+        WBTC.safeTransferFrom(msg.sender, address(leverageDepositor), params.collateralAmount);
     }
 
     function swapWbtcToStrategyToken(
