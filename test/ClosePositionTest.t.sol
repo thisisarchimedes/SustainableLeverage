@@ -141,4 +141,36 @@ contract ClosePositionTest is BaseTest {
         assertEq(uint8(position.state), uint8(PositionState.CLOSED));
         assertEq(wbtcBalanceAfterClose - wbtcBalanceBeforeClose, position.wbtcDebtAmount);
     }
+
+    function testDepositWhenStrategyAssetInWbtcAndClose() external {
+        deal(WBTC, address(this), 10e8);
+        ERC20(WBTC).approve(address(allContracts.positionOpener), type(uint256).max);
+
+        IMultiPoolStrategy strategy = IMultiPoolStrategy(UNIV3_WBTC_WETH_STRATEGY_LEVERAGE);
+
+        bytes memory payload = "";
+        OpenPositionParams memory params = OpenPositionParams({
+            collateralAmount: 10e8,
+            wbtcToBorrow: 20e8,
+            minStrategyShares: 0,
+            strategy: UNIV3_WBTC_WETH_STRATEGY_LEVERAGE,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payload,
+            exchange: address(0)
+        });
+        uint256 nftId = allContracts.positionOpener.openPosition(params);
+        vm.roll(block.number + TWO_DAYS);
+        ClosePositionParams memory closeParams = ClosePositionParams({
+            nftId: nftId,
+            minWBTC: 0,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payload,
+            exchange: address(0)
+        });
+        uint256 wbtcBalanceBefore = ERC20(WBTC).balanceOf(address(this));
+        allContracts.positionCloser.closePosition(closeParams);
+        uint256 wbtcBalanceAfter = ERC20(WBTC).balanceOf(address(this));
+        uint256 delta = 10e8 * 2e8 / 100e8;
+        assertAlmostEq(wbtcBalanceAfter - wbtcBalanceBefore, 10e8, delta);
+    }
 }

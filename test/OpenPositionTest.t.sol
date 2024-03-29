@@ -168,4 +168,28 @@ contract OpenPositionTest is BaseTest {
         uint256 delta = previewShareNumber * 2e8 / 100e8;
         assertAlmostEq(previewShareNumber, actualShareNumber, delta);
     }
+
+    function testDepositWhenStrategyAssetIsWbtc() external {
+        deal(WBTC, address(this), 10e8);
+        ERC20(WBTC).approve(address(allContracts.positionOpener), type(uint256).max);
+
+        IMultiPoolStrategy strategy = IMultiPoolStrategy(UNIV3_WBTC_WETH_STRATEGY_LEVERAGE);
+
+        uint256 expectedSharesForDeposit = strategy.previewDeposit(10e8 + 20e8);
+
+        bytes memory payload = "";
+        OpenPositionParams memory params = OpenPositionParams({
+            collateralAmount: 10e8,
+            wbtcToBorrow: 20e8,
+            minStrategyShares: 0,
+            strategy: UNIV3_WBTC_WETH_STRATEGY_LEVERAGE,
+            swapRoute: SwapManager.SwapRoute.UNISWAPV3,
+            swapData: payload,
+            exchange: address(0)
+        });
+        uint256 nftId = allContracts.positionOpener.openPosition(params);
+
+        uint256 strategyShares = allContracts.positionLedger.getStrategyShares(nftId);
+        assertEq(strategyShares, expectedSharesForDeposit);
+    }
 }

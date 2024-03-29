@@ -93,7 +93,7 @@ contract UnifiedDeployer {
     address public constant FRAXBPALUSD_STRATEGY = 0xD078a331A8A00AB5391ba9f3AfC910225a78e6A1;
     address public constant LVBTC_ADDRESS = 0x1ce0D1E19c9514230FF8CD1DAbaC2555fb92122b;
     address public constant LVBTC_CURVE_POOL = 0xFD94A5dCB0E52fDD076Bee3eA1Aa16C48081660C;
-    address public constant UNIV3_WBTC_WETH_STRATEGY_LEVERAGE = 0x6Ea2F043e5EeafD0552963B60aAf18A4E105cB5B;
+    address public constant UNIV3_WBTC_WETH_STRATEGY_LEVERAGE = 0x7694Cd972Baa64018e5c6389740832e4C7f2Ce9a;
 
     address admin;
     address defaultFeeCollector;
