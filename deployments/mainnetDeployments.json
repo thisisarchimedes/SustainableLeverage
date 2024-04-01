@@ -1,6 +1,6 @@
 [
   {
-    "address": "0x88c792C78dbfDfc7034108e718d3866B538C8317",
+    "address": "0x56D696195987Dba6baeD82979aABBAb4fbE0381a",
     "name": "ExpiredVault"
   },
   {
@@ -8,7 +8,7 @@
     "name": "LeverageDepositor"
   },
   {
-    "address": "0x621c9513A6A48D152A6eeC1604cdbF08D391640c",
+    "address": "0xF33BC53141054024cf585e14fC7c824c48Fb8B9e",
     "name": "wbtcVault"
   },
   {
@@ -16,43 +16,43 @@
     "name": "PositionToken"
   },
   {
-    "address": "0x1AA739f4cE7713B283e892a9bF155420af91aB2e",
+    "address": "0x0000000000000000000000000000000000000000",
     "name": "ProxyAdmin"
   },
   {
-    "address": "0xfDAF621825f60464b3c4d22730D09B4b4ca03Df6",
+    "address": "0x1b0146c166011758A1072835F592aaCcd96aeFA7",
     "name": "LeveragedStrategy"
   },
   {
-    "address": "0x7d1E3eb7df057480bEd8f3f5F86E31406B0CDaC6",
+    "address": "0xeDdF0d4dEEcF1DB6996F95F150f747b496b2052E",
     "name": "ProtocolParameters"
   },
   {
-    "address": "0xDe30d4B2843465A7C349493e22702cd667436389",
+    "address": "0xA535bEb218d7b8f322a5298323e83312C33C5aa1",
     "name": "OracleManager"
   },
   {
-    "address": "0xa8aAF442fFA99d49e9949612C2Ec22448e280564",
+    "address": "0x404e1256Ad4Dfd361eb682D60cb24757Ce77740B",
     "name": "PositionOpener"
   },
   {
-    "address": "0x09F618De7cFF510e9E06D18F5392C0282715E526",
+    "address": "0x9bcf4b810726907e3421866294a0C48AA724585e",
     "name": "PositionCloser"
   },
   {
-    "address": "0x5544A6cee77660f58Bb52e90A456AdD8813BC8ec",
+    "address": "0x27E5dE33b607CB5A0fDe5Ea7c6aAFb5d51aC98c8",
     "name": "PositionLiquidator"
   },
   {
-    "address": "0x7693eef22985f4868bF9ff575a7142CD9db5e4C8",
+    "address": "0x0574fF156679588648EAA3a415f755bd76A6b376",
     "name": "PositionExpirator"
   },
   {
-    "address": "0xB860c5E2bd37b68BB7A58AAa0B921625FB817036",
+    "address": "0xDCb54f022D8fBeF4A686540848B75A22A35cF4Ce",
     "name": "PositionLedger"
   },
   {
-    "address": "0xB61049FD720009a3FD7D93720c50d8052F62D11B",
+    "address": "0x35B827896AbeDf60Da9Bf72ea13d166cec076897",
     "name": "SwapManager"
   },
   {

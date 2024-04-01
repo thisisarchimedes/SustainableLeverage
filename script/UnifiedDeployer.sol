@@ -108,7 +108,7 @@ contract UnifiedDeployer {
         // Mainnet Deployment
         deploymentParameters[uint256(Environment.MAINNET)] = DeploymentParameters({
             ethUsdPriceStaleThreshold: 3600,
-            btcEthPriceStaleThreshold: 3600,
+            btcEthPriceStaleThreshold: 1 days,
             wbtcUsdPriceStaleThreshold: 3600,
             usdcUsdPriceStaleThreshold: 1 days,
             strategyConfig: LeveragedStrategy.StrategyConfig({

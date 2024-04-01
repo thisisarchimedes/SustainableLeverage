@@ -18,8 +18,8 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
     using ProtocolRoles for *;
 
-    int128 private immutable WBTC_INDEX = 0;
-    int128 private immutable LVBTC_INDEX = 1;
+    int128 public constant WBTC_INDEX = 0;
+    int128 public constant LVBTC_INDEX = 1;
 
     IERC20 public wbtc;
     LVBTC private lvBtc;
