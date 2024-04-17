@@ -29,4 +29,10 @@ library ErrorsLeverageEngine {
     error PositionDoesNotExist(); //f7b3b391
     error FeeTooHigh(); //cd4e6167
     error NotEnoughLvBTC();
+    error InsufficientWBTC(uint256 required, uint256 available);
+    error InsufficientLvBTC(uint256 required, uint256 available);
+    error WBTC_SwapAmountMismatch(uint256 expected, uint256 actual);
+    error lvBTC_SwapAmountMismatch(uint256 expected, uint256 actual);
+    error BelowMinimumLvBTC(uint256 minimumRequired, uint256 actualReceived);
+    error BelowMinimumWBTC(uint256 minimumRequired, uint256 actualReceived);
 }

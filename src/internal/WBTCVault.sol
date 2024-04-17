@@ -41,9 +41,13 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
     }
 
     function setlvBTCPoolAddress(address lvBTCPoolAddress) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
+        //reset previous curve pool allowance
+        if (address(curvePool) > address(0)) {
+            wbtc.approve(address(curvePool), 0);
+            lvBtc.approve(address(curvePool), 0);
+        }
+
         curvePool = ICurvePool(lvBTCPoolAddress);
-        wbtc.approve(address(lvBTCPoolAddress), type(uint256).max);
-        lvBtc.approve(address(lvBTCPoolAddress), type(uint256).max);
     }
 
     function setDependencies(DependencyAddresses calldata dependencies) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
@@ -63,14 +67,27 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
         external
         onlyRole(ProtocolRoles.MONITOR_ROLE)
     {
-        uint256 lvBTCBalanceBeforeSwap = lvBtc.balanceOf(address(this));
+        uint256 wbtcBalanceBefore = wbtc.balanceOf(address(this));
+        uint256 lvBTCBalanceBefore = lvBtc.balanceOf(address(this));
 
+        wbtc.approve(address(curvePool), wbtcAmount);
         curvePool.exchange(WBTC_INDEX, LVBTC_INDEX, wbtcAmount, minlvBTCAmount, address(this));
-        uint256 lvBTCBalanceAfterSwap = lvBtc.balanceOf(address(this));
 
-        uint256 totalToBurn = lvBTCBalanceAfterSwap - lvBTCBalanceBeforeSwap;
+        uint256 wbtcBalanceAfter = wbtc.balanceOf(address(this));
+        uint256 lvBTCBalanceAfter = lvBtc.balanceOf(address(this));
 
-        lvBtc.burn(totalToBurn);
+        uint256 actualWBTCChange = wbtcBalanceBefore - wbtcBalanceAfter;
+        uint256 actualLvBTCChange = lvBTCBalanceAfter - lvBTCBalanceBefore;
+
+        if (actualWBTCChange != wbtcAmount) {
+            revert ErrorsLeverageEngine.WBTC_SwapAmountMismatch(wbtcAmount, actualWBTCChange);
+        }
+        if (actualLvBTCChange < minlvBTCAmount) {
+            revert ErrorsLeverageEngine.BelowMinimumLvBTC(minlvBTCAmount, actualLvBTCChange);
+        }
+
+        lvBtc.burn(actualLvBTCChange);
+        wbtc.approve(address(curvePool), 0);
     }
 
     function swaplvBTCtoWBTC(
@@ -80,13 +97,26 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
         external
         onlyRole(ProtocolRoles.MONITOR_ROLE)
     {
-        uint256 currentlvBTCAmount = lvBtc.balanceOf(address(this));
+        uint256 wbtcBalanceBefore = wbtc.balanceOf(address(this));
+        uint256 lvBTCBalanceBefore = lvBtc.balanceOf(address(this));
 
-        if (currentlvBTCAmount < lvBTCAmount) {
-            revert ErrorsLeverageEngine.NotEnoughLvBTC();
+        lvBtc.approve(address(curvePool), lvBTCAmount);
+        curvePool.exchange(LVBTC_INDEX, WBTC_INDEX, lvBTCAmount, minWBTCAmount, address(this));
+
+        uint256 wbtcBalanceAfter = wbtc.balanceOf(address(this));
+        uint256 lvBTCBalanceAfter = lvBtc.balanceOf(address(this));
+
+        uint256 actualWBTCChange = wbtcBalanceAfter - wbtcBalanceBefore;
+        uint256 actualLvBTCChange = lvBTCBalanceBefore - lvBTCBalanceAfter;
+
+        if (actualWBTCChange < minWBTCAmount) {
+            revert ErrorsLeverageEngine.BelowMinimumWBTC(minWBTCAmount, actualWBTCChange);
+        }
+        if (actualLvBTCChange != lvBTCAmount) {
+            revert ErrorsLeverageEngine.lvBTC_SwapAmountMismatch(lvBTCAmount, actualLvBTCChange);
         }
 
-        curvePool.exchange(LVBTC_INDEX, WBTC_INDEX, lvBTCAmount, minWBTCAmount, address(this));
+        lvBtc.approve(address(curvePool), 0);
     }
 
     function borrowAmountTo(

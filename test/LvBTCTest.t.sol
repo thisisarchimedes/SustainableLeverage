@@ -21,15 +21,14 @@ contract LvBTCTest is BaseTest {
         initTestFramework();
 
         mintLvBTCToSelf();
+
         // deposit to curve pool
         ERC20(WBTC).approve(address(allContracts.lvBTCCurvePool), type(uint256).max);
         ERC20(allContracts.lvBTC).approve(address(allContracts.lvBTCCurvePool), type(uint256).max);
 
-        allContracts.lvBTC.transfer(address(allContracts.wbtcVault), 1e8); //TODO:check
+        allContracts.lvBTC.transfer(address(allContracts.wbtcVault), 1e8);
         deal(WBTC, address(this), 1000e8);
 
-        uint256 balance = allContracts.lvBTC.balanceOf(address(this));
-        console2.log("balance", balance);
         // Initialize WBTC Vault and other necessary components
         deal(WBTC, address(allContracts.wbtcVault), 1000e8);
 

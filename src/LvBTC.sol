@@ -24,6 +24,11 @@ contract LVBTC is ERC20Burnable, AccessControl {
     }
 
     function setMintDestination(address to) external onlyRole(ProtocolRoles.ADMIN_ROLE) {
+        //reset allowance to previous destination
+        if (mintDestination > address(0)) {
+            _spendAllowance(address(this), mintDestination, 0);
+        }
+
         mintDestination = to;
     }
 
