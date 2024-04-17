@@ -100,6 +100,10 @@ contract WBTCVault is IWBTCVault, AccessControlUpgradeable {
         uint256 wbtcBalanceBefore = wbtc.balanceOf(address(this));
         uint256 lvBTCBalanceBefore = lvBtc.balanceOf(address(this));
 
+        if (lvBTCBalanceBefore < lvBTCAmount) {
+            revert ErrorsLeverageEngine.NotEnoughLvBTC();
+        }
+
         lvBtc.approve(address(curvePool), lvBTCAmount);
         curvePool.exchange(LVBTC_INDEX, WBTC_INDEX, lvBTCAmount, minWBTCAmount, address(this));
 
