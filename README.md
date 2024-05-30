@@ -28,6 +28,14 @@ Run the tests:
 $ forge test
 ```
 
+### Custom Scripts
+
+Open Position (fork):
+
+```sh
+$ forge script script/OpenPosition.s.sol --broadcast --fork-url http://ec2-52-4-114-208.compute-1.amazonaws.com:8545 --slow
+```
+
 ### CICD
 
 1. Open a PR request, Github Actionswill run Linter and Tests
