@@ -5,7 +5,7 @@ import sys
 
 def set_wbtc_balance_of_vault(storageSlot, wbtc_address, amount):
     fork_url = "http://localhost:8545"
-    requests.post(
+    response = requests.post(
         url=fork_url,
         json={
             "jsonrpc": "2.0",
@@ -14,6 +14,7 @@ def set_wbtc_balance_of_vault(storageSlot, wbtc_address, amount):
             "id": 67,
         },
     )
+    print(response.text)
 
 
 def main():
