@@ -34,7 +34,7 @@ import { ProtocolRoles } from "src/libs/ProtocolRoles.sol";
 import { LVBTC } from "src/LvBTC.sol";
 
 // ! Specify Mainnet or Fork environment
-Environment constant ENV = Environment.FORK;
+Environment constant ENVIRONMENT = Environment.FORK;
 
 enum Environment {
     MAINNET,
@@ -78,6 +78,11 @@ struct AllContracts {
 contract UnifiedDeployer {
     using SafeERC20 for IERC20;
     using ProtocolRoles for *;
+
+    // !!!DO NOT change this line, it derives from the global constant!!!
+    // Use the class' ENV constant to access the value
+    // This is done for child contract to access its' value
+    Environment public constant ENV = ENVIRONMENT;
 
     DeploymentParameters[2] public deploymentParameters;
 

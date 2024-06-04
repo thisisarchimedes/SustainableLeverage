@@ -8,7 +8,7 @@ import { TransparentUpgradeableProxy } from "openzeppelin-contracts/proxy/transp
 import { console2 } from "forge-std/console2.sol";
 
 import { BaseScript } from "script/Base.s.sol";
-import { UnifiedDeployer } from "script/UnifiedDeployer.sol";
+import { UnifiedDeployer, Environment } from "script/UnifiedDeployer.sol";
 
 import { PositionToken } from "src/user_facing/PositionToken.sol";
 
@@ -26,6 +26,10 @@ contract DeployContracts is UnifiedDeployer, BaseScript {
         DeployAllContracts();
 
         CreateContractJSON();
+
+        if(this.ENV() == Environment.FORK) {
+            postDeployConfig();
+        }
     }
 
     function CreateContractJSON() internal {
