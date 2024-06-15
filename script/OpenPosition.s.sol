@@ -21,7 +21,7 @@ import { OpenPositionParams } from "src/libs/PositionCallParams.sol";
 
 contract OpenPosition is Script {
     /* solhint-disable  */
-    PositionOpener internal positionOpener = PositionOpener(0x404e1256Ad4Dfd361eb682D60cb24757Ce77740B); // UPDATE THIS
+    PositionOpener internal positionOpener = PositionOpener(0x1d6C8A1B29FAF897A54202e537d8eE4065071CcB); // UPDATE THIS
         // WITH LATEST ADDRESS
 
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
@@ -42,7 +42,7 @@ contract OpenPosition is Script {
         vm.startBroadcast(broadcaster);
         console2.log("Broadcaster address:", broadcaster); // Print the broadcaster address
 
-        console2.log("WBTC Vault balance:", ERC20(WBTC).balanceOf(0xF33BC53141054024cf585e14fC7c824c48Fb8B9e));
+        console2.log("WBTC Vault balance:", ERC20(WBTC).balanceOf(0xfB3579fCE33D7733D5Ca7D023D4164627F4caFd1));
         console2.log("Broadcaster balance:", ERC20(WBTC).balanceOf(broadcaster));
 
         //! adjustIn check

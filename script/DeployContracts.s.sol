@@ -21,14 +21,22 @@ import { ISwapAdapter } from "src/interfaces/ISwapAdapter.sol";
 import { ChainlinkOracle } from "src/ports/oracles/ChainlinkOracle.sol";
 import { BaseScript } from "script/Base.s.sol";
 
+import { PositionLiquidator } from "src/monitor_facing/PositionLiquidator.sol";
+import { PositionExpirator } from "src/monitor_facing/PositionExpirator.sol";
+
 contract DeployContracts is UnifiedDeployer, BaseScript {
+    address private constant KMS_URGENT_GLOBAL = 0x36b47D05EbCf3694b6c94Abc6002da727398422C;
+    address private constant KMS_LEVERAGE_NORMAL = 0x0F32c97966FbBB661d1b1405838Ad3C9A3896697;
+    address private constant KMS_PSP_NORMAL = 0x1d74A8F5e8452f1BB37EA85BBA0e68f54f0ad99F;
+
     function run() public broadcast {
         DeployAllContracts();
 
         CreateContractJSON();
 
         if(this.ENV() == Environment.FORK) {
-            postDeployConfig();
+            fundBalances();
+            setAccessControl();
         }
     }
 
@@ -84,9 +92,17 @@ contract DeployContracts is UnifiedDeployer, BaseScript {
         _writeDeploymentsToJson();
     }
 
-    function postDeployConfig() internal {
+    function fundBalances() internal {
         setWBTCBalanceForAddress(dependencyAddresses.wbtcVault);
         setWBTCBalanceForAddress(broadcaster);
+    }
+
+    function setAccessControl() internal {
+        PositionLiquidator proxyPositionLiquidator = PositionLiquidator(this.getAllContracts().positionLiquidator);
+        proxyPositionLiquidator.setMonitor(KMS_URGENT_GLOBAL);
+
+        PositionExpirator proxyPositionExpirator = PositionExpirator(this.getAllContracts().positionExpirator);
+        proxyPositionExpirator.setMonitor(KMS_LEVERAGE_NORMAL);
     }
 
     function setWBTCBalanceForAddress(address dest) internal {
