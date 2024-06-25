@@ -99,6 +99,7 @@ contract UnifiedDeployer {
     address public constant LVBTC_ADDRESS = 0x1ce0D1E19c9514230FF8CD1DAbaC2555fb92122b;
     address public constant LVBTC_CURVE_POOL = 0xFD94A5dCB0E52fDD076Bee3eA1Aa16C48081660C;
     address public constant UNIV3_WBTC_WETH_STRATEGY_LEVERAGE = 0x7694Cd972Baa64018e5c6389740832e4C7f2Ce9a;
+    address public constant EZETH_WETH_STRATEGY_LEVERAGE = 0x4f4c4D838c1bd66A1d19f599CA9e6C6c2F6104d2;
 
     address admin;
     address defaultFeeCollector;
@@ -206,6 +207,7 @@ contract UnifiedDeployer {
         if (ENV == Environment.FORK) {
             allContracts.leveragedStrategy.setStrategyConfig(FRAXBPALUSD_STRATEGY, strategyConfig);
             allContracts.leveragedStrategy.setStrategyConfig(ETHPLUSETH_STRATEGY, strategyConfig);
+            allContracts.leveragedStrategy.setStrategyConfig(EZETH_WETH_STRATEGY_LEVERAGE, strategyConfig);
         }
         allContracts.leveragedStrategy.setStrategyConfig(UNIV3_WBTC_WETH_STRATEGY_LEVERAGE, strategyConfig);
     }
