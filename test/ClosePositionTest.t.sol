@@ -146,8 +146,6 @@ contract ClosePositionTest is BaseTest {
         deal(WBTC, address(this), 10e8);
         ERC20(WBTC).approve(address(allContracts.positionOpener), type(uint256).max);
 
-        IMultiPoolStrategy strategy = IMultiPoolStrategy(UNIV3_WBTC_WETH_STRATEGY_LEVERAGE);
-
         bytes memory payload = "";
         OpenPositionParams memory params = OpenPositionParams({
             collateralAmount: 10e8,
