@@ -198,7 +198,6 @@ contract UnifiedDeployer {
         if (ENV == Environment.FORK) {
             allContracts.leverageDepositor.allowStrategyWithDepositor(ETHPLUSETH_STRATEGY);
             allContracts.leverageDepositor.allowStrategyWithDepositor(FRAXBPALUSD_STRATEGY);
-            allContracts.leverageDepositor.allowStrategyWithDepositor(EZETH_WETH_STRATEGY_LEVERAGE);
         }
         allContracts.leverageDepositor.allowStrategyWithDepositor(UNIV3_WBTC_WETH_STRATEGY_LEVERAGE);
     }
