@@ -33,9 +33,10 @@ contract OpenPosition is Script {
     address public constant ETHPLUSETH_STRATEGY = 0xF326Cd46A1A189B305AFF7500b02C5C26b405266;
     address public constant FRAXBPALUSD_STRATEGY = 0xD078a331A8A00AB5391ba9f3AfC910225a78e6A1;
     address public constant UNIV3_STRATEGY = 0x7694Cd972Baa64018e5c6389740832e4C7f2Ce9a;
+    address public constant EZETH_WETH_STRATEGY = 0x4f4c4D838c1bd66A1d19f599CA9e6C6c2F6104d2;
 
     function run() public {
-        address OPEN_POSITION_STRATEGY = UNIV3_STRATEGY;
+        address OPEN_POSITION_STRATEGY = EZETH_WETH_STRATEGY;
 
         address broadcaster = vm.rememberKey(0xfb3e889306aafa69793a67e74c09e657eec07c4c552543db26f3158cf53c2a57); // THIS
             // IS DUMMY KEY
@@ -59,7 +60,16 @@ contract OpenPosition is Script {
         //         amountOutMin: 1
         //     })
         // );
-        bytes memory payload; // For UNIV3_STRATEGY
+
+        bytes memory payload = abi.encode(
+            UniV3SwapAdapter.UniswapV3Data({
+                path: abi.encodePacked(WBTC, uint24(3000), WETH),
+                deadline: block.timestamp + 30 days,
+                amountOutMin: 1
+            })
+        );
+        
+        // bytes memory payload; // For UNIV3_STRATEGY
 
         OpenPositionParams memory params = OpenPositionParams({
             collateralAmount: 0.1e8,
